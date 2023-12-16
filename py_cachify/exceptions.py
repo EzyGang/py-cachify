@@ -1,0 +1,2 @@
+class CachifyLockError(Exception):
+    pass
