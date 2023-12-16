@@ -1,0 +1,57 @@
+name: Pre-build Checks
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12",]
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install --no-cache-dir "poetry==1.7.1"
+          poetry install --no-root --no-interaction --no-ansi
+      - name: Execute Tests
+        run: poetry run task tests
+  lint:
+    name: Code Lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12",]
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install --no-cache-dir "poetry==1.7.1"
+          poetry install --no-root --no-interaction --no-ansi
+      - name: Run ruff
+        run: poetry run task ruff-lint
+      - name: Run mypy
+        run: poetry run task mypy-lint
+      - name: Run poetry check
+        run: poetry run task poetry-check
+      - name: Run pip check
+        run: poetry run task pip-check
