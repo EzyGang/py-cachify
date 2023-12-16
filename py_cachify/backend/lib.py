@@ -1,8 +1,8 @@
 from typing import Any
 
 from py_cachify.backend.clients import AsyncWrapper, MemoryCache
-from py_cachify.backend.types import AsyncClient, SyncClient
 from py_cachify.backend.exceptions import CachifyInitError
+from py_cachify.backend.types import AsyncClient, SyncClient
 
 
 class Cachify:
