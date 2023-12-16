@@ -1,0 +1,2 @@
+class CachifyInitError(Exception):
+    pass
