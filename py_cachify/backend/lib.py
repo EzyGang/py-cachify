@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 from py_cachify.backend.clients import AsyncWrapper, MemoryCache
