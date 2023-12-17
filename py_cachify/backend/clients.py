@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, Dict, Tuple
 
 
 class MemoryCache:
     def __init__(self) -> None:
-        self._cache: dict[str, tuple[Any, float | None]] = {}
+        self._cache: Dict[str, Tuple[Any, float | None]] = {}
 
     def set(self, name: str, value: Any, ex: int | None = None) -> None:
         self._cache[name] = value, ex and time.time() + ex
