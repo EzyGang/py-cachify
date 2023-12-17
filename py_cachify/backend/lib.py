@@ -8,7 +8,9 @@ from py_cachify.backend.types import AsyncClient, SyncClient
 
 
 class Cachify:
-    def __init__(self, sync_client: Union[SyncClient | MemoryCache], async_client: Union[AsyncClient | AsyncWrapper]) -> None:
+    def __init__(
+        self, sync_client: Union[SyncClient | MemoryCache], async_client: Union[AsyncClient | AsyncWrapper]
+    ) -> None:
         self._sync_client = sync_client
         self._async_client = async_client
 
