@@ -31,7 +31,11 @@ jobs:
           pip install --no-cache-dir "poetry==1.7.1"
           poetry install --no-root --no-interaction --no-ansi
       - name: Execute Tests
-        run: python -m pytest tests/ -v
+        run: poetry run task tests
+      - uses: actions/upload-artifact@v3
+        with:
+          name: coverage.xml
+          path: coverage.xml
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
