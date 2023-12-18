@@ -25,8 +25,8 @@ pytest-socket = "^0.6.0"
 [tool.taskipy.tasks]
 format-and-lint = "task ruff && task mypy-lint"
 
-ruff = "ruff format ./py_cachify/ && ruff check ./py_cachify/ --fix"
-tests = "pytest tests/ -v"
+ruff = "ruff format ./py_cachify/ && ruff check ./py_cachify/ --fix --unsafe-fixes"
+tests = "PYTHONPATH=. pytest tests/ -v"
 
 ruff-lint = "ruff check ./py_cachify"
 mypy-lint = "mypy --install-types --non-interactive ./py_cachify/"
@@ -50,6 +50,7 @@ ignore = [
 ]
 ignore-init-module-imports = true
 extend-exclude = ["site-packages", "*.pyi"]
+target-version = 'py38'
 
 
 [tool.ruff.format]

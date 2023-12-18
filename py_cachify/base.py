@@ -1,14 +1,13 @@
 import inspect
-from collections.abc import Callable
-from typing import Any, Awaitable
+from typing import Any, Awaitable, Callable, Union
 
 from typing_extensions import ParamSpec
 
 
 P = ParamSpec('P')
-SyncFunc = Callable[[P.args, P.kwargs], Any]
-AsyncFunc = Callable[[P.args, P.kwargs], Awaitable[Any]]
-DecoratorFunc = Callable[[SyncFunc | AsyncFunc], AsyncFunc | SyncFunc]
+SyncFunc = Callable[P, Any]
+AsyncFunc = Callable[P, Awaitable[Any]]
+DecoratorFunc = Callable[[Union[SyncFunc, AsyncFunc]], Union[AsyncFunc, SyncFunc]]
 
 
 def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) -> str:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .backend.exceptions import CachifyInitError
 from .backend.lib import init_cachify
 from .cached import cached

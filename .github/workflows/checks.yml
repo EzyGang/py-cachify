@@ -3,7 +3,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
 jobs:
   unit-tests:
     name: Unit Tests
@@ -27,6 +32,10 @@ jobs:
           poetry install --no-root --no-interaction --no-ansi
       - name: Execute Tests
         run: poetry run task tests
+      - uses: actions/upload-artifact@v3
+        with:
+          name: coverage.xml
+          path: coverage.xml
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
@@ -46,7 +55,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install --no-cache-dir "poetry==1.7.1"
-          poetry install --no-root --no-interaction --no-ansi
+          poetry install --no-root --no-interaction --no-ansi --with dev
       - name: Run ruff
         run: poetry run task ruff-lint
       - name: Run mypy
