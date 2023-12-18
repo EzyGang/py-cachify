@@ -9,12 +9,12 @@ from py_cachify.backend.types import AsyncClient, SyncClient
 
 class Cachify:
     def __init__(
-        self, sync_client: Union[SyncClient | MemoryCache], async_client: Union[AsyncClient | AsyncWrapper]
+        self, sync_client: Union[SyncClient, MemoryCache], async_client: Union[AsyncClient, AsyncWrapper]
     ) -> None:
         self._sync_client = sync_client
         self._async_client = async_client
 
-    def set(self, key: str, val: Any, ttl: Union[int | None] = None) -> Any:
+    def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
         self._sync_client.set(name=key, value=val, ex=ttl)
 
     def get(self, key: str) -> Any:
@@ -26,7 +26,7 @@ class Cachify:
     async def a_get(self, key: str) -> Any:
         return await self._async_client.get(name=key)
 
-    async def a_set(self, key: str, val: Any, ttl: Union[int | None] = None) -> Any:
+    async def a_set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
         await self._async_client.set(name=key, value=val, ex=ttl)
 
     async def a_delete(self, key: str) -> Any:

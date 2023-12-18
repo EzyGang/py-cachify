@@ -49,7 +49,7 @@ def lock(key: str) -> Generator[None, None, None]:
 
 
 def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> DecoratorFunc:
-    def decorator(_func: Union[SyncFunc | AsyncFunc]) -> Union[SyncFunc | AsyncFunc]:
+    def decorator(_func: Union[SyncFunc, AsyncFunc]) -> Union[SyncFunc, AsyncFunc]:
         @wraps(_func)
         async def _async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
             bound_args = inspect.signature(_func).bind(*args, **kwargs)

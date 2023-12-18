@@ -9,8 +9,8 @@ from .backend.lib import get_cachify
 from .base import AsyncFunc, DecoratorFunc, P, SyncFunc, get_full_key_from_signature
 
 
-def cached(key: str, ttl: Union[int | None] = None) -> DecoratorFunc:
-    def decorator(_func: Union[SyncFunc | AsyncFunc]) -> Union[SyncFunc | AsyncFunc]:
+def cached(key: str, ttl: Union[int, None] = None) -> DecoratorFunc:
+    def decorator(_func: Union[SyncFunc, AsyncFunc]) -> Union[SyncFunc, AsyncFunc]:
         signature = inspect.signature(_func)
 
         @wraps(_func)
