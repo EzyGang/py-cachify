@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Awaitable, Union, Callable
+from typing import Any, Awaitable, Callable, Union
 
 from typing_extensions import ParamSpec
 
