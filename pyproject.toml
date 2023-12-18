@@ -26,7 +26,7 @@ pytest-socket = "^0.6.0"
 format-and-lint = "task ruff && task mypy-lint"
 
 ruff = "ruff format ./py_cachify/ && ruff check ./py_cachify/ --fix --unsafe-fixes"
-tests = "pytest tests/ -v"
+tests = "PYTHONPATH=. pytest tests/ -v"
 
 ruff-lint = "ruff check ./py_cachify"
 mypy-lint = "mypy --install-types --non-interactive ./py_cachify/"
