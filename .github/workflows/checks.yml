@@ -29,9 +29,9 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install --no-cache-dir "poetry==1.7.1"
-          poetry install --no-root --no-interaction --no-ansi --with dev
+          poetry install --no-root --no-interaction --no-ansi
       - name: Execute Tests
-        run: pytest tests/ -v
+        run: python -m pytest tests/ -v
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
