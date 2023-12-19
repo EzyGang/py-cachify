@@ -34,8 +34,8 @@ jobs:
         run: poetry run task tests
       - uses: actions/upload-artifact@v3
         with:
-          name: coverage.xml
-          path: coverage.xml
+          name: coverage.json
+          path: coverage.json
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
