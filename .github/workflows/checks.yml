@@ -38,6 +38,8 @@ jobs:
           path: coverage.json
       - name: Coveralls
         uses: coverallsapp/github-action@v2
+        with:
+          file: coverage.json
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
