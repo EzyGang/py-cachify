@@ -36,6 +36,10 @@ jobs:
         with:
           name: coverage.xml
           path: coverage.xml
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: coverage.xml
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
