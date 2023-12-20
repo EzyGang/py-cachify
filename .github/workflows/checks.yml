@@ -34,12 +34,12 @@ jobs:
         run: poetry run task tests
       - uses: actions/upload-artifact@v3
         with:
-          name: coverage.json
-          path: coverage.json
+          name: coverage.xml
+          path: coverage.xml
       - name: Coveralls
         uses: coverallsapp/github-action@v2
         with:
-          file: coverage.json
+          file: coverage.xml
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
