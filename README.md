@@ -4,7 +4,7 @@
 [![Build Status](https://github.com/EzyGang/py-cachify/actions/workflows/checks.yml/badge.svg)]()
 [![Coverage Status](https://coveralls.io/repos/github/EzyGang/py-cachify/badge.png?branch=main)](https://coveralls.io/github/EzyGang/py-cachify?branch=main)
 
-py-cachify is a small library that provides small but useful cache utilities.
+py-cachify is a library that provides small but useful cache utilities.
 
 Some parts were heavily inspired by [douglasfarinelli's python-cachelock](https://github.com/douglasfarinelli/python-cachelock) lib,
 which is sadly no longer maintained.
