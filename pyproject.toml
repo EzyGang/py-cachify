@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "py-cachify"
-version = "1.0.1"
+version = "1.0.2"
 description = ""
 authors = ["Galtozzy <galtozzy+git@gmail.com>"]
 readme = "README.md"
+packages = [{include = 'py_cachify'}]
 
 [project]
 requires-python = ">=3.8"
