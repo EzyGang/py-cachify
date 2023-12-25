@@ -33,11 +33,16 @@ mkdocs = "^1.5.3"
 mkdocs-material = "^9.5.3"
 pygments = "^2.17.2"
 
+
+[tool.poetry.group.integration.dependencies]
+redis = "^5.0.1"
+
 [tool.taskipy.tasks]
 format-and-lint = "task ruff && task mypy-lint"
 
-ruff = "ruff format ./py_cachify/ && ruff check ./py_cachify/ --fix --unsafe-fixes"
+ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ && ruff check ./py_cachify/ ./tests/ ./integration_tests/ --fix --unsafe-fixes"
 tests = "PYTHONPATH=. pytest tests/ -v"
+integration-tests = "PYTHONPATH=. pytest tests/ -v"
 
 ruff-lint = "ruff check ./py_cachify"
 mypy-lint = "mypy --install-types --non-interactive ./py_cachify/"
