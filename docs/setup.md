@@ -7,7 +7,7 @@ pip install py-cachify
 poetry add py-cachify
 ```
 
-## Initialization (working with in-memory cache or `redis-py`)
+## Initialization (working with in-memory cache or `redis`)
 
 To start working with it, you'll have to initialize it using `init_cachify`:
 ```python

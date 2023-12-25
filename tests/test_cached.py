@@ -43,4 +43,3 @@ def test_cached_decorator_check_cachify_init():
     sync_function_wrapped = cached(key='test_key')(sync_function)
     with pytest.raises(CachifyInitError, match='Cachify is not initialized, did you forget to call `init_cachify`?'):
         sync_function_wrapped(3, 4)
-

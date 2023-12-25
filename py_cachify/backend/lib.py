@@ -9,7 +9,7 @@ from py_cachify.backend.types import AsyncClient, SyncClient
 
 class Cachify:
     def __init__(
-        self, sync_client: Union[SyncClient, MemoryCache], async_client: Union[AsyncClient, AsyncWrapper], prefix: str,
+        self, sync_client: Union[SyncClient, MemoryCache], async_client: Union[AsyncClient, AsyncWrapper], prefix: str
     ) -> None:
         self._sync_client = sync_client
         self._async_client = async_client
@@ -38,7 +38,9 @@ _cachify: Cachify | None = None
 
 
 def init_cachify(
-    sync_client: SyncClient = (mc := MemoryCache()), async_client: AsyncClient = AsyncWrapper(cache=mc), prefix: str = '_PYC_',
+    sync_client: SyncClient = (mc := MemoryCache()),
+    async_client: AsyncClient = AsyncWrapper(cache=mc),
+    prefix: str = '_PYC_',
 ) -> None:
     global _cachify
     _cachify = Cachify(sync_client=sync_client, async_client=async_client, prefix=prefix)

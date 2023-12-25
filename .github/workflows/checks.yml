@@ -29,7 +29,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install --no-cache-dir "poetry==1.7.1"
-          poetry install --no-root --no-interaction --no-ansi
+          poetry install --no-root --no-interaction --no-ansi --without docs
       - name: Execute Tests
         run: poetry run task tests
       - uses: actions/upload-artifact@v3
@@ -40,6 +40,38 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           file: coverage.xml
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12",]
+    services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install --no-cache-dir "poetry==1.7.1"
+          poetry install --no-root --no-interaction --no-ansi --without docs
+      - name: Execute Tests
+        run: poetry run task integration-tests
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
@@ -59,7 +91,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install --no-cache-dir "poetry==1.7.1"
-          poetry install --no-root --no-interaction --no-ansi --with dev
+          poetry install --no-root --no-interaction --no-ansi --without docs
       - name: Run ruff
         run: poetry run task ruff-lint
       - name: Run mypy

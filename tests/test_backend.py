@@ -3,9 +3,9 @@ import time
 import pytest
 from pytest_mock import MockerFixture
 
-from py_cachify.backend.clients import MemoryCache, AsyncWrapper
-from py_cachify.backend.exceptions import CachifyInitError
 import py_cachify.backend.lib
+from py_cachify.backend.clients import AsyncWrapper, MemoryCache
+from py_cachify.backend.exceptions import CachifyInitError
 from py_cachify.backend.lib import Cachify, get_cachify
 
 
@@ -21,7 +21,7 @@ def async_wrapper(memory_cache):
 
 @pytest.fixture
 def cachify(memory_cache, async_wrapper):
-    return Cachify(sync_client=memory_cache, async_client=async_wrapper)
+    return Cachify(sync_client=memory_cache, async_client=async_wrapper, prefix='_PYC_')
 
 
 def test_memory_cache_set_and_get(memory_cache):
