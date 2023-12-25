@@ -1,13 +1,17 @@
 [tool.poetry]
 name = "py-cachify"
 version = "1.0.2"
+homepage = "https://github.com/EzyGang/py-cachify"
+repository = "https://github.com/EzyGang/py-cachify"
+license = "MIT"
 description = ""
 authors = ["Galtozzy <galtozzy+git@gmail.com>"]
 readme = "README.md"
+include = ["README.md"]
 packages = [{include = 'py_cachify'}]
 
 [project]
-requires-python = ">=3.8"
+requires-python = ">=3.8,<4.0"
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -22,6 +26,12 @@ ruff = "^0.1.6"
 coverage = "^7.3.2"
 pytest-asyncio = "^0.21.1"
 pytest-socket = "^0.6.0"
+
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.5.3"
+mkdocs-material = "^9.5.3"
+pygments = "^2.17.2"
 
 [tool.taskipy.tasks]
 format-and-lint = "task ruff && task mypy-lint"

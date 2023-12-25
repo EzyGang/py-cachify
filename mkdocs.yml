@@ -1,0 +1,25 @@
+site_name: py-cachify's documentation
+theme:
+  name: material
+  palette:
+    scheme: slate
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - content.code.copy
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+repo_url: https://github.com/EzyGang/py-cachify
+nav:
+  - Introduction: 'index.md'
+  - Installation and Setup: 'setup.md'
+  - Base lock: 'locks.md'
+  - 'once-decorator.md'
+  - 'cached-decorator.md'
+  - 'examples.md'
