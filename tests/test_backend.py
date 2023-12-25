@@ -21,7 +21,7 @@ def async_wrapper(memory_cache):
 
 @pytest.fixture
 def cachify(memory_cache, async_wrapper):
-    return Cachify(sync_client=memory_cache, async_client=async_wrapper)
+    return Cachify(sync_client=memory_cache, async_client=async_wrapper, prefix='_PYC_')
 
 
 def test_memory_cache_set_and_get(memory_cache):
