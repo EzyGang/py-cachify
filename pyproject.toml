@@ -42,7 +42,7 @@ format-and-lint = "task ruff && task mypy-lint"
 
 ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ && ruff check ./py_cachify/ ./tests/ ./integration_tests/ --fix --unsafe-fixes"
 tests = "PYTHONPATH=. pytest tests/ -v"
-integration-tests = "pytest integration_tests/ -v"
+integration-tests = "PYTHONPATH=. pytest integration_tests/ -v"
 
 ruff-lint = "ruff check ./py_cachify"
 mypy-lint = "mypy --install-types --non-interactive ./py_cachify/"
