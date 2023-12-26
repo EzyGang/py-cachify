@@ -55,7 +55,7 @@ from py_cachify import init_cachify
 from redis.asyncio import from_url as async_from_url
 from redis import from_url
 
-init_cachify(sync_client=from_url(redis_url), async_clien=async_from_url(async_redis_client))
+init_cachify(sync_client=from_url(redis_url), async_client=async_from_url(async_redis_client))
 ```
 Normally you wouldn't have to use both sync and async clients since an application usually works in a single mode i.e. sync/async.
 
