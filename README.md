@@ -6,6 +6,7 @@
 [![Build Status](https://github.com/EzyGang/py-cachify/actions/workflows/checks.yml/badge.svg)]()
 [![Tests Status](https://github.com/EzyGang/py-cachify/actions/workflows/integration-tests.yml/badge.svg)]()
 [![Coverage Status](https://coveralls.io/repos/github/EzyGang/py-cachify/badge.png?branch=main)](https://coveralls.io/github/EzyGang/py-cachify?branch=main)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=EzyGang_py-cachify&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=EzyGang_py-cachify)
 
 py-cachify is a library that provides small but useful cache utilities.
 
@@ -58,6 +59,9 @@ init_cachify(sync_client=from_url(redis_url), async_clien=async_from_url(async_r
 ```
 Normally you wouldn't have to use both sync and async clients since an application usually works in a single mode i.e. sync/async.
 
+Once initialized you can use everything that the library provides straight up without being worried about managing the cache yourself. 
+
+If you forgot to call `init_cachify` the `CachifyInitError` will be raised during runtime.
 ```python
 from py_cachify import once
 

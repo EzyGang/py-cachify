@@ -1,4 +1,3 @@
-import asyncio
 from threading import Thread
 from time import sleep
 
@@ -10,12 +9,12 @@ from py_cachify import CachifyLockError, cached, once
 def test_once_decorator():
     @once(key='test_key-{arg1}', return_on_locked='IF_LOCKED')
     def _sync_function(arg1, arg2):
-        sleep(1)
+        sleep(2)
         return arg1 + arg2
 
     thread = Thread(target=_sync_function, args=(1, 2))
     thread.start()
-    sleep(0.01)
+    sleep(0.1)
     result = _sync_function(1, 2)
 
     assert 'IF_LOCKED' == result
@@ -24,12 +23,12 @@ def test_once_decorator():
 def test_once_decorator_raises():
     @once(key='test_key-{arg1}-{arg2}', raise_on_locked=True)
     def _sync_function(arg1, arg2):
-        sleep(1)
+        sleep(2)
         return arg1 + arg2
 
     thread = Thread(target=_sync_function, args=(1, 2))
     thread.start()
-    sleep(0.01)
+    sleep(0.1)
     with pytest.raises(CachifyLockError):
         _sync_function(1, 2)
 
@@ -62,7 +61,6 @@ async def test_async_once_decorator_raise_on_locked(init_cachify_fixture):
 def test_cached_decorator_sync_function():
     @cached(key='test_key')
     def _sync_function_wrapped(arg1, arg2):
-        sleep(1)
         return arg1 + arg2
 
     result = _sync_function_wrapped(3, 4)
@@ -76,7 +74,6 @@ def test_cached_decorator_sync_function():
 async def test_cached_decorator_async_function():
     @cached(key='test_key_{arg1}')
     async def _async_function_wrapped(arg1, arg2):
-        await asyncio.sleep(1)
         return arg1 + arg2
 
     result = await _async_function_wrapped(3, 4)
