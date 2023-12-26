@@ -4,6 +4,7 @@
 [![PyPI version](https://badge.fury.io/py/py-cachify.svg)](https://badge.fury.io/py/py-cachify)
 [![Documentation Status](https://readthedocs.org/projects/py-cachify/badge/?version=latest)](https://py-cachify.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://github.com/EzyGang/py-cachify/actions/workflows/checks.yml/badge.svg)]()
+[![Tests Status](https://github.com/EzyGang/py-cachify/actions/workflows/integration-tests.yml/badge.svg)]()
 [![Coverage Status](https://coveralls.io/repos/github/EzyGang/py-cachify/badge.png?branch=main)](https://coveralls.io/github/EzyGang/py-cachify?branch=main)
 
 py-cachify is a library that provides small but useful cache utilities.
