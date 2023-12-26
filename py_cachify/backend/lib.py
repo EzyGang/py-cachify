@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pickle
 from typing import Any, Union
 
 from py_cachify.backend.clients import AsyncWrapper, MemoryCache
@@ -16,19 +17,19 @@ class Cachify:
         self._prefix = prefix
 
     def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
-        self._sync_client.set(name=f'{self._prefix}{key}', value=val, ex=ttl)
+        self._sync_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl)
 
     def get(self, key: str) -> Any:
-        return self._sync_client.get(name=f'{self._prefix}{key}')
+        return (val := self._sync_client.get(name=f'{self._prefix}{key}')) and pickle.loads(val)
 
     def delete(self, key: str) -> Any:
         return self._sync_client.delete(f'{self._prefix}{key}')
 
     async def a_get(self, key: str) -> Any:
-        return await self._async_client.get(name=f'{self._prefix}{key}')
+        return (val := await self._async_client.get(name=f'{self._prefix}{key}')) and pickle.loads(val)
 
     async def a_set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
-        await self._async_client.set(name=f'{self._prefix}{key}', value=val, ex=ttl)
+        await self._async_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl)
 
     async def a_delete(self, key: str) -> Any:
         return await self._async_client.delete(f'{self._prefix}{key}')
