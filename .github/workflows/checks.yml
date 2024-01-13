@@ -80,7 +80,7 @@ jobs:
         with:
           name: coverage.xml
       - name: Override Coverage Source Path for Sonar
-        run: sed -i "s/<source>\/home\/runner\/work\/repo<\/source>/<source>\/github\/workspace<\/source>/g" /home/runner/work/py-cachify/py-cachify/
+        run: sed -i "s/<source>\/home\/runner\/work\/py-cachify<\/source>/<source>\/github\/workspace<\/source>/g" /home/runner/work/py-cachify/py-cachify/coverage.xml
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
