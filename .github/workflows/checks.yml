@@ -79,8 +79,10 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: coverage.xml
-      - name: Override Coverage Source Path for Sonar
-        run: sed -i "s/<source>\/home\/runner\/work\/py-cachify<\/source>/<source>\/github\/workspace<\/source>/g" /home/runner/work/py-cachify/py-cachify/coverage.xml
+      - name: fix code coverage paths
+        run: |
+          sed -i 's/\/home\/runner\/work\/py-cachify\/py-cachify\//\/github\/workspace\//g' /home/runner/work/py-cachify/py-cachify/coverage.xml
+          cat /home/runner/work/py-cachify/py-cachify/coverage.xml
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
