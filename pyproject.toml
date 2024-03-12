@@ -51,6 +51,14 @@ pip-check = "pip check"
 
 [tool.ruff]
 line-length = 120
+extend-exclude = ["site-packages", "*.pyi"]
+target-version = 'py38'
+
+
+[tool.ruff.lint]
+fixable = ["ALL"]
+unfixable = []
+ignore-init-module-imports = true
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -64,16 +72,16 @@ ignore = [
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
 ]
-ignore-init-module-imports = true
-extend-exclude = ["site-packages", "*.pyi"]
-target-version = 'py38'
-
 
 [tool.ruff.format]
-quote-style = "single"
-skip-magic-trailing-comma = true
-exclude = ["*.pyi"]
+quote-style = 'single'
+indent-style = 'space'
+line-ending = 'auto'
+skip-magic-trailing-comma = false
+exclude = ['*.pyi']
 
+[tool.ruff.lint.mccabe]
+max-complexity = 6
 
 [tool.ruff.isort]
 split-on-trailing-comma = false
