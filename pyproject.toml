@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py-cachify"
-version = "1.0.4"
+version = "1.0.5"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
@@ -22,7 +22,7 @@ pytest-mock = "^3.12.0"
 pytest-cov = "^4.1.0"
 taskipy = "^1.12.2"
 mypy = "^1.7.1"
-ruff = "^0.1.6"
+ruff = "^0.3.2"
 coverage = "^7.3.2"
 pytest-asyncio = "^0.21.1"
 pytest-socket = "^0.6.0"
@@ -83,12 +83,12 @@ exclude = ['*.pyi']
 [tool.ruff.lint.mccabe]
 max-complexity = 6
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 split-on-trailing-comma = false
 lines-after-imports = 2
 known-first-party = ["py_cachify"]
 
-[tool.ruff.pyupgrade]
+[tool.ruff.lint.pyupgrade]
 # Preserve types, even if a file imports `from __future__ import annotations`.
 keep-runtime-typing = true
 

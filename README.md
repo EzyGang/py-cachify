@@ -16,7 +16,7 @@ which is sadly no longer maintained.
 py-cachify works well in both sync and async environments, has 100% test coverage, 
 is backend agnostic (you can provide your own client as long as it matches the signature), and supports Python from 3.8 and upward.
 
-It offers cache-based locks and decorators for securing function executions and storing their results in the cache.
+It offers distributed (cache based) locks and decorators for securing function executions and storing their results in the cache.
 
 ## Table of Contents
 
