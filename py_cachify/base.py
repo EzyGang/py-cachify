@@ -1,12 +1,13 @@
 import inspect
-from typing import Any, Awaitable, Callable, Union
+from typing import Awaitable, Callable, TypeVar, Union
 
 from typing_extensions import ParamSpec
 
 
+T = TypeVar('T')
 P = ParamSpec('P')
-SyncFunc = Callable[P, Any]
-AsyncFunc = Callable[P, Awaitable[Any]]
+SyncFunc = Callable[P, T]
+AsyncFunc = Callable[P, Awaitable[T]]
 DecoratorFunc = Callable[[Union[SyncFunc, AsyncFunc]], Union[AsyncFunc, SyncFunc]]
 
 
