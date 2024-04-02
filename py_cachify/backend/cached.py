@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import inspect
 from functools import partial, wraps
-from typing import Awaitable, Callable, ParamSpec, TypeVar, Union, cast
+from typing import Awaitable, Callable, TypeVar, Union, cast
+
+from typing_extensions import ParamSpec
 
 from py_cachify.backend.lib import get_cachify
 

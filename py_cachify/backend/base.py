@@ -1,7 +1,7 @@
 import inspect
-from typing import Awaitable, Callable, TypeGuard, TypeVar, Union
+from typing import Awaitable, Callable, TypeVar, Union
 
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, TypeGuard
 
 
 R = TypeVar('R')

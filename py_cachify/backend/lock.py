@@ -4,7 +4,9 @@ import inspect
 import logging
 from contextlib import asynccontextmanager, contextmanager
 from functools import partial, wraps
-from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, ParamSpec, TypeVar, Union, cast
+from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union, cast
+
+from typing_extensions import ParamSpec
 
 from .base import get_full_key_from_signature, is_coroutine
 from .exceptions import CachifyLockError
