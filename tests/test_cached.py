@@ -3,8 +3,8 @@ import sys
 import pytest
 from pytest_mock import MockerFixture
 
+from py_cachify import cached
 from py_cachify.backend.exceptions import CachifyInitError
-from py_cachify.cached import cached
 
 
 def sync_function(arg1, arg2):

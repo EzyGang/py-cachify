@@ -4,8 +4,7 @@ from time import sleep
 
 import pytest
 
-from py_cachify import CachifyLockError
-from py_cachify.lock import once
+from py_cachify import CachifyLockError, once
 
 
 def test_once_decorator_sync_function(init_cachify_fixture):
