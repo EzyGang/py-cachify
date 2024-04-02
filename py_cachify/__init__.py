@@ -18,4 +18,6 @@ __all__ = [
     'once',
     'AsyncClient',
     'SyncClient',
+    'sync',
+    'async',
 ]
