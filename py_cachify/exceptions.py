@@ -1,2 +1,0 @@
-class CachifyLockError(Exception):
-    pass

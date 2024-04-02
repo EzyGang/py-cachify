@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py-cachify"
-version = "1.0.7"
+version = "1.0.8"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
@@ -159,7 +159,10 @@ concurrency = ['thread']
 
 
 [tool.coverage.report]
-omit = []
+omit = [
+    '**/py_cachify/async.py',
+    '**/py_cachify/sync.py',
+]
 
 exclude_lines = [
     'pragma: no cover',
@@ -168,6 +171,7 @@ exclude_lines = [
     'raise AssertionError',
     'raise NotImplementedError',
     'if __name__ == .__main__.:',
+    '__all__',
 ]
 
 [build-system]

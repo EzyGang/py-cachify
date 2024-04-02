@@ -1,14 +1,12 @@
+import asyncio
 import inspect
 from typing import Awaitable, Callable, TypeVar, Union
 
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, TypeGuard
 
 
-T = TypeVar('T')
+R = TypeVar('R')
 P = ParamSpec('P')
-SyncFunc = Callable[P, T]
-AsyncFunc = Callable[P, Awaitable[T]]
-DecoratorFunc = Callable[[Union[SyncFunc, AsyncFunc]], Union[AsyncFunc, SyncFunc]]
 
 
 def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) -> str:
@@ -21,3 +19,7 @@ def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) ->
         return key.format(*args, **kwargs)
     except IndexError:
         raise ValueError('Arguments in a key do not match function signature') from None
+
+
+def is_coroutine(func: Union[Callable[P, R], Callable[P, Awaitable[R]]]) -> TypeGuard[Callable[P, Awaitable[R]]]:
+    return asyncio.iscoroutinefunction(func)

@@ -1,7 +1,7 @@
 import pytest
 
-from py_cachify.exceptions import CachifyLockError
-from py_cachify.lock import async_lock, lock
+from py_cachify import CachifyLockError
+from py_cachify.backend.lock import async_lock, lock
 
 
 @pytest.mark.asyncio
