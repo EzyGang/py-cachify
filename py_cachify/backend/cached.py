@@ -5,7 +5,8 @@ from functools import partial, wraps
 from typing import Awaitable, Callable, ParamSpec, TypeVar, Union, cast
 
 from py_cachify.backend.lib import get_cachify
-from py_cachify.base import get_full_key_from_signature, is_coroutine
+
+from .base import get_full_key_from_signature, is_coroutine
 
 
 R = TypeVar('R')

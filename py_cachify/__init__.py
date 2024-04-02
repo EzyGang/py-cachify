@@ -1,23 +1,17 @@
 from __future__ import annotations
 
-from .backend.exceptions import CachifyInitError
+from .backend.cached import cached
+from .backend.exceptions import CachifyInitError, CachifyLockError
 from .backend.lib import init_cachify
-from .backend.types import AsyncClient, SyncClient
-from .cached import cached
-from .exceptions import CachifyLockError
-from .lock import async_lock, lock, once
+from .backend.lock import once
 
 
 __all__ = [
-    'CachifyLockError',
     'CachifyInitError',
+    'CachifyLockError',
     'init_cachify',
     'cached',
-    'async_lock',
-    'lock',
     'once',
-    'AsyncClient',
-    'SyncClient',
     'sync',
     'async',
 ]
