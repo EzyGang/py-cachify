@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from typing import Awaitable, Callable, TypeVar, Union
 
@@ -21,4 +22,4 @@ def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) ->
 
 
 def is_coroutine(func: Union[Callable[P, R], Callable[P, Awaitable[R]]]) -> TypeGuard[Callable[P, Awaitable[R]]]:
-    return inspect.iscoroutinefunction(func)
+    return asyncio.iscoroutinefunction(func)
