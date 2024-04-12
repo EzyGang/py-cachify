@@ -6,7 +6,7 @@ function based on the provided key.
 
 It detects the type of function that it is being applied to automatically using a compatible cache client for it (sync or async).
 
-__TYPE CHECKS__: Currently there is no way (*or we haven't found one*) to correctly type annotate a decorator so that you won't have to ignore or cast
+__TYPE CHECKING__: Currently there is no way (*or we haven't found one*) to correctly type annotate a decorator so that you won't have to ignore or cast
 the results of a function the decorator is being applied to. In order to use specific decorator to match
 your runtime you can import the desired one with:
 ```python

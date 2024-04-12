@@ -1,12 +1,16 @@
 # `cached` decorator
 
 The cached decorator is designed to cache the result of a function and retrieve the cached result for subsequent calls, based on a specified key. 
-It also supports setting a time-to-live (TTL) for the cached values.
+It also supports setting a time-to-live (TTL) for the cached values. 
+
+The returned function value should be picklable, i.e. a pydantic's `BaseModel`
+subclasses are picklable, but a Django's `Response` is not. There is an [issue](https://github.com/EzyGang/py-cachify/issues/46) present to implement an ability
+to provide custom encoders/decoders to extend the possible applications.
 
 It detects the type of function that it is being applied to automatically using a compatible cache client for it (sync or async).
 
 
-__TYPE CHECKS__: Currently there is no way (*or we haven't found one*) to correctly type annotate a decorator so that you won't have to ignore or cast
+__TYPE CHECKING__: Currently there is no way (*or we haven't found one*) to correctly type annotate a decorator so that you won't have to ignore or cast
 the results of a function the decorator is being applied to. In order to use specific decorator to match
 your runtime you can import the desired one with:
 ```python
