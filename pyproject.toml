@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py-cachify"
-version = "1.0.9"
+version = "1.0.10"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"

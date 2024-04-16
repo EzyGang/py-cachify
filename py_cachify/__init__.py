@@ -13,5 +13,5 @@ __all__ = [
     'cached',
     'once',
     'sync',
-    'async',
+    'asyncio',
 ]

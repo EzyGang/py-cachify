@@ -12,7 +12,7 @@ your runtime you can import the desired one with:
 ```python
 from py_cachify.sync import sync_once
 # OR for async
-from py_cachify.async import async_once
+from py_cachify.asyncio import async_once
 
 ```
 
