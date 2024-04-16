@@ -161,7 +161,7 @@ concurrency = ['thread']
 
 [tool.coverage.report]
 omit = [
-    '**/py_cachify/async.py',
+    '**/py_cachify/asyncio.py',
     '**/py_cachify/sync.py',
 ]
 
