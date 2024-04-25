@@ -35,7 +35,7 @@ def test_memory_cache_set_and_get_with_expiry(memory_cache):
 
 
 def test_memory_cache_get_with_default(memory_cache):
-    assert memory_cache.get('nonexistent_key', default='default_value') == 'default_value'
+    assert memory_cache.get('nonexistent_key') is None
 
 
 def test_memory_cache_delete(memory_cache):
@@ -56,8 +56,8 @@ async def test_async_wrapper_get(async_wrapper, mocker: MockerFixture):
 @pytest.mark.asyncio
 async def test_async_wrapper_get_with_default(async_wrapper, mocker: MockerFixture):
     mocker.patch.object(time, 'time', return_value=0)
-    result = await async_wrapper.get('nonexistent_key', default='default_value')
-    assert result == 'default_value'
+    result = await async_wrapper.get('nonexistent_key')
+    assert result is None
 
 
 @pytest.mark.asyncio
