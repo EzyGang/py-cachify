@@ -4,7 +4,7 @@ from typing import Any, Protocol, Union
 
 
 class AsyncClient(Protocol):
-    async def get(self, name: str, default: Any = None) -> Any:
+    async def get(self, name: str) -> Any | None:
         raise NotImplementedError
 
     async def delete(self, *names: str) -> Any:
@@ -15,7 +15,7 @@ class AsyncClient(Protocol):
 
 
 class SyncClient(Protocol):
-    def get(self, name: str, default: Any = None) -> Any:
+    def get(self, name: str) -> Any | None:
         raise NotImplementedError
 
     def delete(self, *names: str) -> Any:

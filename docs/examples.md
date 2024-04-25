@@ -4,7 +4,8 @@
 ## `async_lock` / `lock`
 ```python
 
-from py_cachify import async_lock, lock
+from py_cachify.asyncio import async_lock
+from py_cachify.sync import lock
 
 
 # Use it within an asynchronous context
