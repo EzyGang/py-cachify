@@ -8,8 +8,8 @@ from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar,
 
 from typing_extensions import ParamSpec
 
-from .base import get_full_key_from_signature, is_coroutine
 from .exceptions import CachifyLockError
+from .helpers import get_full_key_from_signature, is_coroutine
 from .lib import get_cachify
 
 
@@ -58,14 +58,17 @@ def _decorator(
     raise_on_locked: bool = False,
     return_on_locked: Any = None,
 ) -> Union[Callable[P, R], Callable[P, Awaitable[R]]]:
+    signature = inspect.signature(_func)
+
     if is_coroutine(_func):
         _awaitable_func = _func
 
         @wraps(_awaitable_func)
         async def _async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
-            bound_args = inspect.signature(_awaitable_func).bind(*args, **kwargs)
+            bound_args = signature.bind(*args, **kwargs)
+            _key = get_full_key_from_signature(bound_args=bound_args, key=key)
+
             try:
-                _key = get_full_key_from_signature(bound_args=bound_args, key=key)
                 async with async_lock(key=_key):
                     return await _awaitable_func(*args, **kwargs)
             except CachifyLockError:
@@ -80,9 +83,10 @@ def _decorator(
 
         @wraps(_func)
         def _sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
-            bound_args = inspect.signature(_func).bind(*args, **kwargs)
+            bound_args = signature.bind(*args, **kwargs)
+            _key = get_full_key_from_signature(bound_args=bound_args, key=key)
+
             try:
-                _key = get_full_key_from_signature(bound_args=bound_args, key=key)
                 with lock(key=_key):
                     return _func(*args, **kwargs)
             except CachifyLockError:
