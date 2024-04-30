@@ -1,8 +1,8 @@
 import asyncio
 import inspect
-from typing import Any, Awaitable, Callable, TypeAlias, TypeVar, Union
+from typing import Any, Awaitable, Callable, TypeVar, Union
 
-from typing_extensions import ParamSpec, TypeGuard
+from typing_extensions import ParamSpec, TypeAlias, TypeGuard
 
 
 R = TypeVar('R')
