@@ -4,7 +4,7 @@ import py_cachify.backend.lib
 from py_cachify.backend.lib import init_cachify
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def init_cachify_fixture():
     init_cachify()
     yield

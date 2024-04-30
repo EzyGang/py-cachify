@@ -2,7 +2,7 @@ import inspect
 
 import pytest
 
-from py_cachify.backend.base import get_full_key_from_signature
+from py_cachify.backend.helpers import get_full_key_from_signature
 
 
 def method_with_args_kwargs_args(*args, **kwargs) -> None:
