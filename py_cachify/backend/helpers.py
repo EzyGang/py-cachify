@@ -27,7 +27,7 @@ def is_coroutine(func: Union[Callable[P, R], Callable[P, Awaitable[R]]]) -> Type
     return asyncio.iscoroutinefunction(func)
 
 
-def encode_decode_value(encoder_decoder: Encoder | Decoder | None, val: Any) -> Any:
+def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any) -> Any:
     if not encoder_decoder:
         return val
 
