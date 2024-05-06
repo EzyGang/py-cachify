@@ -31,7 +31,7 @@ pytest-socket = "^0.6.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.5.3"
-mkdocs-material = "^9.5.3"
+mkdocs-material = "^9.5.21"
 pygments = "^2.17.2"
 
 
