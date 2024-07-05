@@ -71,3 +71,21 @@ def async_expensive_function(arg_a: int, arg_b: int) -> int:
     return arg_a + arg_b
 
 ```
+
+## `cached` decorator with encoder/decoder
+```python
+from py_cachify import cached
+
+
+def encoder(val: 'UnpicklableClass') -> dict:
+    return {'arg1': val._arg1, 'arg2': val._arg2}
+
+
+def decoder(val: dict) -> 'UnpicklableClass':
+    return UnpicklableClass(**val)
+
+
+@cached(key='create_unpicklable_class-{arg1}-{arg2}', enc_dec=(encoder, decoder))
+def create_unpicklable_class(arg1: str, arg2: str) -> 'UnpicklableClass':
+    return UnpicklableClass(arg1=arg1, arg2=arg2)
+```
