@@ -1,12 +1,14 @@
 import asyncio
 import inspect
-from typing import Awaitable, Callable, TypeVar, Union
+from typing import Any, Awaitable, Callable, TypeVar, Union
 
-from typing_extensions import ParamSpec, TypeGuard
+from typing_extensions import ParamSpec, TypeAlias, TypeGuard
 
 
 R = TypeVar('R')
 P = ParamSpec('P')
+Encoder: TypeAlias = Callable[[Any], Any]
+Decoder: TypeAlias = Callable[[Any], Any]
 
 
 def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) -> str:
@@ -23,3 +25,10 @@ def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) ->
 
 def is_coroutine(func: Union[Callable[P, R], Callable[P, Awaitable[R]]]) -> TypeGuard[Callable[P, Awaitable[R]]]:
     return asyncio.iscoroutinefunction(func)
+
+
+def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any) -> Any:
+    if not encoder_decoder:
+        return val
+
+    return encoder_decoder(val)

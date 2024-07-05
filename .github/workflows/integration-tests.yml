@@ -8,7 +8,7 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]
+    branches: [main, v/*]
 jobs:
   integration-tests:
     name: Integration tests
@@ -38,7 +38,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install --no-cache-dir "poetry==1.7.1"
+          pip install --no-cache-dir "poetry==1.8.2"
           poetry install --no-root --no-interaction --no-ansi --without docs
       - name: Execute Tests
         run: poetry run task integration-tests
