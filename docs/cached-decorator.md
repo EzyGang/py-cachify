@@ -4,8 +4,10 @@ The cached decorator is designed to cache the result of a function and retrieve 
 It also supports setting a time-to-live (TTL) for the cached values. 
 
 The returned function value should be picklable, i.e. a pydantic's `BaseModel`
-subclasses are picklable, but a Django's `Response` is not. There is an [issue](https://github.com/EzyGang/py-cachify/issues/46) present to implement an ability
-to provide custom encoders/decoders to extend the possible applications.
+subclasses are picklable, but a Django's `Response` is not. 
+
+A way to make it work with non-picklable results is by providing a custom encoder & decoder tuple into the decorator.
+Please take a look at the examples below.
 
 It detects the type of function that it is being applied to automatically using a compatible cache client for it (sync or async).
 
@@ -22,10 +24,11 @@ from py_cachify.asyncio import async_cached
 
 ### Parameters
 
-| Param name | Param type            | Description                                                                                                                                                                      | Default |
-|------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `key`      | `str`                 | The unique identifier used to determine whether the function has already been executed. The key can be a string containing placeholders to be formatted with function arguments. |         |
-| `ttl`      | `int, None, optional` | Time-to-live for the cached value in seconds. If None, the value is cached indefinitely.                                                                                         | `None`  |
+| Param name | Param type                                                          | Description                                                                                                                                                                      | Default |
+|------------|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `key`      | `str`                                                               | The unique identifier used to determine whether the function has already been executed. The key can be a string containing placeholders to be formatted with function arguments. |         |
+| `ttl`      | `int, None, optional`                                               | Time-to-live for the cached value in seconds. If None, the value is cached indefinitely.                                                                                         | `None`  |
+| `enc_dec`  | `Tuple[Callable[[Any], Any], Callable[[Any], Any]], None, optional` | Encoder and decoder to apply before caching/after retrieving from cache to results.                                                                                              | `None`  |
 
 
 ### Usage
@@ -41,6 +44,20 @@ def expensive_function(x):
 @cached(key='example_async_function-{arg_a}-{arg_b}')
 def async_expensive_function(arg_a: int, arg_b: int) -> int:
     return arg_a + arg_b
+
+
+# Encoder/Decoder example
+def encoder(val: 'UnpicklableClass') -> dict:
+    return {'arg1': val._arg1, 'arg2': val._arg2}
+
+
+def decoder(val: dict) -> 'UnpicklableClass':
+    return UnpicklableClass(**val)
+
+
+@cached(key='create_unpicklable_class-{arg1}-{arg2}', enc_dec=(encoder, decoder))
+def create_unpicklable_class(arg1: str, arg2: str) -> 'UnpicklableClass':
+    return UnpicklableClass(arg1=arg1, arg2=arg2)
 
 ```
 
