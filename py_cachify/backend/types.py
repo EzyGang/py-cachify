@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Protocol, Union
+from typing import Any, Awaitable, Protocol, Union
 
 
 class AsyncClient(Protocol):
-    async def get(self, name: str) -> Any | None:
+    def get(self, name: str) -> Awaitable[Any]:
         raise NotImplementedError
 
-    async def delete(self, *names: str) -> Any:
+    def delete(self, *names: str) -> Awaitable[Any]:
         raise NotImplementedError
 
-    async def set(self, name: str, value: Any, ex: Union[int, None] = None) -> Any:
+    def set(self, name: str, value: Any, ex: Union[int, None] = None) -> Awaitable[Any]:
         raise NotImplementedError
 
 
