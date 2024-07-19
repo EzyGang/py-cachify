@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py-cachify"
-version = "1.1.0"
+version = "1.1.2"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
@@ -16,7 +16,6 @@ requires-python = ">=3.8,<4.0"
 [tool.poetry.dependencies]
 python = "^3.8"
 typing-extensions = "^4.12.2"
-ruff = "^0.5.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"
@@ -27,6 +26,7 @@ mypy = "^1.10.1"
 coverage = "^7.5.4"
 pytest-asyncio = "^0.23.7"
 pytest-socket = "^0.7.0"
+ruff = "^0.5.3"
 
 
 [tool.poetry.group.docs.dependencies]
