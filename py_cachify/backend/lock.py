@@ -1,15 +1,13 @@
-from __future__ import annotations
-
 import inspect
 import logging
 from contextlib import asynccontextmanager, contextmanager
 from functools import partial, wraps
 from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union, cast
 
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, deprecated, overload
 
 from .exceptions import CachifyLockError
-from .helpers import get_full_key_from_signature, is_coroutine
+from .helpers import SyncOrAsync, get_full_key_from_signature, is_coroutine
 from .lib import get_cachify
 
 
@@ -52,74 +50,77 @@ def lock(key: str) -> Generator[None, None, None]:
         _cachify.delete(key=key)
 
 
-def _decorator(
-    _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
-    key: str,
-    raise_on_locked: bool = False,
-    return_on_locked: Any = None,
-) -> Union[Callable[P, R], Callable[P, Awaitable[R]]]:
-    signature = inspect.signature(_func)
+def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> SyncOrAsync:
+    @overload
+    def _decorator(
+        _func: Callable[P, Awaitable[R]],
+    ) -> Callable[P, Awaitable[R]]: ...
 
-    if is_coroutine(_func):
-        _awaitable_func = _func
+    @overload
+    def _decorator(
+        _func: Callable[P, R],
+    ) -> Callable[P, R]: ...
 
-        @wraps(_awaitable_func)
-        async def _async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
-            bound_args = signature.bind(*args, **kwargs)
-            _key = get_full_key_from_signature(bound_args=bound_args, key=key)
+    def _decorator(  # type: ignore[misc]
+        _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
+    ) -> Union[Callable[P, R], Callable[P, Awaitable[R]]]:
+        signature = inspect.signature(_func)
 
-            try:
-                async with async_lock(key=_key):
-                    return await _awaitable_func(*args, **kwargs)
-            except CachifyLockError:
-                if raise_on_locked:
-                    raise
+        if is_coroutine(_func):
+            _awaitable_func = _func
 
-                return return_on_locked
+            @wraps(_awaitable_func)
+            async def _async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                bound_args = signature.bind(*args, **kwargs)
+                _key = get_full_key_from_signature(bound_args=bound_args, key=key)
 
-        return cast(Callable[P, Awaitable[R]], _async_wrapper)
+                try:
+                    async with async_lock(key=_key):
+                        return await _awaitable_func(*args, **kwargs)
+                except CachifyLockError:
+                    if raise_on_locked:
+                        raise
 
-    else:
+                    return return_on_locked
 
-        @wraps(_func)
-        def _sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
-            bound_args = signature.bind(*args, **kwargs)
-            _key = get_full_key_from_signature(bound_args=bound_args, key=key)
+            return _async_wrapper
 
-            try:
-                with lock(key=_key):
-                    return _func(*args, **kwargs)
-            except CachifyLockError:
-                if raise_on_locked:
-                    raise
+        else:
 
-                return return_on_locked
+            @wraps(_func)  # type: ignore[unreachable]
+            def _sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                bound_args = signature.bind(*args, **kwargs)
+                _key = get_full_key_from_signature(bound_args=bound_args, key=key)
 
-        return cast(Callable[P, R], _sync_wrapper)
+                try:
+                    with lock(key=_key):
+                        return _func(*args, **kwargs)
+                except CachifyLockError:
+                    if raise_on_locked:
+                        raise
 
+                    return return_on_locked
 
-def once(
-    key: str, raise_on_locked: bool = False, return_on_locked: Any = None
-) -> Callable[[Union[Callable[P, Awaitable[R]], Callable[P, R]]], Union[Callable[P, Awaitable[R]], Callable[P, R]]]:
-    return cast(
-        Callable[[Union[Callable[P, Awaitable[R]], Callable[P, R]]], Union[Callable[P, Awaitable[R]], Callable[P, R]]],
-        partial(_decorator, key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked),
-    )
+            return _sync_wrapper
+
+    return _decorator
 
 
+@deprecated('sync_once is deprecated, use once instead. Scheduled for removal in 1.3.0')
 def sync_once(
     key: str, raise_on_locked: bool = False, return_on_locked: Any = None
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     return cast(
         Callable[[Callable[P, R]], Callable[P, R]],
-        partial(_decorator, key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked),
+        partial(once, key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked),
     )
 
 
+@deprecated('async_once is deprecated, use once instead. Scheduled for removal in 1.3.0')
 def async_once(
     key: str, raise_on_locked: bool = False, return_on_locked: Any = None
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     return cast(
         Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]],
-        partial(_decorator, key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked),
+        partial(once, key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked),
     )
