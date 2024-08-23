@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py-cachify"
-version = "1.1.2"
+version = "1.2.0"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
@@ -18,15 +18,15 @@ python = "^3.8"
 typing-extensions = "^4.12.2"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
+pytest = "^8.3.2"
 pytest-mock = "^3.14.0"
 pytest-cov = "^5.0.0"
 taskipy = "^1.13.0"
-mypy = "^1.10.1"
-coverage = "^7.5.4"
+mypy = "^1.11.1"
+coverage = "^7.6.1"
 pytest-asyncio = "^0.23.7"
 pytest-socket = "^0.7.0"
-ruff = "^0.5.3"
+ruff = "^0.6.2"
 
 
 [tool.poetry.group.docs.dependencies]
