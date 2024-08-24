@@ -135,3 +135,15 @@ def test_init_cachify(init_cachify_fixture):
 def test_get_cachify_raises_error():
     with pytest.raises(CachifyInitError, match='Cachify is not initialized, did you forget to call `init_cachify`?'):
         get_cachify()
+
+
+def test_asyncio_import_works():
+    import py_cachify.asyncio
+
+    assert py_cachify.asyncio is not None
+
+
+def test_sync_import_works():
+    import py_cachify.sync
+
+    assert py_cachify.sync is not None

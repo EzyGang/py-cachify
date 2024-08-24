@@ -4,7 +4,7 @@ version = "1.2.0"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
-description = "distributed locks and caching/locking decorators at hand"
+description = "Distributed locks and caching/locking decorators at hand"
 authors = ["Galtozzy <galtozzy+git@gmail.com>"]
 readme = "README.md"
 include = ["README.md"]
@@ -89,7 +89,6 @@ lines-after-imports = 2
 known-first-party = ["py_cachify"]
 
 [tool.ruff.lint.pyupgrade]
-# Preserve types, even if a file imports `from __future__ import annotations`.
 keep-runtime-typing = true
 
 [tool.mypy]
@@ -159,10 +158,7 @@ concurrency = ['thread']
 
 
 [tool.coverage.report]
-omit = [
-    '**/py_cachify/asyncio.py',
-    '**/py_cachify/sync.py',
-]
+omit = []
 
 exclude_lines = [
     'pragma: no cover',
