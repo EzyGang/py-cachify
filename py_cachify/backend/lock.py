@@ -1,8 +1,8 @@
 import inspect
 import logging
 from contextlib import asynccontextmanager, contextmanager
-from functools import partial, wraps
-from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union, cast
+from functools import wraps
+from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union
 
 from typing_extensions import ParamSpec, deprecated, overload
 
@@ -110,17 +110,11 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 def sync_once(
     key: str, raise_on_locked: bool = False, return_on_locked: Any = None
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    return cast(
-        Callable[[Callable[P, R]], Callable[P, R]],
-        partial(once, key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked),
-    )
+    return once(key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked)
 
 
 @deprecated('async_once is deprecated, use once instead. Scheduled for removal in 1.3.0')
 def async_once(
     key: str, raise_on_locked: bool = False, return_on_locked: Any = None
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    return cast(
-        Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]],
-        partial(once, key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked),
-    )
+    return once(key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked)

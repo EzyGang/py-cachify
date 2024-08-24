@@ -1,5 +1,5 @@
 import inspect
-from functools import partial, wraps
+from functools import wraps
 from typing import Awaitable, Callable, Tuple, TypeVar, Union, cast, overload
 
 from typing_extensions import ParamSpec, deprecated
@@ -70,14 +70,11 @@ def cached(key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder,
 def sync_cached(
     key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    return cast(Callable[[Callable[P, R]], Callable[P, R]], partial(cached, key=key, ttl=ttl, enc_dec=enc_dec))
+    return cached(key=key, ttl=ttl, enc_dec=enc_dec)
 
 
 @deprecated('async_cached is deprecated, use cached instead. Scheduled for removal in 1.3.0')
 def async_cached(
     key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    return cast(
-        Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]],
-        partial(cached, key=key, ttl=ttl, enc_dec=enc_dec),
-    )
+    return cached(key=key, ttl=ttl, enc_dec=enc_dec)

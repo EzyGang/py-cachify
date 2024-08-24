@@ -166,6 +166,8 @@ omit = [
 
 exclude_lines = [
     'pragma: no cover',
+    '@overload',
+    'SyncOrAsync',
     '@abstract',
     'def __repr__',
     'raise AssertionError',

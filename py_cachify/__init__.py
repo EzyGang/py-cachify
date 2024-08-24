@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from .backend.cached import cached
 from .backend.exceptions import CachifyInitError, CachifyLockError
 from .backend.helpers import Decoder, Encoder

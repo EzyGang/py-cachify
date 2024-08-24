@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from typing import Any, Awaitable, Callable, TypeVar, Union, overload
 
@@ -25,7 +26,7 @@ def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) ->
 def is_coroutine(
     func: Callable[P, Union[R, Awaitable[R]]],
 ) -> TypeIs[Callable[P, Awaitable[R]]]:
-    return inspect.iscoroutinefunction(func)
+    return asyncio.iscoroutinefunction(func)
 
 
 def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any) -> Any:
