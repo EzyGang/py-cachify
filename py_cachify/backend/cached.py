@@ -15,16 +15,16 @@ P = ParamSpec('P')
 
 def cached(key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None) -> SyncOrAsync:
     @overload
-    def _decorator(
+    def _cached_inner(
         _func: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]: ...
 
     @overload
-    def _decorator(
+    def _cached_inner(
         _func: Callable[P, R],
     ) -> Callable[P, R]: ...
 
-    def _decorator(  # type: ignore[misc]
+    def _cached_inner(  # type: ignore[misc]
         _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
     ) -> Union[Callable[P, R], Callable[P, Awaitable[R]]]:
         signature = inspect.signature(_func)
@@ -63,7 +63,7 @@ def cached(key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder,
 
             return _sync_wrapper
 
-    return _decorator
+    return _cached_inner
 
 
 @deprecated('sync_cached is deprecated, use cached instead. Scheduled for removal in 1.3.0')

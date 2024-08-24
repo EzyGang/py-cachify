@@ -52,16 +52,16 @@ def lock(key: str) -> Generator[None, None, None]:
 
 def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> SyncOrAsync:
     @overload
-    def _decorator(
+    def _once_inner(
         _func: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]: ...
 
     @overload
-    def _decorator(
+    def _once_inner(
         _func: Callable[P, R],
     ) -> Callable[P, R]: ...
 
-    def _decorator(  # type: ignore[misc]
+    def _once_inner(  # type: ignore[misc]
         _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
     ) -> Union[Callable[P, R], Callable[P, Awaitable[R]]]:
         signature = inspect.signature(_func)
@@ -103,7 +103,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
             return _sync_wrapper
 
-    return _decorator
+    return _once_inner
 
 
 @deprecated('sync_once is deprecated, use once instead. Scheduled for removal in 1.3.0')
