@@ -1,17 +1,9 @@
-from __future__ import annotations
-
 import pickle
-from typing import Any, TypeVar, Union
-
-from typing_extensions import ParamSpec
+from typing import Any, Union
 
 from .clients import AsyncWrapper, MemoryCache
 from .exceptions import CachifyInitError
 from .types import AsyncClient, SyncClient
-
-
-P = ParamSpec('P')
-R = TypeVar('R')
 
 
 class Cachify:
