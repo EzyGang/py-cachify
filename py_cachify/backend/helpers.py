@@ -4,6 +4,7 @@ from typing import Any, Awaitable, Callable, TypeVar, Union
 
 from typing_extensions import ParamSpec, TypeIs
 
+from .lib import get_cachify
 from .types import Decoder, Encoder
 
 
@@ -34,3 +35,21 @@ def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any
         return val
 
     return encoder_decoder(val)
+
+
+def reset(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> None:
+    cachify = get_cachify()
+    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+
+    cachify.delete(key=_key)
+
+    return None
+
+
+async def a_reset(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> None:
+    cachify = get_cachify()
+    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+
+    await cachify.a_delete(key=_key)
+
+    return None

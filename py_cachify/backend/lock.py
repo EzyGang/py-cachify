@@ -2,13 +2,13 @@ import inspect
 import logging
 from contextlib import asynccontextmanager, contextmanager
 from functools import wraps
-from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union
+from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union, cast
 
 from typing_extensions import ParamSpec, deprecated, overload
 
 from .exceptions import CachifyLockError
 from .helpers import get_full_key_from_signature, is_coroutine
-from .lib import AsyncWithReset, SyncWithReset, get_cachify
+from .lib import get_cachify
 from .types import AsyncWithResetProtocol, SyncOrAsync, SyncWithResetProtocol
 
 
@@ -53,14 +53,14 @@ def lock(key: str) -> Generator[None, None, None]:
 
 def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> SyncOrAsync:
     @overload
-    def _once_inner(
-        _func: Callable[P, R],
-    ) -> SyncWithResetProtocol[P, R]: ...
+    def _once_inner(  # type: ignore[overload-overlap]
+        _func: Callable[P, Awaitable[R]],
+    ) -> AsyncWithResetProtocol[P, R]: ...
 
     @overload
     def _once_inner(
-        _func: Callable[P, Awaitable[R]],
-    ) -> AsyncWithResetProtocol[P, R]: ...
+        _func: Callable[P, R],
+    ) -> SyncWithResetProtocol[P, R]: ...
 
     def _once_inner(
         _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
@@ -84,7 +84,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked
 
-            return AsyncWithReset(func=_async_wrapper, signature=signature, key=key)
+            return cast(AsyncWithResetProtocol[P, R], _async_wrapper)
 
         else:
 
@@ -102,7 +102,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked
 
-            return SyncWithReset(func=_sync_wrapper, signature=signature, key=key)
+            return cast(SyncWithResetProtocol[P, R], _sync_wrapper)
 
     return _once_inner
 

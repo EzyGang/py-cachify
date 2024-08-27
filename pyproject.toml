@@ -71,6 +71,7 @@ select = [
 ignore = [
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
+    "B010",  # do not rewrite setattr()
 ]
 
 [tool.ruff.format]

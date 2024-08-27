@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import pickle
-from inspect import Signature
-from typing import Any, Awaitable, Callable, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from typing_extensions import ParamSpec
 
 from .clients import AsyncWrapper, MemoryCache
 from .exceptions import CachifyInitError
-from .helpers import get_full_key_from_signature
-from .types import AsyncClient, AsyncWithResetProtocol, SyncClient, SyncWithResetProtocol
+from .types import AsyncClient, SyncClient
 
 
 P = ParamSpec('P')
@@ -64,39 +62,3 @@ def get_cachify() -> Cachify:
         raise CachifyInitError('Cachify is not initialized, did you forget to call `init_cachify`?')
 
     return _cachify
-
-
-class SyncWithReset(SyncWithResetProtocol):
-    def __init__(self, func: Callable[P, R], signature: Signature, key: str) -> None:
-        self._func = func
-        self._signature = signature
-        self._key = key
-
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
-        return self._func(*args, **kwargs)
-
-    def reset(self, *args: P.args, **kwargs: P.kwargs) -> None:
-        cachify = get_cachify()
-        _key = get_full_key_from_signature(bound_args=self._signature.bind(*args, **kwargs), key=self._key)
-
-        cachify.delete(key=_key)
-
-        return None
-
-
-class AsyncWithReset(AsyncWithResetProtocol):
-    def __init__(self, func: Callable[P, Awaitable[R]], signature: Signature, key: str) -> None:
-        self._func = func
-        self._signature = signature
-        self._key = key
-
-    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
-        return await self._func(*args, **kwargs)
-
-    async def reset(self, *args: P.args, **kwargs: P.kwargs) -> None:
-        cachify = get_cachify()
-        _key = get_full_key_from_signature(bound_args=self._signature.bind(*args, **kwargs), key=self._key)
-
-        await cachify.a_delete(key=_key)
-
-        return None

@@ -3,7 +3,7 @@ from typing import Any, Awaitable, Callable, Protocol, TypeAlias, TypeVar, Union
 from typing_extensions import ParamSpec
 
 
-R = TypeVar('R')
+R = TypeVar('R', covariant=True)
 P = ParamSpec('P')
 
 Encoder: TypeAlias = Callable[[Any], Any]
@@ -33,23 +33,23 @@ class SyncClient(Protocol):
 
 
 class AsyncWithResetProtocol(Protocol[P, R]):
-    __call__: Callable[P, Awaitable[R]]
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
 
     async def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...
 
 
 class SyncWithResetProtocol(Protocol[P, R]):
-    __call__: Callable[P, R]
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
 
     def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...
 
 
 class SyncOrAsync(Protocol):
     @overload
-    def __call__(self, _func: Callable[P, R]) -> SyncWithResetProtocol[P, R]: ...
+    def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncWithResetProtocol[P, R]: ...  # type: ignore[overload-overlap]
 
     @overload
-    def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncWithResetProtocol[P, R]: ...
+    def __call__(self, _func: Callable[P, R]) -> SyncWithResetProtocol[P, R]: ...
 
     def __call__(
         self, _func: Union[Callable[P, Awaitable[R]], Callable[P, R]]
