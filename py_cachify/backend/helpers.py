@@ -1,14 +1,14 @@
 import asyncio
 import inspect
-from typing import Any, Awaitable, Callable, TypeVar, Union, overload
+from typing import Any, Awaitable, Callable, TypeVar, Union
 
-from typing_extensions import ParamSpec, Protocol, TypeAlias, TypeIs
+from typing_extensions import ParamSpec, TypeIs
+
+from .types import Decoder, Encoder
 
 
-R = TypeVar('R')
+R = TypeVar('R', covariant=True)
 P = ParamSpec('P')
-Encoder: TypeAlias = Callable[[Any], Any]
-Decoder: TypeAlias = Callable[[Any], Any]
 
 
 def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) -> str:
@@ -34,15 +34,3 @@ def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any
         return val
 
     return encoder_decoder(val)
-
-
-class SyncOrAsync(Protocol):
-    @overload
-    def __call__(self, _func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]: ...
-
-    @overload
-    def __call__(self, _func: Callable[P, R]) -> Callable[P, R]: ...
-
-    def __call__(  # type: ignore[misc]
-        self, _func: Union[Callable[P, Awaitable[R]], Callable[P, R]]
-    ) -> Union[Callable[P, Awaitable[R]], Callable[P, R]]: ...

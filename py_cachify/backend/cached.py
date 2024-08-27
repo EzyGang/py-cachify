@@ -4,9 +4,9 @@ from typing import Awaitable, Callable, Tuple, TypeVar, Union, cast, overload
 
 from typing_extensions import ParamSpec, deprecated
 
-from py_cachify.backend.lib import get_cachify
-
-from .helpers import Decoder, Encoder, SyncOrAsync, encode_decode_value, get_full_key_from_signature, is_coroutine
+from .helpers import encode_decode_value, get_full_key_from_signature, is_coroutine
+from .lib import SyncWithReset, get_cachify
+from .types import AsyncWithResetProtocol, Decoder, Encoder, SyncOrAsync, SyncWithResetProtocol
 
 
 R = TypeVar('R')
@@ -16,17 +16,17 @@ P = ParamSpec('P')
 def cached(key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None) -> SyncOrAsync:
     @overload
     def _cached_inner(
-        _func: Callable[P, Awaitable[R]],
-    ) -> Callable[P, Awaitable[R]]: ...
+        _func: Callable[P, R],
+    ) -> SyncWithResetProtocol[P, R]: ...
 
     @overload
     def _cached_inner(
-        _func: Callable[P, R],
-    ) -> Callable[P, R]: ...
+        _func: Callable[P, Awaitable[R]],
+    ) -> AsyncWithResetProtocol[P, R]: ...
 
-    def _cached_inner(  # type: ignore[misc]
+    def _cached_inner(
         _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
-    ) -> Union[Callable[P, R], Callable[P, Awaitable[R]]]:
+    ) -> Union[SyncWithResetProtocol[P, R], AsyncWithResetProtocol[P, R]]:
         signature = inspect.signature(_func)
 
         enc, dec = None, None
@@ -47,7 +47,8 @@ def cached(key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder,
                 await cachify.a_set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
                 return res
 
-            return _async_wrapper
+            return cast(AsyncWithResetProtocol[P, R], _async_wrapper)
+            # return AsyncWithReset(func=_async_wrapper, signature=signature, key=key)
         else:
 
             @wraps(_func)  # type: ignore[unreachable]
@@ -61,7 +62,7 @@ def cached(key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder,
                 cachify.set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
                 return cast(R, res)
 
-            return _sync_wrapper
+            return SyncWithReset(func=_sync_wrapper, signature=signature, key=key)
 
     return _cached_inner
 
@@ -69,12 +70,12 @@ def cached(key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder,
 @deprecated('sync_cached is deprecated, use cached instead. Scheduled for removal in 1.3.0')
 def sync_cached(
     key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
-) -> Callable[[Callable[P, R]], Callable[P, R]]:
+) -> SyncOrAsync:
     return cached(key=key, ttl=ttl, enc_dec=enc_dec)
 
 
 @deprecated('async_cached is deprecated, use cached instead. Scheduled for removal in 1.3.0')
 def async_cached(
     key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
-) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+) -> SyncOrAsync:
     return cached(key=key, ttl=ttl, enc_dec=enc_dec)

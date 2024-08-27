@@ -7,8 +7,9 @@ from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar,
 from typing_extensions import ParamSpec, deprecated, overload
 
 from .exceptions import CachifyLockError
-from .helpers import SyncOrAsync, get_full_key_from_signature, is_coroutine
-from .lib import get_cachify
+from .helpers import get_full_key_from_signature, is_coroutine
+from .lib import AsyncWithReset, SyncWithReset, get_cachify
+from .types import AsyncWithResetProtocol, SyncOrAsync, SyncWithResetProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -53,17 +54,17 @@ def lock(key: str) -> Generator[None, None, None]:
 def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> SyncOrAsync:
     @overload
     def _once_inner(
-        _func: Callable[P, Awaitable[R]],
-    ) -> Callable[P, Awaitable[R]]: ...
+        _func: Callable[P, R],
+    ) -> SyncWithResetProtocol[P, R]: ...
 
     @overload
     def _once_inner(
-        _func: Callable[P, R],
-    ) -> Callable[P, R]: ...
+        _func: Callable[P, Awaitable[R]],
+    ) -> AsyncWithResetProtocol[P, R]: ...
 
-    def _once_inner(  # type: ignore[misc]
+    def _once_inner(
         _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
-    ) -> Union[Callable[P, R], Callable[P, Awaitable[R]]]:
+    ) -> Union[SyncWithResetProtocol[P, R], AsyncWithResetProtocol[P, R]]:
         signature = inspect.signature(_func)
 
         if is_coroutine(_func):
@@ -83,7 +84,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked
 
-            return _async_wrapper
+            return AsyncWithReset(func=_async_wrapper, signature=signature, key=key)
 
         else:
 
@@ -101,7 +102,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked
 
-            return _sync_wrapper
+            return SyncWithReset(func=_sync_wrapper, signature=signature, key=key)
 
     return _once_inner
 
