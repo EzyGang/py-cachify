@@ -160,7 +160,6 @@ concurrency = ['thread']
 
 [tool.coverage.report]
 omit = []
-
 exclude_lines = [
     'pragma: no cover',
     '@overload',

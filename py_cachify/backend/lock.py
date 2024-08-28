@@ -1,13 +1,13 @@
 import inspect
 import logging
 from contextlib import asynccontextmanager, contextmanager
-from functools import wraps
+from functools import partial, wraps
 from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union, cast
 
 from typing_extensions import ParamSpec, deprecated, overload
 
 from .exceptions import CachifyLockError
-from .helpers import get_full_key_from_signature, is_coroutine
+from .helpers import a_reset, get_full_key_from_signature, is_coroutine, reset
 from .lib import get_cachify
 from .types import AsyncWithResetProtocol, SyncOrAsync, SyncWithResetProtocol
 
@@ -84,6 +84,8 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked
 
+            setattr(_async_wrapper, 'reset', partial(a_reset, signature=signature, key=key))
+
             return cast(AsyncWithResetProtocol[P, R], _async_wrapper)
 
         else:
@@ -101,6 +103,8 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
                         raise
 
                     return return_on_locked
+
+            setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key))
 
             return cast(SyncWithResetProtocol[P, R], _sync_wrapper)
 

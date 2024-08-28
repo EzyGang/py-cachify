@@ -65,9 +65,12 @@ def test_cached_decorator_sync_function():
 
     result = _sync_function_wrapped(3, 4)
     result_2 = _sync_function_wrapped(10, 20)
+    _sync_function_wrapped.reset(3, 4)
+    result_3 = _sync_function_wrapped(10, 20)
 
     assert result == 7
     assert result_2 == 7
+    assert result_3 == 30
 
 
 @pytest.mark.asyncio
@@ -78,6 +81,9 @@ async def test_cached_decorator_async_function():
 
     result = await _async_function_wrapped(3, 4)
     result_2 = await _async_function_wrapped(3, 20)
+    await _async_function_wrapped.reset(3, 4)
+    result_3 = await _async_function_wrapped(10, 20)
 
     assert result == 7
     assert result_2 == 7
+    assert result_3 == 30

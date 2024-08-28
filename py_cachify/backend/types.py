@@ -33,15 +33,15 @@ class SyncClient(Protocol):
 
 
 class AsyncWithResetProtocol(Protocol[P, R]):
-    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
 
-    async def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...
+    async def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...  # pragma: no cover
 
 
 class SyncWithResetProtocol(Protocol[P, R]):
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
 
-    def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...
+    def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...  # pragma: no cover
 
 
 class SyncOrAsync(Protocol):

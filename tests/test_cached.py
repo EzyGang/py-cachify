@@ -1,11 +1,13 @@
+import asyncio
 import sys
 
 import pytest
 from pytest_mock import MockerFixture
+from typing_extensions import assert_type
 
 from py_cachify import cached
-from py_cachify.backend.cached import async_cached, sync_cached
 from py_cachify.backend.exceptions import CachifyInitError
+from py_cachify.backend.types import AsyncWithResetProtocol, P, R, SyncWithResetProtocol
 
 
 def sync_function(arg1: int, arg2: int) -> int:
@@ -69,12 +71,31 @@ def test_cached_decorator_check_cachify_init():
 
 
 def test_sync_cached_preserves_type_annotations(init_cachify_fixture):
-    func = sync_cached(key='test_key_{arg1}')(async_function)
+    func = cached(key='test_sync_key_{arg1}')(sync_function)
     for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
         assert func.__annotations__[name] == clz
+
+    assert_type(func, SyncWithResetProtocol[P, R])
 
 
 def test_async_cached_preserves_type_annotations(init_cachify_fixture):
-    func = async_cached(key='test_key_{arg1}')(async_function)
+    func = cached(key='test_key_{arg1}')(async_function)
     for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
         assert func.__annotations__[name] == clz
+
+    assert_type(func, AsyncWithResetProtocol[P, R])
+
+
+def test_cached_wrapped_async_function_has_reset_callable_attached(init_cachify_fixture):
+    func = cached(key='test_key_{arg1}')(async_function)
+
+    assert hasattr(func, 'reset')
+    assert asyncio.iscoroutinefunction(func.reset)
+
+
+def test_cached_wrapped_function_has_reset_callable_attached(init_cachify_fixture):
+    func = cached(key='teset')(sync_function)
+
+    assert hasattr(func, 'reset')
+    assert not asyncio.iscoroutinefunction(func.reset)
+    assert callable(func.reset)
