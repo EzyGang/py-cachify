@@ -1,6 +1,6 @@
-from typing import Any, Awaitable, Callable, Protocol, TypeAlias, TypeVar, Union, overload
+from typing import Any, Awaitable, Callable, Protocol, TypeVar, Union, overload
 
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, TypeAlias
 
 
 R = TypeVar('R', covariant=True)

@@ -87,7 +87,7 @@ max-complexity = 6
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
 lines-after-imports = 2
-known-first-party = ["py_cachify"]
+known-first-party = ["py_cachify",]
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
