@@ -1,5 +1,5 @@
 import pickle
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from .clients import AsyncWrapper, MemoryCache
 from .exceptions import CachifyInitError
@@ -36,7 +36,7 @@ class Cachify:
         return await self._async_client.delete(f'{self._prefix}{key}')
 
 
-_cachify: Cachify | None = None
+_cachify: Optional[Cachify] = None
 
 
 def init_cachify(
