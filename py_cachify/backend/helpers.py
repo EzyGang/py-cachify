@@ -1,14 +1,15 @@
 import asyncio
 import inspect
-from typing import Any, Awaitable, Callable, TypeVar, Union, overload
+from typing import Any, Awaitable, Callable, TypeVar, Union
 
-from typing_extensions import ParamSpec, Protocol, TypeAlias, TypeIs
+from typing_extensions import ParamSpec, TypeIs
+
+from .lib import get_cachify
+from .types import Decoder, Encoder
 
 
-R = TypeVar('R')
+R = TypeVar('R', covariant=True)
 P = ParamSpec('P')
-Encoder: TypeAlias = Callable[[Any], Any]
-Decoder: TypeAlias = Callable[[Any], Any]
 
 
 def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) -> str:
@@ -36,13 +37,19 @@ def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any
     return encoder_decoder(val)
 
 
-class SyncOrAsync(Protocol):
-    @overload
-    def __call__(self, _func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]: ...
+def reset(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> None:
+    cachify = get_cachify()
+    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
 
-    @overload
-    def __call__(self, _func: Callable[P, R]) -> Callable[P, R]: ...
+    cachify.delete(key=_key)
 
-    def __call__(  # type: ignore[misc]
-        self, _func: Union[Callable[P, Awaitable[R]], Callable[P, R]]
-    ) -> Union[Callable[P, Awaitable[R]], Callable[P, R]]: ...
+    return None
+
+
+async def a_reset(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> None:
+    cachify = get_cachify()
+    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+
+    await cachify.a_delete(key=_key)
+
+    return None

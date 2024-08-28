@@ -71,6 +71,7 @@ select = [
 ignore = [
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
+    "B010",  # do not rewrite setattr()
 ]
 
 [tool.ruff.format]
@@ -86,7 +87,7 @@ max-complexity = 6
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
 lines-after-imports = 2
-known-first-party = ["py_cachify"]
+known-first-party = ["py_cachify",]
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
@@ -159,7 +160,6 @@ concurrency = ['thread']
 
 [tool.coverage.report]
 omit = []
-
 exclude_lines = [
     'pragma: no cover',
     '@overload',

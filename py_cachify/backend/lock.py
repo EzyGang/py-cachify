@@ -1,14 +1,15 @@
 import inspect
 import logging
 from contextlib import asynccontextmanager, contextmanager
-from functools import wraps
-from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union
+from functools import partial, wraps
+from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union, cast
 
 from typing_extensions import ParamSpec, deprecated, overload
 
 from .exceptions import CachifyLockError
-from .helpers import SyncOrAsync, get_full_key_from_signature, is_coroutine
+from .helpers import a_reset, get_full_key_from_signature, is_coroutine, reset
 from .lib import get_cachify
+from .types import AsyncWithResetProtocol, SyncOrAsync, SyncWithResetProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -52,18 +53,18 @@ def lock(key: str) -> Generator[None, None, None]:
 
 def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> SyncOrAsync:
     @overload
-    def _once_inner(
+    def _once_inner(  # type: ignore[overload-overlap]
         _func: Callable[P, Awaitable[R]],
-    ) -> Callable[P, Awaitable[R]]: ...
+    ) -> AsyncWithResetProtocol[P, R]: ...
 
     @overload
     def _once_inner(
         _func: Callable[P, R],
-    ) -> Callable[P, R]: ...
+    ) -> SyncWithResetProtocol[P, R]: ...
 
-    def _once_inner(  # type: ignore[misc]
+    def _once_inner(
         _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
-    ) -> Union[Callable[P, R], Callable[P, Awaitable[R]]]:
+    ) -> Union[SyncWithResetProtocol[P, R], AsyncWithResetProtocol[P, R]]:
         signature = inspect.signature(_func)
 
         if is_coroutine(_func):
@@ -83,7 +84,9 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked
 
-            return _async_wrapper
+            setattr(_async_wrapper, 'reset', partial(a_reset, signature=signature, key=key))
+
+            return cast(AsyncWithResetProtocol[P, R], _async_wrapper)
 
         else:
 
@@ -101,7 +104,9 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked
 
-            return _sync_wrapper
+            setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key))
+
+            return cast(SyncWithResetProtocol[P, R], _sync_wrapper)
 
     return _once_inner
 
