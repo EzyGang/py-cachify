@@ -1,6 +1,6 @@
-from typing import Any, Awaitable, Callable, Protocol, TypeVar, Union, overload
+from typing import Any, Awaitable, Callable, Optional, Protocol, TypeVar, Union
 
-from typing_extensions import ParamSpec, TypeAlias
+from typing_extensions import ParamSpec, TypeAlias, overload
 
 
 R = TypeVar('R', covariant=True)
@@ -11,7 +11,7 @@ Decoder: TypeAlias = Callable[[Any], Any]
 
 
 class AsyncClient(Protocol):
-    def get(self, name: str) -> Awaitable[Any]:
+    def get(self, name: str) -> Awaitable[Optional[Any]]:
         raise NotImplementedError
 
     def delete(self, *names: str) -> Awaitable[Any]:
@@ -22,7 +22,7 @@ class AsyncClient(Protocol):
 
 
 class SyncClient(Protocol):
-    def get(self, name: str) -> Any | None:
+    def get(self, name: str) -> Optional[Any]:
         raise NotImplementedError
 
     def delete(self, *names: str) -> Any:
