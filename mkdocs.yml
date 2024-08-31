@@ -7,6 +7,9 @@ theme:
     repo: fontawesome/brands/github
   features:
     - content.code.copy
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
