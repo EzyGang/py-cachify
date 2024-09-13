@@ -119,16 +119,18 @@ class Lock(AsyncLockMethods, SyncLockMethods):
                     bound_args = signature.bind(*args, **kwargs)
                     _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
 
-                    # try:
-                    #     async with self.__aenter__(key=_key):
-                    #         return await _awaitable_func(*args, **kwargs)
-                    # except CachifyLockError:
-                    #     if raise_on_locked:
-                    #         raise
-                    #
-                    #     return return_on_locked
+                    try:
+                        async with Lock(
+                            key=_key,
+                            reentrant=self._reentrant,
+                            nowait=self._nowait,
+                            timeout=self._timeout,
+                        ):
+                            return await _awaitable_func(*args, **kwargs)
+                    except CachifyLockError:
+                        pass
 
-                setattr(_async_wrapper, 'reset', partial(a_reset, signature=signature, key=key))
+                #setattr(_async_wrapper, 'reset', partial(a_reset, signature=signature, key=key))
 
                 return cast(AsyncWithResetProtocol[P, R], _async_wrapper)
 
@@ -137,18 +139,15 @@ class Lock(AsyncLockMethods, SyncLockMethods):
                 @wraps(_func)  # type: ignore[unreachable]
                 def _sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
                     bound_args = signature.bind(*args, **kwargs)
-                    _key = get_full_key_from_signature(bound_args=bound_args, key=key)
+                    _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
 
-                    # try:
-                    #     with lock(key=_key):
-                    #         return _func(*args, **kwargs)
-                    # except CachifyLockError:
-                    #     if raise_on_locked:
-                    #         raise
-                    #
-                    #     return return_on_locked
+                    try:
+                        with Lock(key=_key, reentrant=self._reentrant, nowait=self._nowait, timeout=self._timeout):
+                            return _func(*args, **kwargs)
+                    except CachifyLockError:
+                        pass
 
-                setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key))
+                #setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key))
 
                 return cast(SyncWithResetProtocol[P, R], _sync_wrapper)
 
