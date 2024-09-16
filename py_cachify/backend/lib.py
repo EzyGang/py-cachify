@@ -1,11 +1,9 @@
-from __future__ import annotations
-
 import pickle
-from typing import Any, Union
+from typing import Any, Optional, Union
 
-from py_cachify.backend.clients import AsyncWrapper, MemoryCache
-from py_cachify.backend.exceptions import CachifyInitError
-from py_cachify.backend.types import AsyncClient, SyncClient
+from .clients import AsyncWrapper, MemoryCache
+from .exceptions import CachifyInitError
+from .types import AsyncClient, SyncClient
 
 
 class Cachify:
@@ -38,7 +36,7 @@ class Cachify:
         return await self._async_client.delete(f'{self._prefix}{key}')
 
 
-_cachify: Cachify | None = None
+_cachify: Optional[Cachify] = None
 
 
 def init_cachify(

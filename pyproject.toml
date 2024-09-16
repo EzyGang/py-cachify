@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "py-cachify"
-version = "1.1.2"
+version = "1.2.0"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
-description = "distributed locks and caching/locking decorators at hand"
+description = "Distributed locks and caching/locking decorators at hand"
 authors = ["Galtozzy <galtozzy+git@gmail.com>"]
 readme = "README.md"
 include = ["README.md"]
@@ -18,15 +18,15 @@ python = "^3.8"
 typing-extensions = "^4.12.2"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
+pytest = "^8.3.2"
 pytest-mock = "^3.14.0"
 pytest-cov = "^5.0.0"
 taskipy = "^1.13.0"
-mypy = "^1.10.1"
-coverage = "^7.5.4"
+mypy = "^1.11.1"
+coverage = "^7.6.1"
 pytest-asyncio = "^0.23.7"
 pytest-socket = "^0.7.0"
-ruff = "^0.5.3"
+ruff = "^0.6.2"
 
 
 [tool.poetry.group.docs.dependencies]
@@ -71,6 +71,7 @@ select = [
 ignore = [
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
+    "B010",  # do not rewrite setattr()
 ]
 
 [tool.ruff.format]
@@ -86,10 +87,9 @@ max-complexity = 6
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
 lines-after-imports = 2
-known-first-party = ["py_cachify"]
+known-first-party = ["py_cachify",]
 
 [tool.ruff.lint.pyupgrade]
-# Preserve types, even if a file imports `from __future__ import annotations`.
 keep-runtime-typing = true
 
 [tool.mypy]
@@ -159,13 +159,11 @@ concurrency = ['thread']
 
 
 [tool.coverage.report]
-omit = [
-    '**/py_cachify/asyncio.py',
-    '**/py_cachify/sync.py',
-]
-
+omit = []
 exclude_lines = [
     'pragma: no cover',
+    '@overload',
+    'SyncOrAsync',
     '@abstract',
     'def __repr__',
     'raise AssertionError',
