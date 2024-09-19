@@ -8,7 +8,7 @@ description = "Distributed locks and caching/locking decorators at hand"
 authors = ["Galtozzy <galtozzy+git@gmail.com>"]
 readme = "README.md"
 include = ["README.md"]
-packages = [{include = 'py_cachify'}]
+packages = [{ include = 'py_cachify' }]
 
 [project]
 requires-python = ">=3.8,<4.0"
@@ -66,12 +66,12 @@ select = [
     "I",  # isort
     "C",  # flake8-comprehensions
     "B",  # flake8-bugbear
-    "UP",  # pyupgrade
+    "UP", # pyupgrade
 ]
 ignore = [
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-    "B010",  # do not rewrite setattr()
+    "B008", # do not perform function calls in argument defaults
+    "C901", # too complex
+    "B010", # do not rewrite setattr()
 ]
 
 [tool.ruff.format]
@@ -87,7 +87,7 @@ max-complexity = 6
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
 lines-after-imports = 2
-known-first-party = ["py_cachify",]
+known-first-party = ["py_cachify"]
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
@@ -120,9 +120,7 @@ follow_imports_for_stubs = true
 show_error_codes = true
 plugins = []
 
-exclude = [
-    'test_',
-]
+exclude = ['test_']
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -147,9 +145,7 @@ asyncio_mode = "auto"
 python_files = "test*.py"
 # Directories that are not visited by pytest collector:
 norecursedirs = "*.egg .eggs dist build docs .tox .git __pycache__ config docker etc"
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 
 [tool.coverage.run]
 # Coverage configuration:

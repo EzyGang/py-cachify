@@ -32,25 +32,45 @@ class SyncClient(Protocol):
         raise NotImplementedError
 
 
-class AsyncWithResetProtocol(Protocol[P, R]):
+class SyncLockedProto(Protocol[P, R]):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
+
+    def is_locked(self, *args: P.args, **kwargs: P.kwargs) -> bool: ...  # pragma: no cover
+
+
+class AsyncLockedProto(Protocol[P, R]):
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
+
+    def is_locked(self, *args: P.args, **kwargs: P.kwargs) -> bool: ...  # pragma: no cover
+
+
+class AsyncWithResetProto(Protocol[P, R]):
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
 
     async def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...  # pragma: no cover
 
 
-class SyncWithResetProtocol(Protocol[P, R]):
+class SyncWithResetProto(Protocol[P, R]):
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
 
     def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...  # pragma: no cover
 
 
-class SyncOrAsync(Protocol):
+class SyncOrAsyncReset(Protocol):
     @overload
-    def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncWithResetProtocol[P, R]: ...  # type: ignore[overload-overlap]
+    def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncWithResetProto[P, R]: ...  # type: ignore[overload-overlap]
 
     @overload
-    def __call__(self, _func: Callable[P, R]) -> SyncWithResetProtocol[P, R]: ...
+    def __call__(self, _func: Callable[P, R]) -> SyncWithResetProto[P, R]: ...
 
     def __call__(
         self, _func: Union[Callable[P, Awaitable[R]], Callable[P, R]]
-    ) -> Union[AsyncWithResetProtocol[P, R], SyncWithResetProtocol[P, R]]: ...
+    ) -> Union[AsyncWithResetProto[P, R], SyncWithResetProto[P, R]]: ...
+
+
+class UnsetType:
+    def __bool__(self) -> bool:
+        return False
+
+
+UNSET = UnsetType()
