@@ -1,6 +1,10 @@
-from typing import Any, Awaitable, Callable, Optional, Protocol, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Protocol, TypeVar, Union
 
 from typing_extensions import ParamSpec, TypeAlias, overload
+
+
+if TYPE_CHECKING:
+    from .lib import Cachify
 
 
 R = TypeVar('R', covariant=True)
@@ -74,3 +78,20 @@ class UnsetType:
 
 
 UNSET = UnsetType()
+
+
+class LockProtocolBase(Protocol):
+    _key: str
+    _nowait: bool
+    _timeout: Optional[Union[int, float]]
+    _exp: Union[Optional[int], UnsetType]
+
+    @staticmethod
+    def _raise_if_cached(is_already_cached: bool, key: str, do_raise: bool = True) -> None: ...  # pragma: no cover
+
+    @property
+    def _cachify(self) -> 'Cachify': ...  # pragma: no cover
+
+    def _calc_stop_at(self) -> float: ...  # pragma: no cover
+
+    def _get_ttl(self) -> Optional[int]: ...  # pragma: no cover

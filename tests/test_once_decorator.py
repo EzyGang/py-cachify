@@ -7,7 +7,7 @@ from typing_extensions import assert_type
 
 from py_cachify import CachifyLockError, once
 from py_cachify.backend.lock import async_once, sync_once
-from py_cachify.backend.types import AsyncWithResetProtocol, P, R, SyncWithResetProtocol
+from py_cachify.backend.types import AsyncWithResetProto, P, R, SyncWithResetProto
 
 
 def test_once_decorator_sync_function(init_cachify_fixture):
@@ -105,8 +105,8 @@ def test_preserves_type_annotations(init_cachify_fixture):
         assert sync_function.__annotations__[name] == clz
         assert async_function.__annotations__[name] == clz
 
-    assert_type(sync_function, SyncWithResetProtocol[P, R])
-    assert_type(async_function, AsyncWithResetProtocol[P, R])
+    assert_type(sync_function, SyncWithResetProto[P, R])
+    assert_type(async_function, AsyncWithResetProto[P, R])
 
 
 def test_once_wrapped_async_function_has_reset_callable_attached(init_cachify_fixture):

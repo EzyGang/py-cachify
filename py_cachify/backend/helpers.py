@@ -59,10 +59,10 @@ async def is_alocked(*args: Any, key: str, signature: inspect.Signature, **kwarg
     cachify = get_cachify()
     _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
 
-    return bool(await cachify.get(key=_key))
+    return bool(await cachify.a_get(key=_key))
 
 
-async def is_locked(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> bool:
+def is_locked(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> bool:
     cachify = get_cachify()
     _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
 

@@ -6,6 +6,8 @@ from .backend.lock import lock, once
 from .backend.types import Decoder, Encoder
 
 
+__version__ = '1.2.0'
+
 __all__ = [
     'CachifyInitError',
     'CachifyLockError',

@@ -42,7 +42,7 @@ redis = "^5.0.7"
 format-and-lint = "task ruff && task mypy-lint"
 
 ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ && ruff check ./py_cachify/ ./tests/ ./integration_tests/ --fix --unsafe-fixes"
-tests = "PYTHONPATH=. pytest tests/ -v"
+tests = "PYTHONPATH=. pytest tests/ -vvv"
 integration-tests = "PYTHONPATH=. pytest integration_tests/ --no-cov"
 
 ruff-lint = "ruff check ./py_cachify"
@@ -166,6 +166,7 @@ exclude_lines = [
     'raise NotImplementedError',
     'if __name__ == .__main__.:',
     '__all__',
+    'if TYPE_CHECKING:',
 ]
 
 [build-system]

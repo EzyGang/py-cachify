@@ -3,7 +3,7 @@ import logging
 import time
 from asyncio import sleep as asleep
 from functools import partial, wraps
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Protocol, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, TypeVar, Union, cast
 
 from typing_extensions import ParamSpec, Self, deprecated, overload
 
@@ -14,6 +14,7 @@ from .types import (
     UNSET,
     AsyncLockedProto,
     AsyncWithResetProto,
+    LockProtocolBase,
     SyncLockedProto,
     SyncOrAsyncReset,
     SyncWithResetProto,
@@ -30,44 +31,17 @@ R = TypeVar('R')
 P = ParamSpec('P')
 
 
-def _check_is_cached(is_already_cached: bool, key: str, do_raise: bool = True) -> bool:
-    if not is_already_cached:
-        return True
-
-    logger.warning(msg := f'{key} is already locked!')
-    if do_raise:
-        raise CachifyLockError(msg)
-
-    return False
-
-
-class LockProtocolBase(Protocol):
-    _key: str
-    _nowait: bool
-    _timeout: Optional[Union[int, float]]
-    _exp: Union[Optional[int], UnsetType]
-
-    @staticmethod
-    def _check_is_cached(is_already_cached: bool, key: str, do_raise: bool = True) -> bool: ...
-
-    @property
-    def _cachify(self) -> 'Cachify': ...
-
-    def _calc_stop_at(self) -> float: ...
-
-    def _get_ttl(self) -> Optional[int]: ...
-
-
 class AsyncLockMethods(LockProtocolBase):
     async def is_alocked(self) -> bool:
-        return bool(await self._cachify.get(key=self._key))
+        return bool(await self._cachify.a_get(key=self._key))
 
     async def _a_acquire(self, key: str) -> None:
         stop_at = self._calc_stop_at()
 
         while True:
-            _is_locked = self._check_is_cached(
-                is_already_cached=await self.is_alocked(),
+            _is_locked = bool(await self.is_alocked())
+            self._raise_if_cached(
+                is_already_cached=_is_locked,
                 key=key,
                 do_raise=self._nowait or time.time() > stop_at,
             )
@@ -81,8 +55,8 @@ class AsyncLockMethods(LockProtocolBase):
     async def _a_release(self, key: str) -> None:
         await self._cachify.a_delete(key=key)
 
-    async def __aenter__(self, key: Optional[str] = None) -> 'Self':
-        await self._a_acquire(key=key or self._key)
+    async def __aenter__(self) -> 'Self':
+        await self._a_acquire(key=self._key)
         return self
 
     async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
@@ -97,8 +71,9 @@ class SyncLockMethods(LockProtocolBase):
         stop_at = self._calc_stop_at()
 
         while True:
-            _is_locked = self._check_is_cached(
-                is_already_cached=bool(self.is_locked),
+            _is_locked = bool(self.is_locked())
+            self._raise_if_cached(
+                is_already_cached=_is_locked,
                 key=key,
                 do_raise=self._nowait or time.time() > stop_at,
             )
@@ -120,7 +95,7 @@ class SyncLockMethods(LockProtocolBase):
         self._release(key=self._key)
 
 
-class _Lock(AsyncLockMethods, SyncLockMethods):
+class lock(AsyncLockMethods, SyncLockMethods):
     """
     Class to manage locking mechanism for synchronous and asynchronous functions.
 
@@ -135,7 +110,6 @@ class _Lock(AsyncLockMethods, SyncLockMethods):
     Methods:
     __enter__: Acquire a lock for the specified key, synchronous.
     is_locked: Check if the lock is currently held, synchronous.
-
 
     __aenter__: Async version of __enter__ to acquire a lock for the specified key.
     is_alocked: Check if the lock is currently held asynchronously.
@@ -176,16 +150,13 @@ class _Lock(AsyncLockMethods, SyncLockMethods):
                 bound_args = signature.bind(*args, **kwargs)
                 _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
 
-                try:
-                    async with lock(
-                        key=_key,
-                        nowait=self._nowait,
-                        timeout=self._timeout,
-                        exp=self._exp,
-                    ):
-                        return await _awaitable_func(*args, **kwargs)
-                except CachifyLockError:
-                    raise
+                async with lock(
+                    key=_key,
+                    nowait=self._nowait,
+                    timeout=self._timeout,
+                    exp=self._exp,
+                ):
+                    return await _awaitable_func(*args, **kwargs)
 
             setattr(_async_wrapper, 'is_locked', partial(is_alocked, signature=signature, key=self._key))
 
@@ -198,11 +169,8 @@ class _Lock(AsyncLockMethods, SyncLockMethods):
                 bound_args = signature.bind(*args, **kwargs)
                 _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
 
-                try:
-                    with lock(key=_key, nowait=self._nowait, timeout=self._timeout, exp=self._exp):
-                        return _func(*args, **kwargs)
-                except CachifyLockError:
-                    raise
+                with lock(key=_key, nowait=self._nowait, timeout=self._timeout, exp=self._exp):
+                    return _func(*args, **kwargs)
 
             setattr(_sync_wrapper, 'is_locked', partial(is_locked, signature=signature, key=self._key))
 
@@ -219,21 +187,16 @@ class _Lock(AsyncLockMethods, SyncLockMethods):
         return time.time() + self._timeout if self._timeout is not None else float('inf')
 
     def _get_ttl(self) -> Optional[int]:
-        return cast(Optional[int], self._exp or self._cachify.default_expiration)
+        return self._cachify.default_expiration if isinstance(self._exp, UnsetType) else self._exp
 
     @staticmethod
-    def _check_is_cached(is_already_cached: bool, key: str, do_raise: bool = True) -> bool:
+    def _raise_if_cached(is_already_cached: bool, key: str, do_raise: bool = True) -> None:
         if not is_already_cached:
-            return True
+            return
 
         logger.warning(msg := f'{key} is already locked!')
         if do_raise:
             raise CachifyLockError(msg)
-
-        return False
-
-
-lock = _Lock
 
 
 def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> SyncOrAsyncReset:
