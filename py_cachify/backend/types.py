@@ -1,6 +1,10 @@
-from typing import Any, Awaitable, Callable, Optional, Protocol, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Protocol, TypeVar, Union
 
 from typing_extensions import ParamSpec, TypeAlias, overload
+
+
+if TYPE_CHECKING:
+    from .lib import Cachify
 
 
 R = TypeVar('R', covariant=True)
@@ -32,25 +36,62 @@ class SyncClient(Protocol):
         raise NotImplementedError
 
 
-class AsyncWithResetProtocol(Protocol[P, R]):
+class SyncLockedProto(Protocol[P, R]):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
+
+    def is_locked(self, *args: P.args, **kwargs: P.kwargs) -> bool: ...  # pragma: no cover
+
+
+class AsyncLockedProto(Protocol[P, R]):
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
+
+    def is_locked(self, *args: P.args, **kwargs: P.kwargs) -> bool: ...  # pragma: no cover
+
+
+class AsyncWithResetProto(Protocol[P, R]):
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
 
     async def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...  # pragma: no cover
 
 
-class SyncWithResetProtocol(Protocol[P, R]):
+class SyncWithResetProto(Protocol[P, R]):
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
 
     def reset(self, *args: P.args, **kwargs: P.kwargs) -> None: ...  # pragma: no cover
 
 
-class SyncOrAsync(Protocol):
+class SyncOrAsyncReset(Protocol):
     @overload
-    def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncWithResetProtocol[P, R]: ...  # type: ignore[overload-overlap]
+    def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncWithResetProto[P, R]: ...  # type: ignore[overload-overlap]
 
     @overload
-    def __call__(self, _func: Callable[P, R]) -> SyncWithResetProtocol[P, R]: ...
+    def __call__(self, _func: Callable[P, R]) -> SyncWithResetProto[P, R]: ...
 
     def __call__(
         self, _func: Union[Callable[P, Awaitable[R]], Callable[P, R]]
-    ) -> Union[AsyncWithResetProtocol[P, R], SyncWithResetProtocol[P, R]]: ...
+    ) -> Union[AsyncWithResetProto[P, R], SyncWithResetProto[P, R]]: ...
+
+
+class UnsetType:
+    def __bool__(self) -> bool:
+        return False
+
+
+UNSET = UnsetType()
+
+
+class LockProtocolBase(Protocol):
+    _key: str
+    _nowait: bool
+    _timeout: Optional[Union[int, float]]
+    _exp: Union[Optional[int], UnsetType]
+
+    @staticmethod
+    def _raise_if_cached(is_already_cached: bool, key: str, do_raise: bool = True) -> None: ...  # pragma: no cover
+
+    @property
+    def _cachify(self) -> 'Cachify': ...  # pragma: no cover
+
+    def _calc_stop_at(self) -> float: ...  # pragma: no cover
+
+    def _get_ttl(self) -> Optional[int]: ...  # pragma: no cover

@@ -1,15 +1,29 @@
 import inspect
 import logging
-from contextlib import asynccontextmanager, contextmanager
+import time
+from asyncio import sleep as asleep
 from functools import partial, wraps
-from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, TypeVar, Union, cast
 
-from typing_extensions import ParamSpec, deprecated, overload
+from typing_extensions import ParamSpec, Self, deprecated, overload
 
 from .exceptions import CachifyLockError
-from .helpers import a_reset, get_full_key_from_signature, is_coroutine, reset
+from .helpers import a_reset, get_full_key_from_signature, is_alocked, is_coroutine, is_locked, reset
 from .lib import get_cachify
-from .types import AsyncWithResetProtocol, SyncOrAsync, SyncWithResetProtocol
+from .types import (
+    UNSET,
+    AsyncLockedProto,
+    AsyncWithResetProto,
+    LockProtocolBase,
+    SyncLockedProto,
+    SyncOrAsyncReset,
+    SyncWithResetProto,
+    UnsetType,
+)
+
+
+if TYPE_CHECKING:
+    from .lib import Cachify
 
 
 logger = logging.getLogger(__name__)
@@ -17,54 +31,203 @@ R = TypeVar('R')
 P = ParamSpec('P')
 
 
-def _check_is_cached(is_already_cached: bool, key: str) -> None:
-    if not is_already_cached:
-        return
+class AsyncLockMethods(LockProtocolBase):
+    async def is_alocked(self) -> bool:
+        return bool(await self._cachify.a_get(key=self._key))
 
-    logger.warning(msg := f'{key} is already locked!')
-    raise CachifyLockError(msg)
+    async def _a_acquire(self, key: str) -> None:
+        stop_at = self._calc_stop_at()
 
+        while True:
+            _is_locked = bool(await self.is_alocked())
+            self._raise_if_cached(
+                is_already_cached=_is_locked,
+                key=key,
+                do_raise=self._nowait or time.time() > stop_at,
+            )
 
-@asynccontextmanager
-async def async_lock(key: str) -> AsyncGenerator[None, None]:
-    _cachify = get_cachify()
-    cached = await _cachify.a_get(key=key)
-    _check_is_cached(is_already_cached=bool(cached), key=key)
+            if not _is_locked:
+                await self._cachify.a_set(key=key, val=1, ttl=self._get_ttl())
+                return
 
-    await _cachify.a_set(key=key, val=1)
-    try:
-        yield
-    finally:
-        await _cachify.a_delete(key=key)
+            await asleep(0.1)
 
+    async def _a_release(self, key: str) -> None:
+        await self._cachify.a_delete(key=key)
 
-@contextmanager
-def lock(key: str) -> Generator[None, None, None]:
-    _cachify = get_cachify()
-    cached = _cachify.get(key=key)
-    _check_is_cached(is_already_cached=bool(cached), key=key)
+    async def __aenter__(self) -> 'Self':
+        await self._a_acquire(key=self._key)
+        return self
 
-    _cachify.set(key=key, val=1)
-    try:
-        yield
-    finally:
-        _cachify.delete(key=key)
+    async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        await self._a_release(key=self._key)
 
 
-def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> SyncOrAsync:
+class SyncLockMethods(LockProtocolBase):
+    def is_locked(self) -> bool:
+        return bool(self._cachify.get(key=self._key))
+
+    def _acquire(self, key: str) -> None:
+        stop_at = self._calc_stop_at()
+
+        while True:
+            _is_locked = bool(self.is_locked())
+            self._raise_if_cached(
+                is_already_cached=_is_locked,
+                key=key,
+                do_raise=self._nowait or time.time() > stop_at,
+            )
+
+            if not _is_locked:
+                self._cachify.set(key=key, val=1, ttl=self._get_ttl())
+                return
+
+            time.sleep(0.1)
+
+    def _release(self, key: str) -> None:
+        self._cachify.delete(key=key)
+
+    def __enter__(self) -> 'Self':
+        self._acquire(key=self._key)
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self._release(key=self._key)
+
+
+class lock(AsyncLockMethods, SyncLockMethods):
+    """
+    Class to manage locking mechanism for synchronous and asynchronous functions.
+
+    Args:
+    key (str): The key used to identify the lock.
+    nowait (bool, optional): If True, do not wait for the lock to be released. Defaults to True.
+    timeout (Union[int, float], optional): The time in seconds to wait for the lock if nowait is False.
+        Defaults to None.
+    exp (Union[int, None], optional): The expiration time for the lock.
+        Defaults to UNSET and global value from cachify is used in that case.
+
+    Methods:
+    __enter__: Acquire a lock for the specified key, synchronous.
+    is_locked: Check if the lock is currently held, synchronous.
+
+    __aenter__: Async version of __enter__ to acquire a lock for the specified key.
+    is_alocked: Check if the lock is currently held asynchronously.
+
+    __call__: Decorator to acquire a lock for the wrapped function and handle synchronization
+        for synchronous and asynchronous functions.
+        Attaches method `is_locked(*args, **kwargs)` to a wrapped function to quickly check if it's locked.
+    """
+
+    def __init__(
+        self,
+        key: str,
+        nowait: bool = True,
+        timeout: Optional[Union[int, float]] = None,
+        exp: Union[Optional[int], UnsetType] = UNSET,
+    ) -> None:
+        self._key = key
+        self._nowait = nowait
+        self._timeout = timeout
+        self._exp = exp
+
+    @overload
+    def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncLockedProto[P, R]: ...
+
+    @overload
+    def __call__(self, _func: Callable[P, R]) -> SyncLockedProto[P, R]: ...
+
+    def __call__(  # type: ignore[misc]
+        self, _func: Union[Callable[P, Awaitable[R]], Callable[P, R]]
+    ) -> Union[AsyncLockedProto[P, R], SyncLockedProto[P, R]]:
+        signature = inspect.signature(_func)
+
+        if is_coroutine(_func):
+            _awaitable_func = _func
+
+            @wraps(_awaitable_func)
+            async def _async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                bound_args = signature.bind(*args, **kwargs)
+                _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
+
+                async with lock(
+                    key=_key,
+                    nowait=self._nowait,
+                    timeout=self._timeout,
+                    exp=self._exp,
+                ):
+                    return await _awaitable_func(*args, **kwargs)
+
+            setattr(_async_wrapper, 'is_locked', partial(is_alocked, signature=signature, key=self._key))
+
+            return cast(AsyncLockedProto[P, R], _async_wrapper)
+
+        else:
+
+            @wraps(_func)  # type: ignore[unreachable]
+            def _sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                bound_args = signature.bind(*args, **kwargs)
+                _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
+
+                with lock(key=_key, nowait=self._nowait, timeout=self._timeout, exp=self._exp):
+                    return _func(*args, **kwargs)
+
+            setattr(_sync_wrapper, 'is_locked', partial(is_locked, signature=signature, key=self._key))
+
+            return cast(SyncLockedProto[P, R], cast(object, _sync_wrapper))
+
+    @property
+    def _cachify(self) -> 'Cachify':
+        return get_cachify()
+
+    def _recreate_cm(self) -> 'Self':
+        return self
+
+    def _calc_stop_at(self) -> float:
+        return time.time() + self._timeout if self._timeout is not None else float('inf')
+
+    def _get_ttl(self) -> Optional[int]:
+        return self._cachify.default_expiration if isinstance(self._exp, UnsetType) else self._exp
+
+    @staticmethod
+    def _raise_if_cached(is_already_cached: bool, key: str, do_raise: bool = True) -> None:
+        if not is_already_cached:
+            return
+
+        logger.warning(msg := f'{key} is already locked!')
+        if do_raise:
+            raise CachifyLockError(msg)
+
+
+def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> SyncOrAsyncReset:
+    """
+    Decorator that ensures a function is only called once at a time,
+        based on a specified key (could be a format string).
+
+    Args:
+    key (str): The key used to identify the lock.
+    raise_on_locked (bool, optional): If True, raise an exception when the function is already locked.
+        Defaults to False.
+    return_on_locked (Any, optional): The value to return when the function is already locked.
+        Defaults to None.
+
+    Returns:
+    SyncOrAsyncReset: Either a synchronous or asynchronous wrapped function with reset method attached to it.
+    """
+
     @overload
     def _once_inner(  # type: ignore[overload-overlap]
         _func: Callable[P, Awaitable[R]],
-    ) -> AsyncWithResetProtocol[P, R]: ...
+    ) -> AsyncWithResetProto[P, R]: ...
 
     @overload
     def _once_inner(
         _func: Callable[P, R],
-    ) -> SyncWithResetProtocol[P, R]: ...
+    ) -> SyncWithResetProto[P, R]: ...
 
     def _once_inner(
         _func: Union[Callable[P, R], Callable[P, Awaitable[R]]],
-    ) -> Union[SyncWithResetProtocol[P, R], AsyncWithResetProtocol[P, R]]:
+    ) -> Union[SyncWithResetProto[P, R], AsyncWithResetProto[P, R]]:
         signature = inspect.signature(_func)
 
         if is_coroutine(_func):
@@ -76,7 +239,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
                 _key = get_full_key_from_signature(bound_args=bound_args, key=key)
 
                 try:
-                    async with async_lock(key=_key):
+                    async with lock(key=_key):
                         return await _awaitable_func(*args, **kwargs)
                 except CachifyLockError:
                     if raise_on_locked:
@@ -86,7 +249,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
             setattr(_async_wrapper, 'reset', partial(a_reset, signature=signature, key=key))
 
-            return cast(AsyncWithResetProtocol[P, R], _async_wrapper)
+            return cast(AsyncWithResetProto[P, R], _async_wrapper)
 
         else:
 
@@ -106,7 +269,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
             setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key))
 
-            return cast(SyncWithResetProtocol[P, R], _sync_wrapper)
+            return cast(SyncWithResetProto[P, R], _sync_wrapper)
 
     return _once_inner
 

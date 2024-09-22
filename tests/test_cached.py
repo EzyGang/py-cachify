@@ -7,7 +7,7 @@ from typing_extensions import assert_type
 
 from py_cachify import cached
 from py_cachify.backend.exceptions import CachifyInitError
-from py_cachify.backend.types import AsyncWithResetProtocol, P, R, SyncWithResetProtocol
+from py_cachify.backend.types import AsyncWithResetProto, P, R, SyncWithResetProto
 
 
 def sync_function(arg1: int, arg2: int) -> int:
@@ -75,7 +75,7 @@ def test_sync_cached_preserves_type_annotations(init_cachify_fixture):
     for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
         assert func.__annotations__[name] == clz
 
-    assert_type(func, SyncWithResetProtocol[P, R])
+    assert_type(func, SyncWithResetProto[P, R])
 
 
 def test_async_cached_preserves_type_annotations(init_cachify_fixture):
@@ -83,7 +83,7 @@ def test_async_cached_preserves_type_annotations(init_cachify_fixture):
     for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
         assert func.__annotations__[name] == clz
 
-    assert_type(func, AsyncWithResetProtocol[P, R])
+    assert_type(func, AsyncWithResetProto[P, R])
 
 
 def test_cached_wrapped_async_function_has_reset_callable_attached(init_cachify_fixture):

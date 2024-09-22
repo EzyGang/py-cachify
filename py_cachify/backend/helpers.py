@@ -53,3 +53,17 @@ async def a_reset(*args: Any, key: str, signature: inspect.Signature, **kwargs: 
     await cachify.a_delete(key=_key)
 
     return None
+
+
+async def is_alocked(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> bool:
+    cachify = get_cachify()
+    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+
+    return bool(await cachify.a_get(key=_key))
+
+
+def is_locked(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> bool:
+    cachify = get_cachify()
+    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+
+    return bool(cachify.get(key=_key))

@@ -3,7 +3,7 @@ import inspect
 import pytest
 from pytest_mock import MockerFixture
 
-from py_cachify.backend.helpers import a_reset, get_full_key_from_signature, reset
+from py_cachify.backend.helpers import a_reset, get_full_key_from_signature, is_alocked, is_locked, reset
 
 
 def method_with_args_kwargs_args(*args, **kwargs) -> None:
@@ -54,3 +54,26 @@ async def test_a_reset_calls_delete_with_key(init_cachify_fixture, args_kwargs_s
     await a_reset('val1', 'val2', arg3='val3', key='key_{}_{}_{arg3}', signature=args_kwargs_signature)
 
     mock.assert_called_once_with(key='key_val1_val2_val3')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('val', [0, 1])
+async def test_is_alocked_accesses_a_get_with_key(
+    init_cachify_fixture, args_kwargs_signature, mocker: MockerFixture, val
+):
+    mock = mocker.patch('py_cachify.backend.lib.Cachify.a_get', return_value=val)
+
+    res = await is_alocked('val1', 'val2', arg3='val3', key='key_{}_{}_{arg3}', signature=args_kwargs_signature)
+
+    mock.assert_called_once_with(key='key_val1_val2_val3')
+    assert res is bool(val)
+
+
+@pytest.mark.parametrize('val', [0, 1])
+def test_is_locked_accesses_get_with_key(init_cachify_fixture, args_kwargs_signature, mocker: MockerFixture, val):
+    mock = mocker.patch('py_cachify.backend.lib.Cachify.get', return_value=val)
+
+    res = is_locked('val1', 'val2', arg3='val3', key='key_{}_{}_{arg3}', signature=args_kwargs_signature)
+
+    mock.assert_called_once_with(key='key_val1_val2_val3')
+    assert res is bool(val)
