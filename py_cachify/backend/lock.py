@@ -274,14 +274,14 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
     return _once_inner
 
 
-@deprecated('sync_once is deprecated, use once instead. Scheduled for removal in 1.3.0')
+@deprecated('sync_once is deprecated, use once instead. Scheduled for removal in 3.0.0')
 def sync_once(
     key: str, raise_on_locked: bool = False, return_on_locked: Any = None
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     return once(key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked)
 
 
-@deprecated('async_once is deprecated, use once instead. Scheduled for removal in 1.3.0')
+@deprecated('async_once is deprecated, use once instead. Scheduled for removal in 3.0.0')
 def async_once(
     key: str, raise_on_locked: bool = False, return_on_locked: Any = None
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:

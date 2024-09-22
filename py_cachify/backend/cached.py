@@ -88,14 +88,14 @@ def cached(
     return _cached_inner
 
 
-@deprecated('sync_cached is deprecated, use cached instead. Scheduled for removal in 1.3.0')
+@deprecated('sync_cached is deprecated, use cached instead. Scheduled for removal in 3.0.0')
 def sync_cached(
     key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
 ) -> SyncOrAsyncReset:
     return cached(key=key, ttl=ttl, enc_dec=enc_dec)
 
 
-@deprecated('async_cached is deprecated, use cached instead. Scheduled for removal in 1.3.0')
+@deprecated('async_cached is deprecated, use cached instead. Scheduled for removal in 3.0.0')
 def async_cached(
     key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
 ) -> SyncOrAsyncReset:
