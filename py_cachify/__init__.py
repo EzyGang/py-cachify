@@ -10,6 +10,7 @@ from .backend.types import Decoder, Encoder
 
 __version__ = version('py-cachify')
 
+
 __all__ = [
     'CachifyInitError',
     'CachifyLockError',

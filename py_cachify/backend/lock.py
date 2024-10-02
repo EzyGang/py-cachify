@@ -37,6 +37,7 @@ class AsyncLockMethods(LockProtocolBase):
                 key=key,
                 do_raise=self._nowait or time.time() > stop_at,
                 do_log=bool(c >= 10),
+
             )
 
             if not _is_locked:
@@ -45,10 +46,9 @@ class AsyncLockMethods(LockProtocolBase):
 
             await asleep(0.1)
 
-            c += 1
-
     async def arelease(self) -> None:
         await self._cachify.a_delete(key=self._key)
+
 
     async def __aenter__(self) -> 'Self':
         await self._a_acquire(key=self._key)
@@ -58,6 +58,7 @@ class AsyncLockMethods(LockProtocolBase):
         await self.arelease()
 
 
+
 class SyncLockMethods(LockProtocolBase):
     def is_locked(self) -> bool:
         return bool(self._cachify.get(key=self._key))
@@ -65,6 +66,7 @@ class SyncLockMethods(LockProtocolBase):
     def _acquire(self, key: str) -> None:
         stop_at = self._calc_stop_at()
         c = 10
+
 
         while True:
             _is_locked = bool(self.is_locked())
@@ -133,6 +135,7 @@ class lock(AsyncLockMethods, SyncLockMethods):
 
     @overload
     def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncLockedProto[P, R]: ...  # type: ignore[overload-overlap]
+
 
     @overload
     def __call__(self, _func: Callable[P, R]) -> SyncLockedProto[P, R]: ...
