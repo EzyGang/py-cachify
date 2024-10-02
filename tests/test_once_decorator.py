@@ -7,7 +7,7 @@ from typing_extensions import assert_type
 
 from py_cachify import CachifyLockError, once
 from py_cachify.backend.lock import async_once, sync_once
-from py_cachify.backend.types import AsyncWithResetProtocol, P, R, SyncWithResetProtocol
+from py_cachify.backend.types import AsyncWithResetProto, P, R, SyncWithResetProto
 
 
 def test_once_decorator_sync_function(init_cachify_fixture):
@@ -105,23 +105,30 @@ def test_preserves_type_annotations(init_cachify_fixture):
         assert sync_function.__annotations__[name] == clz
         assert async_function.__annotations__[name] == clz
 
-    assert_type(sync_function, SyncWithResetProtocol[P, R])
-    assert_type(async_function, AsyncWithResetProtocol[P, R])
+    assert_type(sync_function, SyncWithResetProto[P, R])
+    assert_type(async_function, AsyncWithResetProto[P, R])
 
 
-def test_once_wrapped_async_function_has_reset_callable_attached(init_cachify_fixture):
+def test_once_wrapped_async_function_has_release_and_is_locked_callables_attached(init_cachify_fixture):
     @once(key='test')
     async def async_function(arg1: int, arg2: int) -> None:
         return None
 
-    assert hasattr(async_function, 'reset')
-    assert asyncio.iscoroutinefunction(async_function.reset)
+    assert hasattr(async_function, 'release')
+    assert asyncio.iscoroutinefunction(async_function.release)
+
+    assert hasattr(async_function, 'is_locked')
+    assert asyncio.iscoroutinefunction(async_function.is_locked)
 
 
-def test_once_wrapped_function_has_reset_callable_attached(init_cachify_fixture):
+def test_once_wrapped_function_has_release_and_is_locked_callables_attached(init_cachify_fixture):
     @once(key='test')
     def sync_function() -> None: ...
 
-    assert hasattr(sync_function, 'reset')
-    assert not asyncio.iscoroutinefunction(sync_function.reset)
-    assert callable(sync_function.reset)
+    assert hasattr(sync_function, 'release')
+    assert not asyncio.iscoroutinefunction(sync_function.release)
+    assert callable(sync_function.release)
+
+    assert hasattr(sync_function, 'is_locked')
+    assert not asyncio.iscoroutinefunction(sync_function.is_locked)
+    assert callable(sync_function.is_locked)

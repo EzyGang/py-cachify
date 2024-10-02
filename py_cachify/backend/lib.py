@@ -11,11 +11,13 @@ class Cachify:
         self,
         sync_client: Union[SyncClient, MemoryCache],
         async_client: Union[AsyncClient, AsyncWrapper],
+        default_expiration: Optional[int],
         prefix: str,
     ) -> None:
         self._sync_client = sync_client
         self._async_client = async_client
         self._prefix = prefix
+        self.default_expiration = default_expiration
 
     def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
         self._sync_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl)
@@ -42,10 +44,26 @@ _cachify: Optional[Cachify] = None
 def init_cachify(
     sync_client: SyncClient = (mc := MemoryCache()),
     async_client: AsyncClient = AsyncWrapper(cache=mc),
-    prefix: str = '_PYC_',
+    default_lock_expiration: Optional[int] = 30,
+    prefix: str = 'PYC-',
 ) -> None:
+    """
+    Initialize the Cachify instance with the specified clients and settings.
+
+    Args:
+    sync_client (Union[SyncClient, MemoryCache], optional): The synchronous client to use.
+        Defaults to MemoryCache().
+    async_client (Union[AsyncClient, AsyncWrapper], optional): The asynchronous client to use.
+        Defaults to AsyncWrapper(cache=MemoryCache()).
+    default_lock_expiration (Optional[int], optional): The default expiration time for locks.
+        Defaults to 30.
+    prefix (str, optional): The prefix to use for keys. Defaults to 'PYC-'.
+    """
+
     global _cachify
-    _cachify = Cachify(sync_client=sync_client, async_client=async_client, prefix=prefix)
+    _cachify = Cachify(
+        sync_client=sync_client, async_client=async_client, prefix=prefix, default_expiration=default_lock_expiration
+    )
 
 
 def get_cachify() -> Cachify:

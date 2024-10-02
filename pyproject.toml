@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py-cachify"
-version = "1.2.0"
+version = "2.0.0"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
@@ -8,7 +8,7 @@ description = "Distributed locks and caching/locking decorators at hand"
 authors = ["Galtozzy <galtozzy+git@gmail.com>"]
 readme = "README.md"
 include = ["README.md"]
-packages = [{include = 'py_cachify'}]
+packages = [{ include = 'py_cachify' }]
 
 [project]
 requires-python = ">=3.8,<4.0"
@@ -33,6 +33,8 @@ ruff = "^0.6.2"
 mkdocs = "^1.6.0"
 mkdocs-material = "^9.5.28"
 pygments = "^2.18.0"
+termynal = { version = "^0.12.1", python = ">=3.8.1,<4.0" }
+beautifulsoup4 = "^4.12.3"
 
 
 [tool.poetry.group.integration.dependencies]
@@ -41,8 +43,8 @@ redis = "^5.0.7"
 [tool.taskipy.tasks]
 format-and-lint = "task ruff && task mypy-lint"
 
-ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ && ruff check ./py_cachify/ ./tests/ ./integration_tests/ --fix --unsafe-fixes"
-tests = "PYTHONPATH=. pytest tests/ -v"
+ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ && ruff check ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ --fix --unsafe-fixes"
+tests = "PYTHONPATH=. pytest tests/ -vvv"
 integration-tests = "PYTHONPATH=. pytest integration_tests/ --no-cov"
 
 ruff-lint = "ruff check ./py_cachify"
@@ -66,12 +68,12 @@ select = [
     "I",  # isort
     "C",  # flake8-comprehensions
     "B",  # flake8-bugbear
-    "UP",  # pyupgrade
+    "UP", # pyupgrade
 ]
 ignore = [
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-    "B010",  # do not rewrite setattr()
+    "B008", # do not perform function calls in argument defaults
+    "C901", # too complex
+    "B010", # do not rewrite setattr()
 ]
 
 [tool.ruff.format]
@@ -87,7 +89,7 @@ max-complexity = 6
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
 lines-after-imports = 2
-known-first-party = ["py_cachify",]
+known-first-party = ["py_cachify"]
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
@@ -120,9 +122,7 @@ follow_imports_for_stubs = true
 show_error_codes = true
 plugins = []
 
-exclude = [
-    'test_',
-]
+exclude = ['test_']
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -147,9 +147,7 @@ asyncio_mode = "auto"
 python_files = "test*.py"
 # Directories that are not visited by pytest collector:
 norecursedirs = "*.egg .eggs dist build docs .tox .git __pycache__ config docker etc"
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 
 [tool.coverage.run]
 # Coverage configuration:
@@ -170,6 +168,7 @@ exclude_lines = [
     'raise NotImplementedError',
     'if __name__ == .__main__.:',
     '__all__',
+    'if TYPE_CHECKING:',
 ]
 
 [build-system]
