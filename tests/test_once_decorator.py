@@ -52,7 +52,7 @@ def test_once_decorator_raise_on_locked(init_cachify_fixture):
 @pytest.mark.asyncio
 async def test_async_once_decorator_raise_on_locked(init_cachify_fixture):
     @once(key='test_key-{arg1}-{arg2}', raise_on_locked=True)
-    async def async_function(arg1, arg2):
+    async def async_function(arg1: int, arg2: int) -> int:
         await asyncio.sleep(1)
         return arg1 + arg2
 

@@ -50,7 +50,7 @@ async def test_once_decorator_async_function():
 @pytest.mark.asyncio
 async def test_async_once_decorator_raise_on_locked(init_cachify_fixture):
     @once(key='async_test_key-{arg1}-{arg2}', raise_on_locked=True)
-    async def _async_function(arg1, arg2):
+    async def _async_function(arg1: int, arg2: int) -> int:
         await _async_function(arg1, arg2)
         return arg1 + arg2
 
