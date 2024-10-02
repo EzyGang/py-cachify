@@ -6,7 +6,7 @@ from mkdocs.config.defaults import MkDocsConfig
 from paginate import Page
 
 
-regex = re.compile(r'(///(.+)///)')
+regex = re.compile(r'(///([a-zA-Z_@\(\)]+)///)')
 
 
 @plugins.event_priority(-100)

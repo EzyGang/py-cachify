@@ -2,7 +2,7 @@
 
 ## How to
 
-Now it's type to see some ✨magic✨ happen.
+Now it's time to see some ✨magic✨ happen.
 
 You could've wondered:
 
@@ -11,9 +11,9 @@ Do I have to go all the way to my actual cache client and do the reset myself? H
 
 Don't worry py-cachify has got you covered.
 
-## Introducing /reset()/
+## Introducing ///reset()///
 
-Everytime you wrap something with the provided decorators that py-cachify has, there is a method being attached to the function you are wrapping.
+Every time you wrap something with the provided decorators that py-cachify has, there is a method attached to the function you are wrapping.
 
 Also, the method attached has the same type as the original function, so if it was async, the reset method will be async or the other way around for a sync function.
 
@@ -21,7 +21,7 @@ Also, the method attached has the same type as the original function, so if it w
 
 ## Changing our example
 
-Let's modify the code we ran previously in dynamic keys introduction:
+Let's modify the code we ran previously in the dynamic keys introduction:
 
 ```python
 import asyncio
@@ -86,4 +86,4 @@ The `reset()` function has the same signature as the original function, which is
 
 This concludes our tutorial for the `@cached()` decorator.
 
-Next we'll learn about the locks and a handy decorator that will help you incorporate locking logic without a headache.
+Next, we'll learn about the locks and a handy decorator that will help you incorporate locking logic without a headache.

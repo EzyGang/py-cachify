@@ -34,10 +34,10 @@
 
 ---
 
-py-cachify is a small library that provides useful cache-based utilities (caching, distributes locks) that are
+py-cachify is a small library that provides useful cache-based utilities (caching, distributed locks) that are
 enhanced versions of those provided by similar packages.
 
-py-cachify works well in both sync and async environments, has 100% test coverage, fully type annotated,
+py-cachify works well in both sync and async environments, has 100% test coverage, is fully type annotated,
 is backend agnostic (you can provide your own client as long as it matches the signature), and supports Python from 3.8 and upward.
 
 It offers distributed (cache-based) locks and decorators to lock function executions,
@@ -55,9 +55,9 @@ The key features are:
 ---
 
 ## Quick navigation
-To help you get started, see **[Initial setup](tutorial/initial-setup/install.md)** or start with full **[Tutorial](tutorial/index.md)**.
+To help you get started, take a look at the **[Initial Setup](tutorial/initial-setup/install.md)** or start with the full **[Tutorial](tutorial/index.md)**.
 
-For experienced deveopers - jump into detailed API reference **[here](reference/init.md)**.
+For experienced developers - jump into detailed API reference **[here](reference/init.md)**.
 
 Examples can be found **[here](examples.md)**.
 

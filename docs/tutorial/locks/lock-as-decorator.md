@@ -2,7 +2,7 @@
 
 ## Parameters and Methods
 
-You can also use `lock` that py-cachify has as a decorator.
+You can also use the `lock` that py-cachify has as a decorator.
 
 It accepts the same parameters as a normal `lock` and also automatically detects which function it is being applied to
 (sync or async) and uses the correct wrapper.
@@ -10,7 +10,7 @@ It accepts the same parameters as a normal `lock` and also automatically detects
 ## Differences with regular usage
 
 - The first difference (and advantage) is that when using `lock` as a decorator you can create **dynamic** cache keys (same as in `cached` decorator).
-- The second one is due to the fact that decorator \*knows\* what type of function it is being applied to there is no need to attach both `is_alocked` and `is_locked` to the wrapped function, so it only attaches `is_locked(*args, **kwargs)` that is going to be the same type as the function that was wrapped (i.e. sync or async)
+- The second one is since the decorator \*knows\* what type of function it is being applied to there is no need to attach both `is_alocked` and `is_locked` to the wrapped function, so it only attaches `is_locked(*args, **kwargs)` that is going to be the same type as the function that was wrapped (i.e. sync or async)
 
 ## Examples
 
@@ -77,10 +77,10 @@ sleep_for_lock-1 is already locked!
 Exception: sleep_for_lock-1 is already locked!
 ```
 
-Here we tried to showcase all the flexbility you have when wrapping functions with `lock`.
+Here we tried to showcase all the flexibility you have when wrapping functions with the `lock`.
 
 ## Conslusion
 
 This concludes our tutorial for the `lock` that py-cachify provides.
 
-The full API reference could be found here.
+The full API reference can be found here.

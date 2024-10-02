@@ -3,12 +3,12 @@
 ## Overview
 
 The `init_cachify` function initializes the `Cachify` library, setting up the necessary synchronous and asynchronous clients along with configuration options.
-This function must be called before utilizing caching or locking functionality provided by the library.
+This function must be called before utilizing the caching or locking functionality provided by the library.
 
 ## Function: ///init_cachify///
 
 ### Description
-`init_cachify` initializes the core `Cachify` instance with specified caching clients, expiration settings, and key prefixes. 
+`init_cachify` initializes the core `Cachify` instance with specified caching clients, expiration settings, and key prefixes.
 The function sets up the environment required for caching operations, ensuring they operate correctly across both synchronous and asynchronous contexts.
 
 ### Parameters
@@ -39,21 +39,21 @@ init_cachify(
 
 ### Custom Clients
 
-The py-cachify library supports Redis synchronous and asynchronous clients out of the box. 
-However, if you want to use other caching backends (such as Memcached, database-based, or file-based solutions), 
+The py-cachify library supports Redis synchronous and asynchronous clients out of the box.
+However, if you want to use other caching backends (such as Memcached, database-based, or file-based solutions),
 you can create custom clients by complying with the `SyncClient` and `AsyncClient` protocols.
 
 These custom implementations should match the following method signatures:
 
 - For **synchronous clients (SyncClient)**:
-  - `get(name: str) -> Optional[Any]`
-  - `set(name: str, value: Any, ex: Optional[int] = None) -> Any`
-  - `delete(*names: str) -> Any`
+    - `get(name: str) -> Optional[Any]`
+    - `set(name: str, value: Any, ex: Optional[int] = None) -> Any`
+    - `delete(*names: str) -> Any`
 
 - For **asynchronous clients (AsyncClient)**:
-  - `get(name: str) -> Awaitable[Optional[Any]]`
-  - `set(name: str, value: Any, ex: Optional[int] = None) -> Awaitable[Any]`
-  - `delete(*names: str) -> Awaitable[Any]`
+    - `get(name: str) -> Awaitable[Optional[Any]]`
+    - `set(name: str, value: Any, ex: Optional[int] = None) -> Awaitable[Any]`
+    - `delete(*names: str) -> Awaitable[Any]`
 
 By adhering to these protocols, you can integrate your custom backend while maintaining compatibility with the py-cachify caching mechanisms.
 
@@ -96,6 +96,6 @@ init_cachify(
 This flexibility allows you to utilize a caching backend of your choice while leveraging the `Cachify` library's capabilities effectively.
 
 ### Note
-- It is crucial to call `init_cachify` before performing any caching or locking operations. 
+- It is crucial to call `init_cachify` before performing any caching or locking operations.
 Failing to do so will result in a `CachifyInitError` when attempting to access caching features.
 - The `sync_client` and `async_client` parameters should comply with the `SyncClient` and `AsyncClient` protocols, respectively.

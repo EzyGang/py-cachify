@@ -44,7 +44,7 @@ this code is locked, but using async cache
 As you can see, we just had both of our prints printed out without any exceptions.
 
 Notice how we utilized both sync and async context managers from a single lock object,
-by doing this `py-cachify` allows you to use `lock` in any environment your application might work in (sync or async),
+by doing this `py-cachify` allows you to use the `lock` in any environment your application might work in (sync or async),
 without splitting those into for example `async_lock` and `sync_lock`.
 
 From now on we will do everything in async, but you can also follow the tutorial writing the same sync code :)
@@ -96,7 +96,7 @@ Traceback (most recent call last):
 py_cachify.backend.exceptions.CachifyLockError: cool-async-lock is already locked!
 ```
 
-And as expected, at the line where we are trying to acquire lock with the same name - we get an error that this key is already locked.
+And as expected, at the line where we are trying to acquire a lock with the same name - we get an error that this key is already locked.
 
 This was a showcase of the very basic piece of locks (or mutexes) and everything else everywhere is built on top of this basic concept.
 

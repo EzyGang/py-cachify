@@ -1,9 +1,9 @@
 # Lock - Lock Methods in Py-Cachify
 
-Parameters are not the only things that locks in py-cachify have.
+Parameters are not the only things that lock in py-cachify has.
 There are also a couple of handy methods.
 
-## ///is_locked()/// and //is_alocked()///
+## ///is_locked()/// and ///is_alocked()///
 
 The method `is_locked()` checks if the lock associated with the specified key is currently held.
 The method `is_alocked()` is the asynchronous counterpart of `is_locked()`. It checks if the lock is held, but it is designed to be used in an async context.
@@ -58,7 +58,7 @@ Acquire the same lock again
 
 As you can see we were checking if the lock has been released inside a `while` loop before reacquiring it.
 
-Remember that we are talking about distributed locks, that means that you could check if the lock is being held from another process or even another machine in a real app!
+Remember that we are talking about distributed locks, which means that you could check if the lock is being held from another process or even another machine in a real app!
 
 
 ## ///release()/// and ///arelease()///
@@ -117,8 +117,8 @@ This time we forcefully reset the lock instead of relying on our `while` loop to
 
 Understanding these methods allows for better management of locks within your applications. 
 Depending on your application’s architecture (sync vs. async), you'll choose between the synchronous or asynchronous methods to check lock status or release locks after use. 
-This ensures that resources are managed efficiently and concurrently executed code does not produce race conditions or inconsistent data.
+This ensures that resources are managed efficiently and that concurrently executed code does not produce race conditions or inconsistent data.
 
 ## What's next
 
-We'll see how can we use `lock` as a decorator and see the ✨magic✨ that py-cachify does.
+We'll see how can we use the `lock` as a decorator and see the ✨magic✨ that py-cachify does.

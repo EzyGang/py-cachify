@@ -46,7 +46,7 @@ what it allows py-cachify to do is dynamically craft a key for a function the de
 This way it will cache the result for each set of arguments instead of creating just one key.
 
 Note, that in this current example key `'sum_two-{}-{}'` will have the same effect.
-Providing a not named placeholders is supported to allow creating dynamic cache keys even for the functions that accept `*args, **kwargs` as its arguments.
+Providing a not named placeholders is supported to allow creating dynamic cache keys even for the functions that accept `*args, **kwargs` as their arguments.
 
 We have also modified our main function to showcase the introduced changes.
 

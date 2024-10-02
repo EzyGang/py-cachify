@@ -2,7 +2,7 @@
 
 ## Description
 
-First, to start working with the library, you will have to initialize it by using provided `init_cachify` function:
+First, to start working with the library, you will have to initialize it by using the provided `init_cachify` function:
 ```python
 from py_cachify import init_cachify
 
@@ -13,11 +13,9 @@ By default, it will use an **in-memory** cache.
 <details>
 <summary>⚠ In-memory cache details</summary>
 <p>
-The in-memory cache is not suitable to use in any sort of serious applications,
-since every python process will use it's own memory and caching/locking won't work as expected.
-
-So be carefull using it and make sure it is suitable for your particular use case,
-for example some simple script will probably be OK utilizing an in-memory cache, but a FastAPI app won't work as expected.
+The in-memory cache is not suitable to use in any sort of serious applications, since every python process will use its own memory, 
+and caching/locking won't work as expected. So be careful using it and make sure it is suitable for your particular use case, 
+for example, some simple script will probably be OK utilizing an in-memory cache, but a FastAPI app won't work as expected.
 </p>
 </details>
 
@@ -42,4 +40,4 @@ The clients are not the only thing that this function accepts, so make sure to c
 
 ## What's next
 
-Next we'll learn about the `@cached()` decorator and how to use it.
+Next, we'll learn about the `@cached()` decorator and how to use it.

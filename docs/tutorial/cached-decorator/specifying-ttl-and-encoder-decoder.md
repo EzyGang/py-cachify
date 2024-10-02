@@ -65,7 +65,7 @@ As you can see the cache has expired and allowed the function to be called again
 ## Encoders/Decoders
 
 `ttl` is not the only param that `@cached()` has available.
-There is also a `enc_dec` which accepts a tuple of `(Encoder, Decoder)`,
+There is also an `enc_dec` which accepts a tuple of `(Encoder, Decoder)`,
 those being the methods that are going to be applied to the function result on caching and retrieving the cache value.
 
 The required signature is `Callable[[Any], Any]`.
@@ -76,15 +76,16 @@ But keep in mind that results should be picklable, py-cachify uses pickle, befor
 <p>
 The main reason is sometimes you have to cache something, that is not picklable by default.
 
-Even though the cases are rare, we decided to support it since it doesn't hurt to have it when its needed :)
+Even though the cases are rare, we decided to support it since it doesn't hurt to have it when it's needed :)
 </p>
 </details>
 
 
 ## Introducing `enc_dec`
 
-Usually provided encoder and decoder are supposed to work in tandem and not change the output value at all (since encoder does something, and then decoder reverts it back).
-But for the sake of our demonstration we'll break that principle.
+Usually provided encoder and decoder are supposed to work in tandem and not change the output value at all
+(since the encoder does something, and then the decoder reverts it back). 
+But for the sake of our demonstration, we'll break that principle.
 
 We'll introduce the following functions:
 
@@ -102,7 +103,7 @@ def decoder(val: int) -> int:
 
 Now, as a result, the final output should be multiplied by 6.
 
-All we have to do now, is modify our `@cached()` decorator params to look like this:
+All we have to do now is modify our `@cached()` decorator params to look like this:
 
 ```python
 @cached(key='sum_two-{a}-{b}', enc_dec=(encoder, decoder))

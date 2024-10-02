@@ -11,8 +11,8 @@ being only run once at a time. This prevents data inconsistencies and race condi
 This tutorial will show you how to use locks provided by `py-cachify`, what params do they have,
 and showcase some common use case scenarios.
 
-Note: py-cachify's main focus is to provide convenient way to use distributed locks and in no way replace built-in ones. 
-This type of locks is usually utilized heavily in web development and in particular when scaling comes into play 
+Note: py-cachify's main focus is to provide a convenient way to use distributed locks and in no way replace built-in ones. 
+This type of lock is usually utilized heavily in web development in particular when scaling comes into play
 and the synchronization problems are starting to surface as well as race conditions.
 
 
