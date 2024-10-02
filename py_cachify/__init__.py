@@ -8,7 +8,10 @@ from .backend.lock import lock, once
 from .backend.types import Decoder, Encoder
 
 
-__version__ = version('py-cachify')
+try:
+    __version__ = version('py-cachify')
+except ModuleNotFoundError:
+    __version__ = f'No version available for {__name__}'
 
 
 __all__ = [
