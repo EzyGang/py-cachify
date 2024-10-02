@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.8", "3.9", "3.10", "3.11", "3.12",]
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -32,21 +32,26 @@ jobs:
           poetry install --no-root --no-interaction --no-ansi --without docs
       - name: Execute Tests
         run: poetry run task tests
-      - uses: actions/upload-artifact@v3
+      - name: Rename file
+        env:
+          VER: ${{ matrix.python }}
+        run: mv ./coverage.xml ./coverage-$VER.xml
+      - uses: actions/upload-artifact@v4
         with:
-          name: coverage.xml
-          path: coverage.xml
+          name: coverage-${{ matrix.python }}.xml
+          path: coverage-${{ matrix.python }}.xml
       - name: Coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v2.3.0
         with:
-          file: coverage.xml
+          coverage-reporter-version: v0.6.14
+          file: coverage-${{ matrix.python }}.xml
   lint:
     name: Code Lint
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.8", "3.9", "3.10", "3.11", "3.12",]
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -75,16 +80,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: actions/download-artifact@v3
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: actions/download-artifact@v4
         with:
-          name: coverage.xml
-      - name: fix code coverage paths
+          name: coverage-3.12.xml
+      - name: Rename file
+        run: mv ./coverage{-3.12,}.xml
+      - name: Fix code coverage paths
         run: |
           sed -i 's/\/home\/runner\/work\/py-cachify\/py-cachify\//\/github\/workspace\//g' /home/runner/work/py-cachify/py-cachify/coverage.xml
           cat /home/runner/work/py-cachify/py-cachify/coverage.xml
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
