@@ -7,7 +7,7 @@ It can be applied to both synchronous and asynchronous functions, facilitating l
 
 ---
 
-## Function: `once()`
+## Function: ///once()///
 
 ### Description
 The `once` decorator takes a key to manage function calls,

@@ -5,9 +5,8 @@ import pytest
 from pytest_mock import MockerFixture
 from typing_extensions import assert_type
 
-from py_cachify import cached
-from py_cachify.backend.exceptions import CachifyInitError
-from py_cachify.backend.types import AsyncWithResetProto, P, R, SyncWithResetProto
+from py_cachify import CachifyInitError, cached
+from py_cachify._backend.types import AsyncWithResetProto, P, R, SyncWithResetProto
 
 
 def sync_function(arg1: int, arg2: int) -> int:

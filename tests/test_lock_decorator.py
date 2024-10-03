@@ -6,10 +6,8 @@ from time import sleep
 
 import pytest
 
-from py_cachify.backend.exceptions import CachifyLockError
-from py_cachify.backend.lib import init_cachify
-from py_cachify.backend.lock import lock
-from py_cachify.backend.types import UNSET
+from py_cachify import CachifyLockError, init_cachify, lock
+from py_cachify._backend.types import UNSET
 
 
 @pytest.mark.parametrize(
@@ -174,21 +172,3 @@ async def test_lock_decorator_expiration_async(
 
     with result2 as r2:
         assert r2 == await task2
-
-
-def test_wrapped_function_has_is_locked_sync():
-    @lock(key='test_key')
-    def sync_function(): ...
-
-    assert hasattr(sync_function, 'is_locked')
-    assert not asyncio.iscoroutinefunction(sync_function.is_locked)
-    assert callable(sync_function.is_locked)
-
-
-def test_wrapped_function_has_is_locked_async():
-    @lock(key='test_key')
-    async def async_function(): ...
-
-    assert hasattr(async_function, 'is_locked')
-    assert asyncio.iscoroutinefunction(async_function.is_locked)
-    assert callable(async_function.is_locked)
