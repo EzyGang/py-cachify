@@ -4,10 +4,30 @@ version = "2.0.0"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
-description = "Distributed locks and caching/locking decorators at hand"
+description = "Distributed locks, caching, and locking decorators at hand"
 authors = ["Galtozzy <galtozzy+git@gmail.com>"]
 readme = "README.md"
 include = ["README.md"]
+classifiers = [
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development",
+    "Typing :: Typed",
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
 packages = [{ include = 'py_cachify' }]
 
 [project]
