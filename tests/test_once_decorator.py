@@ -52,7 +52,7 @@ def test_once_decorator_raise_on_locked(init_cachify_fixture):
 @pytest.mark.asyncio
 async def test_async_once_decorator_raise_on_locked(init_cachify_fixture):
     @once(key='test_key-{arg1}-{arg2}', raise_on_locked=True)
-    async def async_function(arg1, arg2):
+    async def async_function(arg1: int, arg2: int) -> int:
         await asyncio.sleep(1)
         return arg1 + arg2
 
@@ -109,19 +109,26 @@ def test_preserves_type_annotations(init_cachify_fixture):
     assert_type(async_function, AsyncWithResetProto[P, R])
 
 
-def test_once_wrapped_async_function_has_reset_callable_attached(init_cachify_fixture):
+def test_once_wrapped_async_function_has_release_and_is_locked_callables_attached(init_cachify_fixture):
     @once(key='test')
     async def async_function(arg1: int, arg2: int) -> None:
         return None
 
-    assert hasattr(async_function, 'reset')
-    assert asyncio.iscoroutinefunction(async_function.reset)
+    assert hasattr(async_function, 'release')
+    assert asyncio.iscoroutinefunction(async_function.release)
+
+    assert hasattr(async_function, 'is_locked')
+    assert asyncio.iscoroutinefunction(async_function.is_locked)
 
 
-def test_once_wrapped_function_has_reset_callable_attached(init_cachify_fixture):
+def test_once_wrapped_function_has_release_and_is_locked_callables_attached(init_cachify_fixture):
     @once(key='test')
     def sync_function() -> None: ...
 
-    assert hasattr(sync_function, 'reset')
-    assert not asyncio.iscoroutinefunction(sync_function.reset)
-    assert callable(sync_function.reset)
+    assert hasattr(sync_function, 'release')
+    assert not asyncio.iscoroutinefunction(sync_function.release)
+    assert callable(sync_function.release)
+
+    assert hasattr(sync_function, 'is_locked')
+    assert not asyncio.iscoroutinefunction(sync_function.is_locked)
+    assert callable(sync_function.is_locked)

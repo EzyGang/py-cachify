@@ -1,3 +1,5 @@
+from importlib.metadata import version
+
 from . import asyncio, sync
 from .backend.cached import cached
 from .backend.exceptions import CachifyInitError, CachifyLockError
@@ -6,7 +8,11 @@ from .backend.lock import lock, once
 from .backend.types import Decoder, Encoder
 
 
-__version__ = '2.0.0'
+try:
+    __version__ = version('py-cachify')
+except ModuleNotFoundError:
+    __version__ = f'No version available for {__name__}'
+
 
 __all__ = [
     'CachifyInitError',

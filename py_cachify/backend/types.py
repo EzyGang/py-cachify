@@ -41,11 +41,15 @@ class SyncLockedProto(Protocol[P, R]):
 
     def is_locked(self, *args: P.args, **kwargs: P.kwargs) -> bool: ...  # pragma: no cover
 
+    def release(self, *args: Any, **kwargs: Any) -> None: ...  # pragma: no cover
+
 
 class AsyncLockedProto(Protocol[P, R]):
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...  # pragma: no cover
 
-    def is_locked(self, *args: P.args, **kwargs: P.kwargs) -> bool: ...  # pragma: no cover
+    async def is_locked(self, *args: P.args, **kwargs: P.kwargs) -> bool: ...  # pragma: no cover
+
+    async def release(self, *args: Any, **kwargs: Any) -> None: ...  # pragma: no cover
 
 
 class AsyncWithResetProto(Protocol[P, R]):
@@ -72,6 +76,18 @@ class SyncOrAsyncReset(Protocol):
     ) -> Union[AsyncWithResetProto[P, R], SyncWithResetProto[P, R]]: ...
 
 
+class SyncOrAsyncRelease(Protocol):
+    @overload
+    def __call__(self, _func: Callable[P, Awaitable[R]]) -> AsyncLockedProto[P, R]: ...  # type: ignore[overload-overlap]
+
+    @overload
+    def __call__(self, _func: Callable[P, R]) -> SyncLockedProto[P, R]: ...
+
+    def __call__(
+        self, _func: Union[Callable[P, Awaitable[R]], Callable[P, R]]
+    ) -> Union[AsyncLockedProto[P, R], SyncLockedProto[P, R]]: ...
+
+
 class UnsetType:
     def __bool__(self) -> bool:
         return False
@@ -87,7 +103,9 @@ class LockProtocolBase(Protocol):
     _exp: Union[Optional[int], UnsetType]
 
     @staticmethod
-    def _raise_if_cached(is_already_cached: bool, key: str, do_raise: bool = True) -> None: ...  # pragma: no cover
+    def _raise_if_cached(
+        is_already_cached: bool, key: str, do_raise: bool = True, do_log: bool = True
+    ) -> None: ...  # pragma: no cover
 
     @property
     def _cachify(self) -> 'Cachify': ...  # pragma: no cover

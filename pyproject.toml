@@ -33,6 +33,8 @@ ruff = "^0.6.2"
 mkdocs = "^1.6.0"
 mkdocs-material = "^9.5.28"
 pygments = "^2.18.0"
+termynal = { version = "^0.12.1", python = ">=3.8.1,<4.0" }
+beautifulsoup4 = "^4.12.3"
 
 
 [tool.poetry.group.integration.dependencies]
@@ -41,7 +43,7 @@ redis = "^5.0.7"
 [tool.taskipy.tasks]
 format-and-lint = "task ruff && task mypy-lint"
 
-ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ && ruff check ./py_cachify/ ./tests/ ./integration_tests/ --fix --unsafe-fixes"
+ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ && ruff check ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ --fix --unsafe-fixes"
 tests = "PYTHONPATH=. pytest tests/ -vvv"
 integration-tests = "PYTHONPATH=. pytest integration_tests/ --no-cov"
 

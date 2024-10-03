@@ -25,7 +25,7 @@ def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) ->
 
 
 def is_coroutine(
-    func: Callable[P, Union[R, Awaitable[R]]],
+    func: Union[Callable[P, Awaitable[R]], Callable[P, R]],
 ) -> TypeIs[Callable[P, Awaitable[R]]]:
     return asyncio.iscoroutinefunction(func)
 

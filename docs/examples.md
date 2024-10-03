@@ -1,15 +1,16 @@
 # Examples
 
+Here's a small list of possible usage applications.
 
-## `async_lock` / `lock`
+Remember to make sure to call `init_cachify`
+
+## ///lock/// as context manager
 ```python
-
-from py_cachify.asyncio import async_lock
-from py_cachify.sync import lock
+from py_cachify import lock
 
 
 # Use it within an asynchronous context
-async with async_lock('resource_key'):
+async with lock('resource_key'):
     # Your critical section here
     print('Critical section code')
 
@@ -21,8 +22,18 @@ with lock('resource_key'):
 
 ```
 
+## ///lock/// as decorator
 
-## `once` decorator
+```python
+
+from py_cachify import lock
+
+@lock(key='critical_function_lock-{arg}', nowait=False, timeout=10)
+def critical_function(arg: int) -> None:
+    # critical code
+```
+
+## ///once/// decorator
 
 ```python
 from datetime import date
@@ -56,7 +67,7 @@ def one_more_long_running_function() -> None:
     pass
 ```
 
-## `cached` decorator
+## ///cached/// decorator
 ```python
 from py_cachify import cached
 
@@ -72,7 +83,7 @@ def async_expensive_function(arg_a: int, arg_b: int) -> int:
 
 ```
 
-## `cached` decorator with encoder/decoder
+## ///cached/// decorator with encoder/decoder
 ```python
 from py_cachify import cached
 

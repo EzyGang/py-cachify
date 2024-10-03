@@ -21,7 +21,8 @@ site_build
 venv
 docs.zip
 archive.zip
-
+.zed
+.zed/*
 # vim temporary files
 *~
 .*.sw?
@@ -322,4 +323,3 @@ Control.system-ca-bundle
 # Visual Studio Code #
 .vscode/
 .history
-
