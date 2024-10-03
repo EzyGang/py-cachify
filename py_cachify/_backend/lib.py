@@ -39,11 +39,13 @@ class Cachify:
 
 
 _cachify: Optional[Cachify] = None
+_mc = MemoryCache()
+_amc = AsyncWrapper(_mc)
 
 
 def init_cachify(
-    sync_client: SyncClient = (mc := MemoryCache()),
-    async_client: AsyncClient = AsyncWrapper(cache=mc),
+    sync_client: SyncClient = _mc,
+    async_client: AsyncClient = _amc,
     default_lock_expiration: Optional[int] = 30,
     prefix: str = 'PYC-',
 ) -> None:

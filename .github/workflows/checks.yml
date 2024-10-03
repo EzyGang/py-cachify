@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install --no-cache-dir "poetry==1.8.2"
+          pip install --no-cache-dir "poetry==1.8.3"
           poetry install --no-root --no-interaction --no-ansi --without docs
       - name: Execute Tests
         run: poetry run task tests
@@ -63,7 +63,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install --no-cache-dir "poetry==1.8.2"
+          pip install --no-cache-dir "poetry==1.8.3"
           poetry install --no-root --no-interaction --no-ansi --without docs
       - name: Run ruff
         run: poetry run task ruff-lint

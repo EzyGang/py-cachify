@@ -95,7 +95,7 @@ init_cachify(
 
 This flexibility allows you to utilize a caching backend of your choice while leveraging the `Cachify` library's capabilities effectively.
 
-### Note
+### Notes
 - It is crucial to call `init_cachify` before performing any caching or locking operations.
 Failing to do so will result in a `CachifyInitError` when attempting to access caching features.
 - The `sync_client` and `async_client` parameters should comply with the `SyncClient` and `AsyncClient` protocols, respectively.

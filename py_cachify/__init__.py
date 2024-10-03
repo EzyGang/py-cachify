@@ -1,14 +1,13 @@
-from importlib.metadata import version
-
-from . import asyncio, sync
-from .backend.cached import cached
-from .backend.exceptions import CachifyInitError, CachifyLockError
-from .backend.lib import init_cachify
-from .backend.lock import lock, once
-from .backend.types import Decoder, Encoder
+from ._backend.cached import async_cached, cached, sync_cached
+from ._backend.exceptions import CachifyInitError, CachifyLockError
+from ._backend.lib import init_cachify
+from ._backend.lock import async_once, lock, once, sync_once
+from ._backend.types import AsyncClient, Decoder, Encoder, SyncClient
 
 
 try:
+    from importlib.metadata import version
+
     __version__ = version('py-cachify')
 except ModuleNotFoundError:
     __version__ = f'No version available for {__name__}'
@@ -23,6 +22,11 @@ __all__ = [
     'Decoder',
     'cached',
     'once',
-    'sync',
-    'asyncio',
+    'AsyncClient',
+    'SyncClient',
+    # The following are deprecated (and are just aliases)
+    'async_once',
+    'sync_once',
+    'async_cached',
+    'sync_cached',
 ]

@@ -5,9 +5,8 @@ from time import sleep
 import pytest
 from typing_extensions import assert_type
 
-from py_cachify import CachifyLockError, once
-from py_cachify.backend.lock import async_once, sync_once
-from py_cachify.backend.types import AsyncWithResetProto, P, R, SyncWithResetProto
+from py_cachify import CachifyLockError, async_once, once, sync_once
+from py_cachify._backend.types import AsyncWithResetProto, P, R, SyncWithResetProto
 
 
 def test_once_decorator_sync_function(init_cachify_fixture):
