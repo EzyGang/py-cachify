@@ -7,7 +7,7 @@ from time import sleep
 import pytest
 
 from py_cachify import CachifyLockError, init_cachify, lock
-from py_cachify._backend.types import UNSET
+from py_cachify._backend._types._common import UNSET
 
 
 @pytest.mark.parametrize(
@@ -172,3 +172,69 @@ async def test_lock_decorator_expiration_async(
 
     with result2 as r2:
         assert r2 == await task2
+
+
+def test_lock_works_on_methods(init_cachify_fixture):
+    class TestClass:
+        t: str = 'test'
+
+        @lock(key='method-{self.t}')
+        def method(self, a: int, b: int) -> int:
+            return a + b
+
+        @staticmethod
+        @lock(key='method-static')
+        def method_static(a: int, b: int) -> int:
+            return a + b
+
+        @classmethod
+        @lock(key='method-class')
+        def method_class(cls, a: int, b: int) -> int:
+            return a + b
+
+    tc = TestClass()
+    assert tc.method(1, 2) == 3
+    assert tc.method.release(tc, 1, 2) is None
+    assert tc.method.is_locked(tc, 1, 2) is False
+    # Fix the type annotation to support
+    assert tc.method_static(1, 2) == 3
+    assert tc.method_static.release(1, 2) is None
+    assert tc.method_static.is_locked(1, 2) is False
+    # Fix the type annotation to support
+    assert tc.method_class(1, 2) == 3
+    assert tc.method_class.release(tc.__class__, 1, 2) is None
+    assert tc.method_class.is_locked(tc.__class__, 1, 2) is False
+
+
+@pytest.mark.asyncio
+async def test_cached_works_on_async_methods(init_cachify_fixture):
+    class TestClass:
+        t: str = 'test'
+
+        @lock(key='method-{self.t}')
+        async def method(self, a: int, b: int) -> int:
+            return a + b
+
+        @staticmethod
+        @lock(key='method-static')
+        async def method_static(a: int, b: int) -> int:
+            return a + b
+
+        @classmethod
+        @lock(key='method-class')
+        async def method_class(cls, a: int, b: int) -> int:
+            return a + b
+
+    tc = TestClass()
+
+    assert await tc.method(1, 2) == 3
+    assert await tc.method.release(tc, 1, 2) is None
+    assert await tc.method.is_locked(tc, 1, 2) is False
+    # Fix the type annotation to support
+    assert await tc.method_static(1, 2) == 3
+    assert await tc.method_static.release(1, 2) is None
+    assert await tc.method_static.is_locked(1, 2) is False
+    # Fix the type annotation to support
+    assert await tc.method_class(1, 2) == 3
+    assert await tc.method_class.release(tc.__class__, 1, 2) is None
+    assert await tc.method_class.is_locked(tc.__class__, 1, 2) is False

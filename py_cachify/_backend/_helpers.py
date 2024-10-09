@@ -4,12 +4,13 @@ from typing import Any, Awaitable, Callable, TypeVar, Union
 
 from typing_extensions import ParamSpec, TypeIs
 
-from .lib import get_cachify
-from .types import Decoder, Encoder
+from ._lib import get_cachify
+from ._types._common import Decoder, Encoder
 
 
-R = TypeVar('R', covariant=True)
-P = ParamSpec('P')
+_R = TypeVar('_R', covariant=True)
+_P = ParamSpec('_P')
+_S = TypeVar('_S')
 
 
 def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) -> str:
@@ -25,8 +26,8 @@ def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) ->
 
 
 def is_coroutine(
-    func: Union[Callable[P, Awaitable[R]], Callable[P, R]],
-) -> TypeIs[Callable[P, Awaitable[R]]]:
+    func: Union[Callable[_P, Awaitable[_R]], Callable[_P, _R]],
+) -> TypeIs[Callable[_P, Awaitable[_R]]]:
     return asyncio.iscoroutinefunction(func)
 
 

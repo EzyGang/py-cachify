@@ -1,8 +1,8 @@
-from ._backend.cached import async_cached, cached, sync_cached
-from ._backend.exceptions import CachifyInitError, CachifyLockError
-from ._backend.lib import init_cachify
-from ._backend.lock import async_once, lock, once, sync_once
-from ._backend.types import AsyncClient, Decoder, Encoder, SyncClient
+from ._backend._cached import async_cached, cached, sync_cached
+from ._backend._exceptions import CachifyInitError, CachifyLockError
+from ._backend._lib import init_cachify
+from ._backend._lock import async_once, lock, once, sync_once
+from ._backend._types._common import AsyncClient, Decoder, Encoder, SyncClient
 
 
 try:
