@@ -3,10 +3,9 @@ import sys
 
 import pytest
 from pytest_mock import MockerFixture
-from typing_extensions import assert_type
 
 from py_cachify import CachifyInitError, cached
-from py_cachify._backend.types import AsyncWithResetProto, P, R, SyncWithResetProto
+from py_cachify._backend._cached import async_cached, sync_cached
 
 
 def sync_function(arg1: int, arg2: int) -> int:
@@ -66,7 +65,7 @@ async def test_cached_decorator_with_encoder_and_decoder(init_cachify_fixture, m
 def test_cached_decorator_check_cachify_init():
     sync_function_wrapped = cached(key='test_key')(sync_function)
     with pytest.raises(CachifyInitError, match='Cachify is not initialized, did you forget to call `init_cachify`?'):
-        sync_function_wrapped(3, 4)
+        _ = sync_function_wrapped(3, 4)
 
 
 def test_sync_cached_preserves_type_annotations(init_cachify_fixture):
@@ -74,15 +73,11 @@ def test_sync_cached_preserves_type_annotations(init_cachify_fixture):
     for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
         assert func.__annotations__[name] == clz
 
-    assert_type(func, SyncWithResetProto[P, R])
-
 
 def test_async_cached_preserves_type_annotations(init_cachify_fixture):
     func = cached(key='test_key_{arg1}')(async_function)
     for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
         assert func.__annotations__[name] == clz
-
-    assert_type(func, AsyncWithResetProto[P, R])
 
 
 def test_cached_wrapped_async_function_has_reset_callable_attached(init_cachify_fixture):
@@ -98,3 +93,71 @@ def test_cached_wrapped_function_has_reset_callable_attached(init_cachify_fixtur
     assert hasattr(func, 'reset')
     assert not asyncio.iscoroutinefunction(func.reset)
     assert callable(func.reset)
+
+
+def test_cached_works_on_methods(init_cachify_fixture):
+    class TestClass:
+        t: str = 'test'
+
+        @cached(key='method-{self.t}')
+        def method(self, a: int, b: int) -> int:
+            return a + b
+
+        @staticmethod
+        @cached(key='method-static')
+        def method_static(a: int, b: int) -> int:
+            return a + b
+
+        @classmethod
+        @cached(key='method-class')
+        def method_class(cls, a: int, b: int) -> int:
+            return a + b
+
+    tc = TestClass()
+    assert tc.method(1, 2) == 3
+    assert tc.method.reset(tc, 1, 2) is None
+    # Fix the type annotation to support
+    assert tc.method_static(1, 2) == 3
+    assert tc.method_static.reset(1, 2) is None
+    # Fix the type annotation to support
+    assert tc.method_class(1, 2) == 3
+    assert tc.method_class.reset(tc.__class__, 1, 2) is None
+
+
+@pytest.mark.asyncio
+async def test_cached_works_on_async_methods(init_cachify_fixture):
+    class TestClass:
+        t: str = 'test'
+
+        @cached(key='method-{self.t}')
+        async def method(self, a: int, b: int) -> int:
+            return a + b
+
+        @staticmethod
+        @cached(key='method-static')
+        async def method_static(a: int, b: int) -> int:
+            return a + b
+
+        @classmethod
+        @cached(key='method-class')
+        async def method_class(cls, a: int, b: int) -> int:
+            return a + b
+
+    tc = TestClass()
+
+    assert await tc.method(1, 2) == 3
+    assert await tc.method.reset(tc, 1, 2) is None
+    # Fix the type annotation to support
+    assert await tc.method_static(1, 2) == 3
+    assert await tc.method_static.reset(1, 2) is None
+    # Fix the type annotation to support
+    assert await tc.method_class(1, 2) == 3
+    assert await tc.method_class.reset(tc.__class__, 1, 2) is None
+
+
+def test_async_cached_returns_cached():
+    assert async_cached(key='test').__qualname__.split('.')[-1] == '_cached_inner'
+
+
+def test_sync_cached_returns_cached():
+    assert sync_cached(key='test').__qualname__.split('.')[-1] == '_cached_inner'

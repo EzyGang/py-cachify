@@ -1,9 +1,9 @@
 import pickle
 from typing import Any, Optional, Union
 
-from .clients import AsyncWrapper, MemoryCache
-from .exceptions import CachifyInitError
-from .types import AsyncClient, SyncClient
+from ._clients import AsyncWrapper, MemoryCache
+from ._exceptions import CachifyInitError
+from ._types._common import AsyncClient, SyncClient
 
 
 class Cachify:
@@ -20,7 +20,7 @@ class Cachify:
         self.default_expiration = default_expiration
 
     def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
-        self._sync_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl)
+        _ = self._sync_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl)
 
     def get(self, key: str) -> Any:
         return (val := self._sync_client.get(name=f'{self._prefix}{key}')) and pickle.loads(val)
