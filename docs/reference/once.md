@@ -23,7 +23,7 @@ If the function is called while it is still locked, it can either raise an excep
 | `return_on_locked`  | `Any`, optional                 | The value to return when the function is already locked. Defaults to `None`.                                  |
 
 ### Returns
-- `SyncOrAsyncRelease`: A wrapped function (either synchronous or asynchronous) with additional methods attached for lock management, specifically:
+- `WrappedFunctionLock`: A wrapped function (either synchronous or asynchronous) with additional methods attached for lock management, specifically:
       - `is_locked(*args, **kwargs)`: Method to check if the function is currently locked.
       - `release(*args, **kwargs)`: Method to release the lock.
 
@@ -50,3 +50,19 @@ async def my_async_function():
 
 ### Note
 - If py-cachify is not initialized through `init_cachify`, a `CachifyInitError` will be raised.
+
+### Type Hints Remark (Decorator only application)
+
+Currently, Python's type hints have limitations in fully capturing a function's 
+original signature when transitioning to a protocol-based callable in a decorator, 
+particularly for methods (i.e., those that include `self`). 
+`ParamSpec` can effectively handle argument and keyword types for functions 
+but doesn't translate well to methods within protocols like `WrappedFunctionLock`. 
+I'm staying updated on this issue and recommend checking the following resources 
+for more insights into ongoing discussions and proposed solutions:
+
+- [Typeshed Pull Request #11662](https://github.com/python/typeshed/pull/11662)
+- [Mypy Pull Request #17123](https://github.com/python/mypy/pull/17123)
+- [Python Discussion on Allowing Self-Binding for Generic ParamSpec](https://discuss.python.org/t/allow-self-binding-for-generic-paramspec/50948)
+
+Once any developments occur, I will quickly update the source code to incorporate the changes.

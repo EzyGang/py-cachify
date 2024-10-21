@@ -5,19 +5,13 @@ from asyncio import sleep as asleep
 from functools import partial, wraps
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, TypeVar, Union, cast
 
-from typing_extensions import Concatenate, ParamSpec, Self, deprecated, overload, override
+from typing_extensions import ParamSpec, Self, deprecated, overload, override
 
 from ._exceptions import CachifyLockError
 from ._helpers import a_reset, get_full_key_from_signature, is_alocked, is_coroutine, is_locked, reset
 from ._lib import get_cachify
 from ._types._common import UNSET, LockProtocolBase, UnsetType
-from ._types._lock_wrap import (
-    AsyncLockWrappedF,
-    AsyncLockWrappedM,
-    SyncLockWrappedF,
-    SyncLockWrappedM,
-    WrappedFunctionLock,
-)
+from ._types._lock_wrap import AsyncLockWrappedF, SyncLockWrappedF, WrappedFunctionLock
 
 
 if TYPE_CHECKING:
@@ -138,40 +132,27 @@ class lock(AsyncLockMethods, SyncLockMethods):
         self._exp = exp
 
     @overload
-    def __call__(self, _func: Callable[Concatenate[_S, _P], Awaitable[_R]], /) -> AsyncLockWrappedM[_S, _P, _R]: ...  # type: ignore[overload-overlap]
-
-    @overload
     def __call__(self, _func: Callable[_P, Awaitable[_R]], /) -> AsyncLockWrappedF[_P, _R]: ...  # type: ignore[overload-overlap]
-
-    @overload
-    def __call__(self, _func: Callable[Concatenate[_S, _P], _R], /) -> SyncLockWrappedM[_S, _P, _R]: ...
 
     @overload
     def __call__(self, _func: Callable[_P, _R], /) -> SyncLockWrappedF[_P, _R]: ...
 
-    def __call__(  # type: ignore[misc]
+    def __call__(
         self,
         _func: Union[
-            Callable[Concatenate[_S, _P], Awaitable[_R]],
             Callable[_P, Awaitable[_R]],
-            Callable[Concatenate[_S, _P], _R],
             Callable[_P, _R],
         ],
     ) -> Union[
-        AsyncLockWrappedM[_S, _P, _R],
         AsyncLockWrappedF[_P, _R],
-        SyncLockWrappedM[_S, _P, _R],
         SyncLockWrappedF[_P, _R],
     ]:
         signature = inspect.signature(_func)
 
-        if is_coroutine(_func):  # type: ignore[arg-type]
-            _awaitable_func: Union[
-                Callable[Concatenate[_S, _P], Awaitable[_R]],
-                Callable[_P, Awaitable[_R]],
-            ] = _func
+        if is_coroutine(_func):
+            _awaitable_func = _func
 
-            @wraps(_awaitable_func)  # type: ignore[arg-type]
+            @wraps(_awaitable_func)
             async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
                 bound_args = signature.bind(*args, **kwargs)
                 _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
@@ -182,7 +163,7 @@ class lock(AsyncLockMethods, SyncLockMethods):
                     timeout=self._timeout,
                     exp=self._exp,
                 ):
-                    return await _awaitable_func(*args, **kwargs)  # type: ignore[arg-type]
+                    return await _awaitable_func(*args, **kwargs)
 
             setattr(_async_wrapper, 'is_locked', partial(is_alocked, signature=signature, key=self._key))
             setattr(_async_wrapper, 'release', partial(a_reset, signature=signature, key=self._key))

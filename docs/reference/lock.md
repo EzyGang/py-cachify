@@ -8,7 +8,8 @@ The main class, `lock`, combines both synchronous and asynchronous locking opera
 ## Class: ///lock///
 
 ### Description
-The `lock` class manages locks using a specified key, with options for waiting and expiration. It can be used in both synchronous and asynchronous contexts.
+The `lock` class manages locks using a specified key, with options for waiting and expiration. 
+It can be used in both synchronous and asynchronous contexts.
 
 ### Parameters
 
@@ -76,3 +77,19 @@ By using the `lock` class, you'll ensure that your function calls are properly s
 ### Note
 
 - If py-cachify is not initialized through `init_cachify`, a `CachifyInitError` will be raised.
+
+### Type Hints Remark (Decorator only application)
+
+Currently, Python's type hints have limitations in fully capturing a function's 
+original signature when transitioning to a protocol-based callable in a decorator, 
+particularly for methods (i.e., those that include `self`). 
+`ParamSpec` can effectively handle argument and keyword types for functions 
+but doesn't translate well to methods within protocols like `WrappedFunctionLock`. 
+I'm staying updated on this issue and recommend checking the following resources 
+for more insights into ongoing discussions and proposed solutions:
+
+- [Typeshed Pull Request #11662](https://github.com/python/typeshed/pull/11662)
+- [Mypy Pull Request #17123](https://github.com/python/mypy/pull/17123)
+- [Python Discussion on Allowing Self-Binding for Generic ParamSpec](https://discuss.python.org/t/allow-self-binding-for-generic-paramspec/50948)
+
+Once any developments occur, I will quickly update the source code to incorporate the changes.

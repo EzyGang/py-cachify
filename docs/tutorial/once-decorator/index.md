@@ -23,18 +23,18 @@ def check_in_progress_orders() -> None:
     [check_order.s(order_id=order.id).delay() for order in orders]
 
 
-# This is being spawn from the previous one
+# This is being spawned from the previous one
 @shared_task()
 def check_order(order_id: UUID) -> None
     # check the order progress, update state, save
 
 ```
 
-So in this scenario, we don't care about the results of each task, but we DO care that we are not running the second task for the same order_id twice
+So in this scenario, we don't care about the results of each task, but we DO care that we are not running the second task for the same `order_id` twice
 since it could break things.
 
 This is where `@once` could come in handy, it will make sure that only one task is being run at the same time,
-and all subsequent tasks on the same order_id will exit while at least one task is running.
+and all subsequent tasks on the same `order_id` will exit while at least one task is running.
 
 The full code will look like this:
 

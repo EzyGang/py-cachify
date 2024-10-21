@@ -21,10 +21,10 @@ the cached result is returned instead of re-executing the function. This is part
 |---------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `key`               | `str`                           | The key used to identify the cached result, which can utilize formatted strings to create dynamic keys. (i.e. `key='my_key-{func_arg}'`)       |
 | `ttl`               | `Union[int, None]`, optional    | Time-to-live for the cached result, in seconds. Defaults to `None`, which means the cache does not expire.   |
-| `enc_dec`           | `Union[Tuple[Encoder, Decoder], None]`, optional  | A tuple containing the encoding and decoding functions for the cached value. Defaults to `None`, meaning no encoding/decoding is applied. |
+| `enc_dec`           | `Union[Tuple[Encoder, Decoder], None]`, optional  | A tuple containing the encoding and decoding functions for the cached value. Defaults to `None`, which means that no encoding or decoding functions will be applied. |
 
 ### Returns
-- `SyncOrAsyncReset`: A wrapped function (either synchronous or asynchronous) with an additional `reset` method attached for cache management. 
+- `WrappedFunctionReset`: A wrapped function (either synchronous or asynchronous) with an additional `reset` method attached for cache management. 
 The `reset(*args, **kwargs)` method allows the user to manually reset the cache for the function using the same key.
 
 ### Method Behavior
@@ -69,3 +69,19 @@ await fetch_data.reset()
 
 - Ensure that both the serialization and deserialization functions defined in `enc_dec` are efficient to preserve optimal performance.
 - If py-cachify is not initialized through `init_cachify`, a `CachifyInitError` will be raised.
+
+### Type Hints Remark
+
+Currently, Python's type hints have limitations in fully capturing a function's 
+original signature when transitioning to a protocol-based callable in a decorator, 
+particularly for methods (i.e., those that include `self`). 
+`ParamSpec` can effectively handle argument and keyword types for functions 
+but doesn't translate well to methods within protocols like `WrappedFunctionReset`. 
+I'm staying updated on this issue and recommend checking the following resources 
+for more insights into ongoing discussions and proposed solutions:
+
+- [Typeshed Pull Request #11662](https://github.com/python/typeshed/pull/11662)
+- [Mypy Pull Request #17123](https://github.com/python/mypy/pull/17123)
+- [Python Discussion on Allowing Self-Binding for Generic ParamSpec](https://discuss.python.org/t/allow-self-binding-for-generic-paramspec/50948)
+
+Once any developments occur, I will quickly update the source code to incorporate the changes.

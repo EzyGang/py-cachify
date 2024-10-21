@@ -67,6 +67,7 @@ ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ 
 tests = "PYTHONPATH=. pytest tests/ -vvv"
 integration-tests = "PYTHONPATH=. pytest integration_tests/ --no-cov"
 
+docs-dev = "mkdocs serve"
 ruff-lint = "ruff check ./py_cachify"
 mypy-lint = "mypy --install-types --non-interactive ./py_cachify/"
 poetry-check = "poetry check"

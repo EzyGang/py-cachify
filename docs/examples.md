@@ -4,7 +4,7 @@ Here's a small list of possible usage applications.
 
 Remember to make sure to call `init_cachify`
 
-## ///lock/// as context manager
+## ///lock/// as a context manager
 ```python
 from py_cachify import lock
 
@@ -22,7 +22,7 @@ with lock('resource_key'):
 
 ```
 
-## ///lock/// as decorator
+## ///lock/// as a decorator
 
 ```python
 

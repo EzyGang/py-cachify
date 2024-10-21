@@ -93,8 +93,8 @@ nav:
   - Tutorial - User Guide:
       - tutorial/index.md
       - Initial setup:
-        - tutorial/initial-setup/install.md
-        - tutorial/initial-setup/initialization.md
+          - tutorial/initial-setup/install.md
+          - tutorial/initial-setup/initialization.md
       - Cached (///@cached()/// decorator):
           - tutorial/cached-decorator/first-steps.md
           - tutorial/cached-decorator/dynamic-cache-keys.md
@@ -108,12 +108,16 @@ nav:
           - tutorial/locks/lock-as-decorator.md
       - Once (///@once()/// decorator):
           - tutorial/once-decorator/index.md
-  - Reference:
+  - API Reference:
       - reference/init.md
       - reference/cached.md
       - reference/lock.md
       - reference/once.md
   - Examples: examples.md
+  - Contribution & Help:
+      - help/help.md
+      - help/contribution.md
+  - Release Notes: release-notes.md
 
 hooks:
   - docs/scripts/hooks.py

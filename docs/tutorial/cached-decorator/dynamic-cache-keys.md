@@ -1,6 +1,6 @@
 # Cached - Dynamic cache key arguments
 
-Continuing our previous example, we'll customize the key in the decorator.
+In this tutorial, we will continue from the previous example and customize the key in the decorator.
 
 The full code will look like this:
 

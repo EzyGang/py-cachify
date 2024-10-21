@@ -9,7 +9,7 @@ This function must be called before utilizing the caching or locking functionali
 
 ### Description
 `init_cachify` initializes the core `Cachify` instance with specified caching clients, expiration settings, and key prefixes.
-The function sets up the environment required for caching operations, ensuring they operate correctly across both synchronous and asynchronous contexts.
+The function sets up the environment required for caching operations, ensuring it operates correctly across both synchronous and asynchronous contexts.
 
 ### Parameters
 

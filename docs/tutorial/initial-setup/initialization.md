@@ -8,7 +8,7 @@ from py_cachify import init_cachify
 
 init_cachify()
 ```
-By default, it will use an **in-memory** cache.
+By default, the library uses an **in-memory** cache.
 
 <details>
 <summary>⚠ In-memory cache details</summary>
