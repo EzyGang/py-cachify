@@ -3,10 +3,10 @@ import time
 import pytest
 from pytest_mock import MockerFixture
 
-import py_cachify.backend.lib
-from py_cachify.backend.clients import AsyncWrapper, MemoryCache
-from py_cachify.backend.exceptions import CachifyInitError
-from py_cachify.backend.lib import Cachify, get_cachify
+import py_cachify._backend._lib
+from py_cachify import CachifyInitError
+from py_cachify._backend._clients import AsyncWrapper, MemoryCache
+from py_cachify._backend._lib import Cachify, get_cachify
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def async_wrapper(memory_cache):
 
 @pytest.fixture
 def cachify(memory_cache, async_wrapper):
-    return Cachify(sync_client=memory_cache, async_client=async_wrapper, prefix='_PYC_')
+    return Cachify(sync_client=memory_cache, default_expiration=30, async_client=async_wrapper, prefix='_PYC_')
 
 
 def test_memory_cache_set_and_get(memory_cache):
@@ -129,7 +129,7 @@ async def test_cachify_a_set(cachify):
 
 
 def test_init_cachify(init_cachify_fixture):
-    assert py_cachify.backend.lib._cachify is not None
+    assert py_cachify._backend._lib._cachify is not None
 
 
 def test_get_cachify_raises_error():

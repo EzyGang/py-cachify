@@ -1,25 +1,123 @@
-site_name: py-cachify's documentation
+site_name: Py-Cachify
+site_description: Py-Cachify. Cache and locks made easy. Fully type annotated. 100% coverage.
+repo_name: EzyGang/py-cachify
+repo_url: https://github.com/EzyGang/py-cachify
+
 theme:
   name: material
   palette:
-    scheme: slate
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: cyan
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: cyan
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
   icon:
     repo: fontawesome/brands/github
   features:
+    - content.code.annotate
     - content.code.copy
+    # - content.code.select
+    - content.footnote.tooltips
+    - content.tabs.link
+    - content.tooltips
+    - navigation.footer
+    - navigation.indexes
+    - navigation.path
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+
 markdown_extensions:
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences
-repo_url: https://github.com/EzyGang/py-cachify
+  # Python Markdown
+  abbr:
+  attr_list:
+  footnotes:
+  md_in_html:
+  tables:
+  toc:
+    permalink: true
+
+  # Python Markdown Extensions
+  pymdownx.betterem:
+    smart_enable: all
+  pymdownx.caret:
+  pymdownx.highlight:
+    line_spans: __span
+  pymdownx.inlinehilite:
+  pymdownx.keys:
+  pymdownx.mark:
+  pymdownx.superfences:
+    custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: !!python/name:pymdownx.superfences.fence_code_format
+  pymdownx.tilde:
+
+  # pymdownx blocks
+  pymdownx.blocks.admonition:
+    types:
+      - note
+      - attention
+      - caution
+      - danger
+      - error
+      - tip
+      - hint
+      - warning
+      # Custom types
+      - info
+  pymdownx.blocks.details:
+  pymdownx.blocks.tab:
+    alternate_style: True
+
+plugins:
+  # Material for MkDocs
+  - search
+  - termynal
 nav:
-  - Introduction: 'index.md'
-  - Installation and Setup: 'setup.md'
-  - Base lock: 'locks.md'
-  - 'once-decorator.md'
-  - 'cached-decorator.md'
-  - 'examples.md'
+  - Introduction: "index.md"
+  - Tutorial - User Guide:
+      - tutorial/index.md
+      - Initial setup:
+          - tutorial/initial-setup/install.md
+          - tutorial/initial-setup/initialization.md
+      - Cached (///@cached()/// decorator):
+          - tutorial/cached-decorator/first-steps.md
+          - tutorial/cached-decorator/dynamic-cache-keys.md
+          - tutorial/cached-decorator/specifying-ttl-and-encoder-decoder.md
+          - Cached - Manually resetting cache with ///reset()/// method: tutorial/cached-decorator/reset-attribute.md
+      - Lock (///lock()/// context manager and decorator):
+          - tutorial/locks/locks-intro.md
+          - tutorial/locks/simple-locks.md
+          - tutorial/locks/lock-parameters.md
+          - tutorial/locks/lock-methods.md
+          - tutorial/locks/lock-as-decorator.md
+      - Once (///@once()/// decorator):
+          - tutorial/once-decorator/index.md
+  - API Reference:
+      - reference/init.md
+      - reference/cached.md
+      - reference/lock.md
+      - reference/once.md
+  - Examples: examples.md
+  - Contribution & Help:
+      - help/help.md
+      - help/contribution.md
+  - Release Notes: release-notes.md
+
+hooks:
+  - docs/scripts/hooks.py
