@@ -62,7 +62,7 @@ You can reset the cache for either a synchronous or asynchronous function by cal
 compute_expensive_operation.reset()
 
 # Reset cache for an asynchronous function
-await fetch_data.reset()
+await fetch_data.reset(param='param-value')
 ```
 
 ### Notes

@@ -42,10 +42,19 @@ def my_function():
     # Critical section of code goes here
     return 'Function executed'
 
-@once('my_async_function_lock', return_on_locked='Function already running')
-async def my_async_function():
+@once('my_async_function_lock-{arg}', return_on_locked='Function already running')
+async def my_async_function(arg: str):
     # Critical section of async code goes here
     return 'Async function executed'
+```
+
+### Releasing the once lock or checking if it is locked
+
+```python
+
+await my_async_function.is_locked(arg='arg-value')
+
+await my_async_function.release(arg='arg-value')
 ```
 
 ### Note

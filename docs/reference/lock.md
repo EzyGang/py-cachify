@@ -55,8 +55,8 @@ It can be used in both synchronous and asynchronous contexts.
 ```python
 from py_cachify import lock
 
-@lock('my_lock_key', nowait=True)
-def my_function():
+@lock('my_lock_key-{arg}', nowait=True)
+def my_function(arg: str) -> None:
     # Critical section of code goes here
     pass
     
@@ -73,6 +73,12 @@ async with lock('my_async_lock_key'):
 
 By using the `lock` class, you'll ensure that your function calls are properly synchronized, preventing race conditions in shared resources.
 
+### Releasing the Lock or checking whether it's locked or not
+```python
+my_function.is_locked(arg='arg-value')  # returns bool
+
+my_function.release(arg='arg-value')  # forcefully releases the lock
+```
 
 ### Note
 

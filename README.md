@@ -112,6 +112,10 @@ async def sum_two(a: int, b: int) -> int:
     # Let's put print here to see what was the function called with
     print(f'Called with {a} {b}')
     return a + b
+    
+    
+# Reset the cache for the call with arguments a=1, b=2
+await sub_two.reset(a=1, b=2)
 ```
 
 Read more about `@cached` [here](https://py-cachify.readthedocs.io/latest/reference/cached/).
@@ -123,11 +127,18 @@ Locking through context manager:
 ```python
 from py_cachify import lock
 
+
+async_lock = lock('resource_key')
 # Use it within an asynchronous context
-async with lock('resource_key'):
+async with async_lock:
     # Your critical section here
     print('Critical section code')
 
+# Check if it's locked
+await async_lock.is_alocked()
+
+# Forcefully release
+await async_lock.arelease()
 
 # Use it within a synchronous context
 with lock('resource_key'):
@@ -142,8 +153,15 @@ Locking via decorator:
 from py_cachify import lock
 
 @lock(key='critical_function_lock-{arg}', nowait=False, timeout=10)
-def critical_function(arg: int) -> None:
+async def critical_function(arg: int) -> None:
     # critical code
+    
+
+# Check if it's locked for arg=5
+await critical_function.is_locked(arg=5)
+
+# Forcefully release for arg=5
+await critical_function.release(arg=5)
 ```
 
 Read more about `lock` [here](https://py-cachify.readthedocs.io/latest/reference/lock/).
