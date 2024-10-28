@@ -29,10 +29,10 @@ class SyncLockWrappedF(Protocol[_P, _R]):
 
 class WrappedFunctionLock(Protocol):
     @overload
-    def __call__(self, _func: Callable[_P, Awaitable[_R]], /) -> AsyncLockWrappedF[_P, _R]: ...  # type: ignore[overload-overlap]
+    def __call__(self, _func: Callable[_P, Awaitable[_R]]) -> AsyncLockWrappedF[_P, _R]: ...  # type: ignore[overload-overlap]
 
     @overload
-    def __call__(self, _func: Callable[_P, _R], /) -> SyncLockWrappedF[_P, _R]: ...
+    def __call__(self, _func: Callable[_P, _R]) -> SyncLockWrappedF[_P, _R]: ...
 
     def __call__(  # pragma: no cover
         self,

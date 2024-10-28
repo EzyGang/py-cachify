@@ -46,7 +46,7 @@ def cached(
     ) -> SyncResetWrappedF[_P, _R]: ...
 
     def _cached_inner(
-        _func: Union[Callable[_P, _R], Callable[_P, Awaitable[_R]]],
+        _func: Union[Callable[_P, Awaitable[_R]], Callable[_P, _R]],
     ) -> Union[AsyncResetWrappedF[_P, _R], SyncResetWrappedF[_P, _R]]:
         signature = inspect.signature(_func)
 
@@ -72,17 +72,18 @@ def cached(
 
             return cast(AsyncResetWrappedF[_P, _R], cast(object, _async_wrapper))
         else:
+            _sync_func = cast(Callable[_P, _R], _func)
 
-            @wraps(_func)  # type: ignore[unreachable]
+            @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 cachify = get_cachify()
                 _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
                 if val := cachify.get(key=_key):
                     return encode_decode_value(encoder_decoder=dec, val=val)
 
-                res = _func(*args, **kwargs)
+                res = _sync_func(*args, **kwargs)
                 cachify.set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
-                return cast(_R, res)
+                return res
 
             setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key))
 

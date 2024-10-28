@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py-cachify"
-version = "2.0.0"
+version = "2.0.1"
 homepage = "https://github.com/EzyGang/py-cachify"
 repository = "https://github.com/EzyGang/py-cachify"
 license = "MIT"
@@ -28,7 +28,10 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
 ]
-packages = [{ include = 'py_cachify' }]
+packages = [
+    { include = 'py_cachify' },
+    { include = 'py_cachify/py.typed'},
+]
 
 [project]
 requires-python = ">=3.8,<4.0"
@@ -44,7 +47,7 @@ pytest-cov = "^5.0.0"
 taskipy = "^1.13.0"
 mypy = "^1.11.1"
 coverage = "^7.6.1"
-pytest-asyncio = "^0.23.7"
+pytest-asyncio = "^0.24.0"
 pytest-socket = "^0.7.0"
 ruff = "^0.6.2"
 
@@ -118,30 +121,8 @@ keep-runtime-typing = true
 [tool.mypy]
 # Mypy configuration:
 # https://mypy.readthedocs.io/en/latest/config_file.html
-allow_redefinition = false
-check_untyped_defs = true
-disallow_untyped_decorators = true
-disallow_any_generics = false
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-ignore_errors = false
-ignore_missing_imports = false
-implicit_reexport = true
-local_partial_types = true
-strict_optional = true
-strict_equality = true
-no_implicit_optional = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-warn_unused_configs = true
-warn_unreachable = true
-warn_no_return = false
+strict = true
 pretty = true
-follow_imports = "silent"
-follow_imports_for_stubs = true
-show_error_codes = true
-plugins = []
 
 exclude = ['test_']
 
