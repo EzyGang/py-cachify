@@ -44,7 +44,7 @@ pytest-cov = "^5.0.0"
 taskipy = "^1.13.0"
 mypy = "^1.11.1"
 coverage = "^7.6.1"
-pytest-asyncio = "^0.23.7"
+pytest-asyncio = ">=0.23.7,<0.25.0"
 pytest-socket = "^0.7.0"
 ruff = "^0.6.2"
 
