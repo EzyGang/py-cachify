@@ -132,10 +132,10 @@ class lock(AsyncLockMethods, SyncLockMethods):
         self._exp = exp
 
     @overload
-    def __call__(self, _func: Callable[_P, Awaitable[_R]], /) -> AsyncLockWrappedF[_P, _R]: ...  # type: ignore[overload-overlap]
+    def __call__(self, _func: Callable[_P, Awaitable[_R]]) -> AsyncLockWrappedF[_P, _R]: ...  # type: ignore[overload-overlap]
 
     @overload
-    def __call__(self, _func: Callable[_P, _R], /) -> SyncLockWrappedF[_P, _R]: ...
+    def __call__(self, _func: Callable[_P, _R]) -> SyncLockWrappedF[_P, _R]: ...
 
     def __call__(
         self,
@@ -153,7 +153,7 @@ class lock(AsyncLockMethods, SyncLockMethods):
             _awaitable_func = _func
 
             @wraps(_awaitable_func)
-            async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
+            async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 bound_args = signature.bind(*args, **kwargs)
                 _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
 
@@ -170,14 +170,15 @@ class lock(AsyncLockMethods, SyncLockMethods):
 
             return cast(AsyncLockWrappedF[_P, _R], cast(object, _async_wrapper))
         else:
+            _sync_func = cast(Callable[_P, _R], _func)
 
-            @wraps(_func)  # type: ignore[unreachable]
-            def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
+            @wraps(_sync_func)
+            def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 bound_args = signature.bind(*args, **kwargs)
                 _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
 
                 with lock(key=_key, nowait=self._nowait, timeout=self._timeout, exp=self._exp):
-                    return _func(*args, **kwargs)
+                    return _sync_func(*args, **kwargs)
 
             setattr(_sync_wrapper, 'is_locked', partial(is_locked, signature=signature, key=self._key))
             setattr(_sync_wrapper, 'release', partial(reset, signature=signature, key=self._key))
@@ -244,14 +245,14 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
     def _once_inner(
         _func: Union[Callable[_P, _R], Callable[_P, Awaitable[_R]]],
-    ) -> Union[SyncLockWrappedF[_P, _R], AsyncLockWrappedF[_P, _R]]:
+    ) -> Union[AsyncLockWrappedF[_P, _R], SyncLockWrappedF[_P, _R]]:
         signature = inspect.signature(_func)
 
         if is_coroutine(_func):
             _awaitable_func = _func
 
             @wraps(_awaitable_func)
-            async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
+            async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 bound_args = signature.bind(*args, **kwargs)
                 _key = get_full_key_from_signature(bound_args=bound_args, key=key)
 
@@ -262,7 +263,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
                     if raise_on_locked:
                         raise
 
-                    return return_on_locked
+                    return return_on_locked  # type: ignore[no-any-return]
 
             setattr(_async_wrapper, 'release', partial(a_reset, signature=signature, key=key))
             setattr(_async_wrapper, 'is_locked', partial(is_alocked, signature=signature, key=key))
@@ -270,15 +271,16 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
             return cast(AsyncLockWrappedF[_P, _R], cast(object, _async_wrapper))
 
         else:
+            _sync_func = cast(Callable[_P, _R], _func)
 
-            @wraps(_func)  # type: ignore[unreachable]
-            def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
+            @wraps(_sync_func)
+            def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 bound_args = signature.bind(*args, **kwargs)
                 _key = get_full_key_from_signature(bound_args=bound_args, key=key)
 
                 try:
                     with lock(key=_key):
-                        return _func(*args, **kwargs)
+                        return _sync_func(*args, **kwargs)
                 except CachifyLockError:
                     if raise_on_locked:
                         raise
