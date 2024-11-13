@@ -1,6 +1,6 @@
 <p align="center">
 <a href="https://py-cachify.readthedocs.io/latest/" target="_blank">
-    <img src="../img/project-header.png" alt="header">
+    <img src="./img/project-header.png" alt="header">
 </a>
 <a href="https://opensource.org/licenses/MIT" target="_blank">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
@@ -45,19 +45,19 @@ Whether you're building synchronous or asynchronous applications, Py-Cachify has
 - **Flexible Caching**: Effortlessly cache your function results, dramatically reducing execution time for expensive computations and I/O-bound tasks.
 Utilize customizable keys and time-to-live (TTL) parameters.
 
-- **Distributed Locks**: Ensure safe concurrent operation of functions with distributed locks. 
+- **Distributed Locks**: Ensure safe concurrent operation of functions with distributed locks.
 Prevent race conditions and manage shared resources effectively across both sync and async contexts.
 
-- **Backend Agnostic**: Easily integrate with different cache backends. 
+- **Backend Agnostic**: Easily integrate with different cache backends.
 Choose between in-memory, Redis, or any custom backend that adheres to the provided client interfaces.
 
-- **Decorators for Ease**: Use intuitive decorators like `@cached()` and `@lock()` to wrap your functions, 
+- **Decorators for Ease**: Use intuitive decorators like `@cached()` and `@lock()` to wrap your functions,
 maintain clean code, and benefit from automatic cache management.
 
-- **Type Safety & Documentation**: Fully type-annotated for enhanced IDE support and readability, 
+- **Type Safety & Documentation**: Fully type-annotated for enhanced IDE support and readability,
 featuring comprehensive documentation and examples to guide you through various use cases.
 
-- **Production Ready**: With 100% test coverage and usage in multiple commercial projects, 
+- **Production Ready**: With 100% test coverage and usage in multiple commercial projects,
 Py-Cachify is trusted for production environments, ensuring reliability and stability for your applications.
 
 ---
@@ -128,8 +128,8 @@ async def sum_two(a: int, b: int) -> int:
     # Let's put print here to see what was the function called with
     print(f'Called with {a} {b}')
     return a + b
-    
-    
+
+
 # Reset the cache for the call with arguments a=1, b=2
 await sub_two.reset(a=1, b=2)
 ```
@@ -171,7 +171,7 @@ from py_cachify import lock
 @lock(key='critical_function_lock-{arg}', nowait=False, timeout=10)
 async def critical_function(arg: int) -> None:
     # critical code
-    
+
 
 # Check if it's locked for arg=5
 await critical_function.is_locked(arg=5)
