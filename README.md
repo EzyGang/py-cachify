@@ -34,23 +34,27 @@
 
 ---
 
-py-cachify is a small library that provides useful cache-based utilities (caching, distributed locks) that are
-enhanced versions of those provided by similar packages.
+**Py-Cachify** is a robust library tailored for developers looking to enhance their Python applications with elegant caching and locking mechanisms.
+Whether you're building synchronous or asynchronous applications, Py-Cachify has you covered!
 
-py-cachify works well in both sync and async environments, has 100% test coverage, is fully type annotated,
-is backend agnostic (you can provide your own client as long as it matches the signature), and supports Python from 3.8 and upward.
+## Key Features:
+- **Flexible Caching**: Effortlessly cache your function results, dramatically reducing execution time for expensive computations and I/O-bound tasks.
+Utilize customizable keys and time-to-live (TTL) parameters.
 
-It offers distributed (cache-based) locks and decorators to lock function executions,
-and also caching utilities and decorators for storing results in the cache.
+- **Distributed Locks**: Ensure safe concurrent operation of functions with distributed locks. 
+Prevent race conditions and manage shared resources effectively across both sync and async contexts.
 
-The key features are:
+- **Backend Agnostic**: Easily integrate with different cache backends. 
+Choose between in-memory, Redis, or any custom backend that adheres to the provided client interfaces.
 
-* **Intuitive to write**: Great editor support. When applying decorators your IDE will still be able to autocomplete and highlight inline errors for applied functions.
-* **Fully type annotated**: You don't have to constantly look into the docs. Everything is type annotated and easy to understand out of the box.
-* **Short**: Minimize code duplication. Add just one line of code to implement a cache or lock on your function.
-* **Start simple**: The simplest example adds only a couple of lines of code: initialize a library and use the needed utility.
-* **Backend agnostic**: Use whatever cache-backend you want to use. Py-Cachify is not forcing you into anything.
-* **Test coverage**: Has 100% test coverage and supports Python 3.8+
+- **Decorators for Ease**: Use intuitive decorators like `@cached()` and `@lock()` to wrap your functions, 
+maintain clean code, and benefit from automatic cache management.
+
+- **Type Safety & Documentation**: Fully type-annotated for enhanced IDE support and readability, 
+featuring comprehensive documentation and examples to guide you through various use cases.
+
+- **Production Ready**: With 100% test coverage and usage in multiple commercial projects, 
+Py-Cachify is trusted for production environments, ensuring reliability and stability for your applications.
 
 ---
 
