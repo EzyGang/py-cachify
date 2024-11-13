@@ -1,6 +1,6 @@
 <p align="center">
 <a href="https://py-cachify.readthedocs.io/latest/" target="_blank">
-    <img src="../img/project-header.png" alt="header">
+    <img src="https://i.imgur.com/kObXEhW.png" alt="header">
 </a>
 <a href="https://opensource.org/licenses/MIT" target="_blank">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
