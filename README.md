@@ -11,6 +11,9 @@
 <a href="https://pypi.org/project/py-cachify/" target="_blank">
     <img src="https://img.shields.io/pypi/pyversions/py-cachify.svg?color=%2334D058" alt="supported versions">
 </a>
+<a href="https://coveralls.io/github/EzyGang/py-cachify?branch=main" target="_blank">
+    <img src="https://coveralls.io/repos/github/EzyGang/py-cachify/badge.png?branch=main" alt="Coverage Status">
+</a>
 </p>
 <p align="center">
 <a href="https://github.com/EzyGang/py-cachify/actions/workflows/checks.yml/badge.svg" target="_blank">
@@ -21,9 +24,6 @@
 </a>
 <a href="https://py-cachify.readthedocs.io/en/latest/?badge=latest" target="_blank">
     <img src="https://readthedocs.org/projects/py-cachify/badge/?version=latest" alt="Documentation Status">
-</a>
-<a href="https://coveralls.io/github/EzyGang/py-cachify?branch=main" target="_blank">
-    <img src="https://coveralls.io/repos/github/EzyGang/py-cachify/badge.png?branch=main" alt="Coverage Status">
 </a>
 <a href="https://sonarcloud.io/summary/new_code?id=EzyGang_py-cachify" target="_blank">
     <img src="https://sonarcloud.io/api/project_badges/measure?project=EzyGang_py-cachify&metric=reliability_rating" alt="Reliability Rating">
