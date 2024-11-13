@@ -5,6 +5,8 @@ repo_url: https://github.com/EzyGang/py-cachify
 
 theme:
   name: material
+  logo: img/logo-icon.svg
+  favicon: img/logo.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -66,7 +68,7 @@ markdown_extensions:
         class: mermaid
         format: !!python/name:pymdownx.superfences.fence_code_format
   pymdownx.tilde:
-
+  pymdownx.blocks.caption:
   # pymdownx blocks
   pymdownx.blocks.admonition:
     types:
