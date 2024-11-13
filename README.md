@@ -8,8 +8,8 @@
 <a href="https://badge.fury.io/py/py-cachify" target="_blank">
     <img src="https://badge.fury.io/py/py-cachify.svg" alt="PyPI version">
 </a>
-<a href="https://py-cachify.readthedocs.io/en/latest/?badge=latest" target="_blank">
-    <img src="https://readthedocs.org/projects/py-cachify/badge/?version=latest" alt="Documentation Status">
+<a href="https://pypi.org/project/py-cachify/" target="_blank">
+    <img src="https://img.shields.io/pypi/pyversions/py-cachify.svg?color=%2334D058" alt="supported versions">
 </a>
 </p>
 <p align="center">
@@ -18,6 +18,9 @@
 </a>
 <a href="https://github.com/EzyGang/py-cachify/actions/workflows/integration-tests.yml/badge.svg" target="_blank">
     <img src="https://github.com/EzyGang/py-cachify/actions/workflows/integration-tests.yml/badge.svg" alt="Tests Status">
+</a>
+<a href="https://py-cachify.readthedocs.io/en/latest/?badge=latest" target="_blank">
+    <img src="https://readthedocs.org/projects/py-cachify/badge/?version=latest" alt="Documentation Status">
 </a>
 <a href="https://coveralls.io/github/EzyGang/py-cachify?branch=main" target="_blank">
     <img src="https://coveralls.io/repos/github/EzyGang/py-cachify/badge.png?branch=main" alt="Coverage Status">
