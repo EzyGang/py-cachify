@@ -68,7 +68,7 @@ markdown_extensions:
         class: mermaid
         format: !!python/name:pymdownx.superfences.fence_code_format
   pymdownx.tilde:
-  pymdownx.blocks.caption:
+
   # pymdownx blocks
   pymdownx.blocks.admonition:
     types:
