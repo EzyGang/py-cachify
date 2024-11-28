@@ -36,6 +36,8 @@
 
 **Source Code**: <a href="https://github.com/EzyGang/py-cachify" target="_blank">https://github.com/EzyGang/py-cachify</a>
 
+**FastAPI Integration Guide**: <a href="https://medium.com/@galtozzy/maximize-your-fastapi-efficiency-with-py-cachify-b2bc0f51c976" target="_blank">Medium</a>
+
 ---
 
 **Py-Cachify** is a robust library tailored for developers looking to enhance their Python applications with elegant caching and locking mechanisms.
