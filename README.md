@@ -9,6 +9,9 @@
     <img src="https://badge.fury.io/py/py-cachify.svg" alt="PyPI version">
 </a>
 <a href="https://pypi.org/project/py-cachify/" target="_blank">
+    <img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/py-cachify">
+</a>
+<a href="https://pypi.org/project/py-cachify/" target="_blank">
     <img src="https://img.shields.io/pypi/pyversions/py-cachify.svg?color=%2334D058" alt="supported versions">
 </a>
 <a href="https://coveralls.io/github/EzyGang/py-cachify?branch=main" target="_blank">
@@ -35,6 +38,8 @@
 **Documentation**: <a href="https://py-cachify.readthedocs.io/latest/" target="_blank">https://py-cachify.readthedocs.io/latest/</a>
 
 **Source Code**: <a href="https://github.com/EzyGang/py-cachify" target="_blank">https://github.com/EzyGang/py-cachify</a>
+
+**FastAPI Integration Guide**: <a href="https://medium.com/@galtozzy/maximize-your-fastapi-efficiency-with-py-cachify-b2bc0f51c976" target="_blank">Medium</a>
 
 ---
 
