@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -83,9 +83,9 @@ jobs:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
       - uses: actions/download-artifact@v4
         with:
-          name: coverage-3.12.xml
+          name: coverage-3.13.xml
       - name: Rename file
-        run: mv ./coverage{-3.12,}.xml
+        run: mv ./coverage{-3.13,}.xml
       - name: Fix code coverage paths
         run: |
           sed -i 's/\/home\/runner\/work\/py-cachify\/py-cachify\//\/github\/workspace\//g' /home/runner/work/py-cachify/py-cachify/coverage.xml
