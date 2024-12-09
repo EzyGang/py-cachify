@@ -11,7 +11,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.13'
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install Dependencies
@@ -21,12 +21,12 @@ jobs:
       - name: build
         run: poetry build
       - name: Publish to PyPi
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@latest
         with:
           verbose: true
           print-hash: true
       - name: Sign published artifacts
-        uses: sigstore/gh-action-sigstore-python@v2.1.0
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
           release-signing-artifacts: true
