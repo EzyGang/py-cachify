@@ -265,6 +265,6 @@ async def test_async_lock_decorator_cleans_up_on_error(init_cachify_fixture):
         await async_function(123)
     except Exception:
         cachify = get_cachify()
-        val = await cachify.get('PYC-test_key-123')
+        val = await cachify.a_get('PYC-test_key-123')
 
         assert val is None
