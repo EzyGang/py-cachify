@@ -7,6 +7,7 @@ from time import sleep
 import pytest
 
 from py_cachify import CachifyLockError, init_cachify, lock
+from py_cachify._backend._lib import get_cachify
 from py_cachify._backend._types._common import UNSET
 
 
@@ -238,3 +239,32 @@ async def test_cached_works_on_async_methods(init_cachify_fixture):
     assert await tc.method_class(1, 2) == 3
     assert await tc.method_class.release(tc.__class__, 1, 2) is None
     assert await tc.method_class.is_locked(tc.__class__, 1, 2) is False
+
+
+def test_lock_decorator_cleans_up_on_error(init_cachify_fixture):
+    @lock(key='test_key-{arg}', nowait=False, timeout=15, exp=30)
+    def sync_function(arg: int) -> int:
+        raise RuntimeError()
+
+    try:
+        sync_function(123)
+    except Exception:
+        cachify = get_cachify()
+        val = cachify.get('PYC-test_key-123')
+
+        assert val is None
+
+
+@pytest.mark.asyncio
+async def test_async_lock_decorator_cleans_up_on_error(init_cachify_fixture):
+    @lock(key='test_key-{arg}', nowait=False, timeout=15, exp=30)
+    async def async_function(arg: int) -> int:
+        raise RuntimeError()
+
+    try:
+        await async_function(123)
+    except Exception:
+        cachify = get_cachify()
+        val = await cachify.a_get('PYC-test_key-123')
+
+        assert val is None
