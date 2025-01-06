@@ -39,7 +39,7 @@
 
 **Source Code**: <a href="https://github.com/EzyGang/py-cachify" target="_blank">https://github.com/EzyGang/py-cachify</a>
 
-**FastAPI Integration Guide**: <a href="https://medium.com/@galtozzy/maximize-your-fastapi-efficiency-with-py-cachify-b2bc0f51c976" target="_blank">Medium</a>
+**FastAPI Integration Guide**: <a href="https://github.com/EzyGang/py-cachify-fastapi-demo" target="_blank">Repo</a>
 
 ---
 
