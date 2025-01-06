@@ -242,31 +242,29 @@ async def test_cached_works_on_async_methods(init_cachify_fixture):
 
 
 def test_lock_decorator_cleans_up_on_error(init_cachify_fixture):
-    
     @lock(key='test_key-{arg}', nowait=False, timeout=15, exp=30)
     def sync_function(arg: int) -> int:
         raise RuntimeError()
-        
+
     try:
         sync_function(123)
     except Exception:
         cachify = get_cachify()
         val = cachify.get('PYC-test_key-123')
-        
+
         assert val is None
-        
+
 
 @pytest.mark.asyncio
 async def test_async_lock_decorator_cleans_up_on_error(init_cachify_fixture):
-    
     @lock(key='test_key-{arg}', nowait=False, timeout=15, exp=30)
     async def async_function(arg: int) -> int:
         raise RuntimeError()
-        
+
     try:
         await async_function(123)
     except Exception:
         cachify = get_cachify()
         val = await cachify.get('PYC-test_key-123')
-        
+
         assert val is None
