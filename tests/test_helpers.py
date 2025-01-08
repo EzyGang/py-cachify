@@ -1,4 +1,5 @@
 import inspect
+import re
 
 import pytest
 from pytest_mock import MockerFixture
@@ -23,7 +24,12 @@ def test_get_full_key_valid_arguments(args_kwargs_signature):
 
 def test_get_full_key_invalid_key_format(args_kwargs_signature):
     bound_args = args_kwargs_signature.bind('value1', 'value2')
-    with pytest.raises(ValueError, match='Arguments in a key do not match function signature'):
+    bound_args.apply_defaults()
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f'Arguments in a key(key_{{}}_{{}}_{{}}) do not match function signature params({bound_args})'),
+    ):
         get_full_key_from_signature(bound_args, 'key_{}_{}_{}')
 
 
@@ -35,8 +41,16 @@ def test_get_full_key_empty_key_and_arguments(args_kwargs_signature):
 
 def test_get_full_key_mixed_placeholders(args_kwargs_signature):
     bound_args = args_kwargs_signature.bind('value1', 'value2', arg3='value3')
-    with pytest.raises(ValueError, match='Arguments in a key do not match function signature'):
-        get_full_key_from_signature(bound_args, 'key_{}_{}_{}_{invalid_arg}')
+    bound_args.apply_defaults()
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            'Arguments in a key(key_{}_{}_{}_{invalid_arg}) '
+            + f'do not match function signature params({bound_args})'
+        ),
+    ):
+        _ = get_full_key_from_signature(bound_args, 'key_{}_{}_{}_{invalid_arg}')
 
 
 def test_reset_calls_delete_with_key(init_cachify_fixture, args_kwargs_signature, mocker: MockerFixture):
