@@ -14,15 +14,18 @@ _S = TypeVar('_S')
 
 
 def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) -> str:
+    bound_args.apply_defaults()
+    _args_repr = f'{bound_args}'
+
     args_dict = bound_args.arguments
-    args: Tuple[str, Any] = args_dict.pop('args', ())
+    args: Tuple[Any, ...] = args_dict.pop('args', ())
     kwargs: Dict[str, Any] = args_dict.pop('kwargs', {})
     kwargs.update(args_dict)
 
     try:
         return key.format(*args, **kwargs)
-    except IndexError:
-        raise ValueError('Arguments in a key do not match function signature') from None
+    except (IndexError, KeyError):
+        raise ValueError(f'Arguments in a key({key}) do not match function signature params({_args_repr})') from None
 
 
 def is_coroutine(
