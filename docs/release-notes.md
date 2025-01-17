@@ -1,5 +1,36 @@
 # Release Notes
 
+## [2.0.10](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.10) 
+
+### Features & Enchancements
+
+- Default log level is now DEBUG
+- Dependencies bump
+
+## [2.0.9](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.9) 
+
+### Features & Enchancements
+
+- Better error message on the mismatch of key format params and function arguments
+
+### Bugfixes
+
+- Fix default arguments are not respected when crafting cache key
+
+## [2.0.7](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.7) 
+
+### Features & Enchancements
+
+- Bump dependencies
+- Add Python 3.13 Support
+
+## [2.0.4](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.4) 
+
+### Features & Enchancements
+
+- Bump dependencies
+- Better README and Docs
+
 ## [2.0.0](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.0)
 
 ### Features & Enchancements
