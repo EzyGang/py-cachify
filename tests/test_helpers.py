@@ -46,8 +46,7 @@ def test_get_full_key_mixed_placeholders(args_kwargs_signature):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            'Arguments in a key(key_{}_{}_{}_{invalid_arg}) '
-            + f'do not match function signature params({bound_args})'
+            'Arguments in a key(key_{}_{}_{}_{invalid_arg}) ' + f'do not match function signature params({bound_args})'
         ),
     ):
         _ = get_full_key_from_signature(bound_args, 'key_{}_{}_{}_{invalid_arg}')

@@ -132,7 +132,7 @@ def test_lock_get_ttl(init_cachify_fixture, default_expiration, exp, expected):
     ],
 )
 def test_lock_raise_if_cached(mocker, is_already_locked, key, do_raise, expectation):
-    patch_log = mocker.patch('py_cachify._backend._lock.logger.warning')
+    patch_log = mocker.patch('py_cachify._backend._lock.logger.debug')
 
     with expectation:
         lock._raise_if_cached(
