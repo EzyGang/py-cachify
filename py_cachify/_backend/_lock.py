@@ -5,7 +5,7 @@ from asyncio import sleep as asleep
 from functools import partial, wraps
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, TypeVar, Union, cast
 
-from typing_extensions import ParamSpec, Self, deprecated, overload, override
+from typing_extensions import ParamSpec, Self, deprecated, final, overload, override
 
 from ._exceptions import CachifyLockError
 from ._helpers import a_reset, get_full_key_from_signature, is_alocked, is_coroutine, is_locked, reset
@@ -93,6 +93,7 @@ class SyncLockMethods(LockProtocolBase):
         self.release()
 
 
+@final
 class lock(AsyncLockMethods, SyncLockMethods):
     """
     Class to manage locking mechanism for synchronous and asynchronous functions.
@@ -210,7 +211,7 @@ class lock(AsyncLockMethods, SyncLockMethods):
         msg = f'{key} is already locked!'
 
         if do_log:
-            logger.warning(msg)
+            logger.debug(msg)
 
         if do_raise:
             raise CachifyLockError(msg)
