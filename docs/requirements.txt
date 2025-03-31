@@ -225,9 +225,9 @@ platformdirs==4.3.6 ; python_version >= "3.8" and python_version < "4.0" \
 pygments==2.18.0 ; python_version >= "3.8" and python_version < "4.0" \
     --hash=sha256:786ff802f32e91311bff3889f6e9a86e81505fe99f2735bb6d60ae0c5004f199 \
     --hash=sha256:b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a
-pymdown-extensions==10.11.2 ; python_version >= "3.8" and python_version < "4.0" \
-    --hash=sha256:41cdde0a77290e480cf53892f5c5e50921a7ee3e5cd60ba91bf19837b33badcf \
-    --hash=sha256:bc8847ecc9e784a098efd35e20cba772bc5a1b529dfcef9dc1972db9021a1049
+pymdown-extensions==10.14.3 ; python_version >= "3.8" and python_version < "4.0" \
+    --hash=sha256:05e0bee73d64b9c71a4ae17c72abc2f700e8bc8403755a00580b49a4e9f189e9 \
+    --hash=sha256:41e576ce3f5d650be59e900e4ceff231e0aed2a88cf30acaee41e02f063a061b
 python-dateutil==2.9.0.post0 ; python_version >= "3.8" and python_version < "4.0" \
     --hash=sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3 \
     --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
