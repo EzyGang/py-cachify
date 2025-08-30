@@ -60,7 +60,9 @@ def cached(
             @wraps(_awaitable_func)
             async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 cachify = get_cachify()
-                _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+                _key = get_full_key_from_signature(
+                    bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
+                )
                 if val := await cachify.a_get(key=_key):
                     return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
 
@@ -68,7 +70,7 @@ def cached(
                 await cachify.a_set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
                 return res
 
-            setattr(_async_wrapper, 'reset', partial(a_reset, signature=signature, key=key))
+            setattr(_async_wrapper, 'reset', partial(a_reset, signature=signature, key=key, operation_postfix='cached'))
 
             return cast(AsyncResetWrappedF[_P, _R], cast(object, _async_wrapper))
         else:
@@ -77,7 +79,9 @@ def cached(
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 cachify = get_cachify()
-                _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+                _key = get_full_key_from_signature(
+                    bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
+                )
                 if val := cachify.get(key=_key):
                     return encode_decode_value(encoder_decoder=dec, val=val)
 
@@ -85,7 +89,7 @@ def cached(
                 cachify.set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
                 return res
 
-            setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key))
+            setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key, operation_postfix='cached'))
 
             return cast(SyncResetWrappedF[_P, _R], cast(object, _sync_wrapper))
 

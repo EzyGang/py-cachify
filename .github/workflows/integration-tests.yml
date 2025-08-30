@@ -28,17 +28,22 @@ jobs:
         ports:
           - 6379:6379
     steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+            version: "latest"
+            python-version: ${{ matrix.python }}
+            activate-environment: true
+            enable-cache: true
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install Dependencies
         run: |
-          pip install --upgrade pip
-          pip install --no-cache-dir "poetry==1.8.3"
-          poetry install --no-root --no-interaction --no-ansi --without docs
+          uv sync --no-extra docs
       - name: Execute Tests
-        run: poetry run task integration-tests
+        run: uv run task integration-tests

@@ -156,7 +156,7 @@ class lock(AsyncLockMethods, SyncLockMethods):
             @wraps(_awaitable_func)
             async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 bound_args = signature.bind(*args, **kwargs)
-                _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
+                _key = get_full_key_from_signature(bound_args=bound_args, key=self._key, operation_postfix='lock')
 
                 async with lock(
                     key=_key,
@@ -166,8 +166,16 @@ class lock(AsyncLockMethods, SyncLockMethods):
                 ):
                     return await _awaitable_func(*args, **kwargs)
 
-            setattr(_async_wrapper, 'is_locked', partial(is_alocked, signature=signature, key=self._key))
-            setattr(_async_wrapper, 'release', partial(a_reset, signature=signature, key=self._key))
+            setattr(
+                _async_wrapper,
+                'is_locked',
+                partial(is_alocked, signature=signature, key=self._key, operation_postfix='lock'),
+            )
+            setattr(
+                _async_wrapper,
+                'release',
+                partial(a_reset, signature=signature, key=self._key, operation_postfix='lock'),
+            )
 
             return cast(AsyncLockWrappedF[_P, _R], cast(object, _async_wrapper))
         else:
@@ -176,13 +184,19 @@ class lock(AsyncLockMethods, SyncLockMethods):
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 bound_args = signature.bind(*args, **kwargs)
-                _key = get_full_key_from_signature(bound_args=bound_args, key=self._key)
+                _key = get_full_key_from_signature(bound_args=bound_args, key=self._key, operation_postfix='lock')
 
                 with lock(key=_key, nowait=self._nowait, timeout=self._timeout, exp=self._exp):
                     return _sync_func(*args, **kwargs)
 
-            setattr(_sync_wrapper, 'is_locked', partial(is_locked, signature=signature, key=self._key))
-            setattr(_sync_wrapper, 'release', partial(reset, signature=signature, key=self._key))
+            setattr(
+                _sync_wrapper,
+                'is_locked',
+                partial(is_locked, signature=signature, key=self._key, operation_postfix='lock'),
+            )
+            setattr(
+                _sync_wrapper, 'release', partial(reset, signature=signature, key=self._key, operation_postfix='lock')
+            )
 
             return cast(SyncLockWrappedF[_P, _R], cast(object, _sync_wrapper))
 
@@ -255,7 +269,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
             @wraps(_awaitable_func)
             async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 bound_args = signature.bind(*args, **kwargs)
-                _key = get_full_key_from_signature(bound_args=bound_args, key=key)
+                _key = get_full_key_from_signature(bound_args=bound_args, key=key, operation_postfix='once')
 
                 try:
                     async with lock(key=_key):
@@ -266,8 +280,10 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked  # type: ignore[no-any-return]
 
-            setattr(_async_wrapper, 'release', partial(a_reset, signature=signature, key=key))
-            setattr(_async_wrapper, 'is_locked', partial(is_alocked, signature=signature, key=key))
+            setattr(_async_wrapper, 'release', partial(a_reset, signature=signature, key=key, operation_postfix='once'))
+            setattr(
+                _async_wrapper, 'is_locked', partial(is_alocked, signature=signature, key=key, operation_postfix='once')
+            )
 
             return cast(AsyncLockWrappedF[_P, _R], cast(object, _async_wrapper))
 
@@ -277,7 +293,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 bound_args = signature.bind(*args, **kwargs)
-                _key = get_full_key_from_signature(bound_args=bound_args, key=key)
+                _key = get_full_key_from_signature(bound_args=bound_args, key=key, operation_postfix='once')
 
                 try:
                     with lock(key=_key):
@@ -288,8 +304,10 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked
 
-            setattr(_sync_wrapper, 'release', partial(reset, signature=signature, key=key))
-            setattr(_sync_wrapper, 'is_locked', partial(is_locked, signature=signature, key=key))
+            setattr(_sync_wrapper, 'release', partial(reset, signature=signature, key=key, operation_postfix='once'))
+            setattr(
+                _sync_wrapper, 'is_locked', partial(is_locked, signature=signature, key=key, operation_postfix='once')
+            )
 
             return cast(SyncLockWrappedF[_P, _R], cast(object, _sync_wrapper))
 
