@@ -1,6 +1,6 @@
 [project]
 name = "py-cachify"
-version = "2.0.10"
+version = "2.1.0"
 description = "Distributed locks, caching, and locking decorators at hand"
 authors = [{ name = "Galtozzy", email = "galtozzy+git@gmail.com" }]
 requires-python = ">=3.8,<4.0"
