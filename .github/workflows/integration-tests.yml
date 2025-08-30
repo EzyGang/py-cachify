@@ -44,6 +44,6 @@ jobs:
           fetch-depth: 0
       - name: Install Dependencies
         run: |
-          uv sync --no-extra docs
+          uv sync --no-group docs
       - name: Execute Tests
         run: uv run task integration-tests

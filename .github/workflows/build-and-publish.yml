@@ -21,7 +21,7 @@ jobs:
           python-version-file: "pyproject.toml"
       - name: Install Dependencies
         run: |
-          uv sync --all-extras
+          uv sync --all-extras --all-groups
       - name: build
         run: uv build
       - name: Publish to PyPi

@@ -38,7 +38,7 @@ jobs:
           fetch-depth: 0
       - name: Install Dependencies
         run: |
-          uv sync --no-extra docs
+          uv sync --no-group docs
       - name: Execute Tests
         run: uv run task tests
       - name: Rename file
@@ -78,7 +78,7 @@ jobs:
           fetch-depth: 0
       - name: Install Dependencies
         run: |
-          uv sync --no-extra docs
+          uv sync --no-group docs
       - name: Run ruff
         run: uv run task ruff-lint
       - name: Run mypy
@@ -101,7 +101,7 @@ jobs:
           sed -i 's/\/home\/runner\/work\/py-cachify\/py-cachify\//\/github\/workspace\//g' /home/runner/work/py-cachify/py-cachify/coverage.xml
           cat /home/runner/work/py-cachify/py-cachify/coverage.xml
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5.3.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
