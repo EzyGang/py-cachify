@@ -132,7 +132,7 @@ def test_lock_get_ttl(init_cachify_fixture, default_expiration, exp, expected):
     ],
 )
 def test_lock_raise_if_cached(mocker, is_already_locked, key, do_raise, expectation):
-    patch_log = mocker.patch('py_cachify._backend._lock.logger.debug')
+    patch_log = mocker.patch('py_cachify._backend._logger.logger.debug')
 
     with expectation:
         lock._raise_if_cached(
@@ -151,7 +151,7 @@ def test_unset_type_bool():
 @pytest.mark.parametrize(
     'sleep_time,expected',
     [
-        (3, True),
+        (1, True),
         (0, False),
     ],
 )
@@ -172,7 +172,7 @@ def test_is_locked_on_lock_obj(init_cachify_fixture, sleep_time, expected):
 @pytest.mark.parametrize(
     'sleep_time,expected',
     [
-        (3, True),
+        (1, True),
         (0, False),
     ],
 )
