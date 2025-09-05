@@ -1,5 +1,4 @@
 import inspect
-import logging
 import time
 from asyncio import sleep as asleep
 from functools import partial, wraps
@@ -10,6 +9,7 @@ from typing_extensions import ParamSpec, Self, deprecated, final, overload, over
 from ._exceptions import CachifyLockError
 from ._helpers import a_reset, get_full_key_from_signature, is_alocked, is_coroutine, is_locked, reset
 from ._lib import get_cachify
+from ._logger import logger
 from ._types._common import UNSET, LockProtocolBase, UnsetType
 from ._types._lock_wrap import AsyncLockWrappedF, SyncLockWrappedF, WrappedFunctionLock
 
@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from ._lib import Cachify
 
 
-logger = logging.getLogger(__name__)
 _R = TypeVar('_R', covariant=True)
 _P = ParamSpec('_P')
 _S = TypeVar('_S')
