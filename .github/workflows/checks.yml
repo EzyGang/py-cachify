@@ -96,10 +96,6 @@ jobs:
           name: coverage-3.13.xml
       - name: Rename file
         run: mv ./coverage{-3.13,}.xml
-      - name: Fix code coverage paths
-        run: |
-          sed -i 's/\/home\/runner\/work\/py-cachify\/py-cachify\//\/github\/workspace\//g' /home/runner/work/py-cachify/py-cachify/coverage.xml
-          cat /home/runner/work/py-cachify/py-cachify/coverage.xml
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v5.3.1
         env:
