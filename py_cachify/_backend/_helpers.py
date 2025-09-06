@@ -4,6 +4,7 @@ from typing import Any, Awaitable, Callable, Dict, Tuple, TypeVar, Union
 
 from typing_extensions import ParamSpec, TypeIs
 
+from ._constants import OperationPostfix
 from ._lib import get_cachify
 from ._types._common import Decoder, Encoder
 
@@ -13,7 +14,11 @@ _P = ParamSpec('_P')
 _S = TypeVar('_S')
 
 
-def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) -> str:
+def get_full_key_from_signature(
+    bound_args: inspect.BoundArguments,
+    key: str,
+    operation_postfix: OperationPostfix,
+) -> str:
     bound_args.apply_defaults()
     _args_repr = f'{bound_args}'
 
@@ -23,7 +28,7 @@ def get_full_key_from_signature(bound_args: inspect.BoundArguments, key: str) ->
     kwargs.update(args_dict)
 
     try:
-        return key.format(*args, **kwargs)
+        return f'{key.format(*args, **kwargs)}-{operation_postfix}'
     except (IndexError, KeyError):
         raise ValueError(f'Arguments in a key({key}) do not match function signature params({_args_repr})') from None
 
@@ -41,33 +46,49 @@ def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any
     return encoder_decoder(val)
 
 
-def reset(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> None:
+def reset(
+    *args: Any, key: str, signature: inspect.Signature, operation_postfix: OperationPostfix, **kwargs: Any
+) -> None:
     cachify = get_cachify()
-    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+    _key = get_full_key_from_signature(
+        bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix=operation_postfix
+    )
 
     cachify.delete(key=_key)
 
     return None
 
 
-async def a_reset(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> None:
+async def a_reset(
+    *args: Any, key: str, signature: inspect.Signature, operation_postfix: OperationPostfix, **kwargs: Any
+) -> None:
     cachify = get_cachify()
-    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+    _key = get_full_key_from_signature(
+        bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix=operation_postfix
+    )
 
     await cachify.a_delete(key=_key)
 
     return None
 
 
-async def is_alocked(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> bool:
+async def is_alocked(
+    *args: Any, key: str, signature: inspect.Signature, operation_postfix: OperationPostfix, **kwargs: Any
+) -> bool:
     cachify = get_cachify()
-    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+    _key = get_full_key_from_signature(
+        bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix=operation_postfix
+    )
 
     return bool(await cachify.a_get(key=_key))
 
 
-def is_locked(*args: Any, key: str, signature: inspect.Signature, **kwargs: Any) -> bool:
+def is_locked(
+    *args: Any, key: str, signature: inspect.Signature, operation_postfix: OperationPostfix, **kwargs: Any
+) -> bool:
     cachify = get_cachify()
-    _key = get_full_key_from_signature(bound_args=signature.bind(*args, **kwargs), key=key)
+    _key = get_full_key_from_signature(
+        bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix=operation_postfix
+    )
 
     return bool(cachify.get(key=_key))

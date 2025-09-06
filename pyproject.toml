@@ -1,13 +1,11 @@
-[tool.poetry]
+[project]
 name = "py-cachify"
-version = "2.0.10"
-homepage = "https://github.com/EzyGang/py-cachify"
-repository = "https://github.com/EzyGang/py-cachify"
-license = "MIT"
+version = "2.1.0"
 description = "Distributed locks, caching, and locking decorators at hand"
-authors = ["Galtozzy <galtozzy+git@gmail.com>"]
+authors = [{ name = "Galtozzy", email = "galtozzy+git@gmail.com" }]
+requires-python = ">=3.8,<4.0"
 readme = "README.md"
-include = ["README.md"]
+license = "MIT"
 classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
@@ -29,40 +27,57 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
 ]
-packages = [
-    { include = 'py_cachify' },
-    { include = 'py_cachify/py.typed'},
+dependencies = ["typing-extensions>=4.12.2,<5"]
+
+[project.urls]
+Homepage = "https://github.com/EzyGang/py-cachify"
+Repository = "https://github.com/EzyGang/py-cachify"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.2,<9",
+    "pytest-mock>=3.14.0,<4",
+    "pytest-cov>=5.0.0,<6",
+    "taskipy>=1.13.0,<2",
+    "mypy>=1.11.1,<2",
+    "coverage>=7.6.1,<8",
+    "pytest-asyncio>=0.24.0,<0.25",
+    "pytest-socket>=0.7.0,<0.8",
+    "ruff>=0.9.2,<0.10",
+]
+docs = [
+    "mkdocs>=1.6.0,<2",
+    "mkdocs-material>=9.5.28,<10",
+    "pygments>=2.18.0,<3",
+    "termynal>=0.12.1,<0.13 ; python_version >= '3.8.1' and python_version < '4.0'",
+    "beautifulsoup4>=4.12.3,<5",
+]
+integration = ["redis>=5.0.7,<6"]
+
+[tool.uv]
+default-groups = [
+    "dev",
+    "docs",
+    "integration",
 ]
 
-[project]
-requires-python = ">=3.8,<4.0"
+[tool.hatch.build.targets.sdist]
+include = [
+    "py_cachify",
+    "py_cachify/py.typed",
+    "README.md",
+]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-typing-extensions = "^4.12.2"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.2"
-pytest-mock = "^3.14.0"
-pytest-cov = "^5.0.0"
-taskipy = "^1.13.0"
-mypy = "^1.11.1"
-coverage = "^7.6.1"
-pytest-asyncio = "^0.24.0"
-pytest-socket = "^0.7.0"
-ruff = "^0.9.2"
-
-
-[tool.poetry.group.docs.dependencies]
-mkdocs = "^1.6.0"
-mkdocs-material = "^9.5.28"
-pygments = "^2.18.0"
-termynal = { version = "^0.12.1", python = ">=3.8.1,<4.0" }
-beautifulsoup4 = "^4.12.3"
-
-
-[tool.poetry.group.integration.dependencies]
-redis = "^5.0.7"
+[tool.hatch.build.targets.wheel]
+include = [
+    "py_cachify",
+    "py_cachify/py.typed",
+    "README.md",
+]
 
 [tool.taskipy.tasks]
 format-and-lint = "task ruff && task mypy-lint"
@@ -81,7 +96,6 @@ pip-check = "pip check"
 line-length = 120
 extend-exclude = ["site-packages", "*.pyi"]
 target-version = 'py38'
-
 
 [tool.ruff.lint]
 fixable = ["ALL"]
@@ -131,7 +145,6 @@ exclude = ['test_']
 module = "tests.*"
 ignore_errors = true
 
-
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = [
@@ -158,7 +171,6 @@ testpaths = ["tests"]
 omit = []
 concurrency = ['thread']
 
-
 [tool.coverage.report]
 omit = []
 exclude_lines = [
@@ -172,8 +184,5 @@ exclude_lines = [
     'if __name__ == .__main__.:',
     '__all__',
     'if TYPE_CHECKING:',
+    'except ModuleNotFoundError:',
 ]
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
