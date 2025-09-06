@@ -7,6 +7,8 @@ jobs:
   build-and-publish:
     name: Build & Upload Package
     runs-on: ubuntu-latest
+    environment:
+      name: release
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -25,7 +27,7 @@ jobs:
       - name: build
         run: uv build
       - name: Publish to PyPi
-        uses: pypa/gh-action-pypi-publish@v1.12.2
+        uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
           verbose: true
           print-hash: true
