@@ -74,7 +74,7 @@ def cached(
 
             return cast(AsyncResetWrappedF[_P, _R], cast(object, _async_wrapper))
         else:
-            _sync_func = cast(Callable[_P, _R], _func)
+            _sync_func = _func
 
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
@@ -83,7 +83,7 @@ def cached(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
                 if val := cachify.get(key=_key):
-                    return encode_decode_value(encoder_decoder=dec, val=val)
+                    return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
 
                 res = _sync_func(*args, **kwargs)
                 cachify.set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
