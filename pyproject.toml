@@ -1,6 +1,6 @@
 [project]
 name = "py-cachify"
-version = "2.1.0"
+version = "2.1.1"
 description = "Distributed locks, caching, and locking decorators at hand"
 authors = [{ name = "Galtozzy", email = "galtozzy+git@gmail.com" }]
 requires-python = ">=3.8,<4.0"
@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = ["typing-extensions>=4.12.2,<5"]

@@ -178,7 +178,7 @@ class lock(AsyncLockMethods, SyncLockMethods):
 
             return cast(AsyncLockWrappedF[_P, _R], cast(object, _async_wrapper))
         else:
-            _sync_func = cast(Callable[_P, _R], _func)
+            _sync_func = _func
 
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
@@ -287,7 +287,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
             return cast(AsyncLockWrappedF[_P, _R], cast(object, _async_wrapper))
 
         else:
-            _sync_func = cast(Callable[_P, _R], _func)
+            _sync_func = _func
 
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
@@ -301,7 +301,7 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
                     if raise_on_locked:
                         raise
 
-                    return return_on_locked
+                    return cast(_R, return_on_locked)
 
             setattr(_sync_wrapper, 'release', partial(reset, signature=signature, key=key, operation_postfix='once'))
             setattr(
