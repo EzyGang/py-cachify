@@ -1,6 +1,7 @@
 import inspect
+from collections.abc import Awaitable
 from functools import partial, wraps
-from typing import Awaitable, Callable, Tuple, TypeVar, Union, cast, overload
+from typing import Callable, TypeVar, Union, cast, overload
 
 from typing_extensions import ParamSpec, deprecated
 
@@ -16,7 +17,7 @@ _S = TypeVar('_S')
 
 
 def cached(
-    key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
+    key: str, ttl: Union[int, None] = None, enc_dec: Union[tuple[Encoder, Decoder], None] = None
 ) -> WrappedFunctionReset:
     """
     Decorator that caches the result of a function based on the specified key, time-to-live (ttl),
@@ -98,13 +99,13 @@ def cached(
 
 @deprecated('sync_cached is deprecated, use cached instead. Scheduled for removal in 3.0.0')
 def sync_cached(
-    key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
+    key: str, ttl: Union[int, None] = None, enc_dec: Union[tuple[Encoder, Decoder], None] = None
 ) -> WrappedFunctionReset:
     return cached(key=key, ttl=ttl, enc_dec=enc_dec)
 
 
 @deprecated('async_cached is deprecated, use cached instead. Scheduled for removal in 3.0.0')
 def async_cached(
-    key: str, ttl: Union[int, None] = None, enc_dec: Union[Tuple[Encoder, Decoder], None] = None
+    key: str, ttl: Union[int, None] = None, enc_dec: Union[tuple[Encoder, Decoder], None] = None
 ) -> WrappedFunctionReset:
     return cached(key=key, ttl=ttl, enc_dec=enc_dec)

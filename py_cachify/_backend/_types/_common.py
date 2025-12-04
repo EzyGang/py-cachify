@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Protocol, TypeVar, Union
+from collections.abc import Awaitable
+from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, TypeVar, Union
 
 from typing_extensions import ParamSpec, TypeAlias
 

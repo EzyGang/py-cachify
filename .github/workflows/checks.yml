@@ -8,7 +8,7 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main, v/*]
+    branches: [main, v/*, rc/*]
 
 env:
   UV_FROZEN: 1    
@@ -20,16 +20,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
             version: "latest"
             python-version: ${{ matrix.python }}
             activate-environment: true
             enable-cache: true
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
@@ -60,16 +60,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
             version: "latest"
             python-version: ${{ matrix.python }}
             activate-environment: true
             enable-cache: true
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           allow-prereleases: true

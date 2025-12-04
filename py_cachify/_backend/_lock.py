@@ -1,8 +1,9 @@
 import inspect
 import time
 from asyncio import sleep as asleep
+from collections.abc import Awaitable
 from functools import partial, wraps
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, cast
 
 from typing_extensions import ParamSpec, Self, deprecated, final, overload, override
 

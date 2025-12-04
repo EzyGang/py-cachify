@@ -1,6 +1,7 @@
 import asyncio
 import inspect
-from typing import Any, Awaitable, Callable, Dict, Tuple, TypeVar, Union
+from collections.abc import Awaitable
+from typing import Any, Callable, TypeVar, Union
 
 from typing_extensions import ParamSpec, TypeIs
 
@@ -23,8 +24,8 @@ def get_full_key_from_signature(
     _args_repr = f'{bound_args}'
 
     args_dict = bound_args.arguments
-    args: Tuple[Any, ...] = args_dict.pop('args', ())
-    kwargs: Dict[str, Any] = args_dict.pop('kwargs', {})
+    args: tuple[Any, ...] = args_dict.pop('args', ())
+    kwargs: dict[str, Any] = args_dict.pop('kwargs', {})
     kwargs.update(args_dict)
 
     try:

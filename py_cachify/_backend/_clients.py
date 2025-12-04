@@ -1,10 +1,10 @@
 import time
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Union
 
 
 class MemoryCache:
     def __init__(self) -> None:
-        self._cache: Dict[str, Tuple[Any, Union[float, None]]] = {}
+        self._cache: dict[str, tuple[Any, Union[float, None]]] = {}
 
     def set(self, name: str, value: Any, ex: Union[int, None] = None) -> None:
         self._cache[name] = value, ex and time.time() + ex
