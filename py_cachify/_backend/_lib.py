@@ -1,6 +1,5 @@
 import pickle
-from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from ._clients import AsyncWrapper, MemoryCache
 from ._exceptions import CachifyInitError
@@ -45,10 +44,6 @@ class CachifyClient:
         return await self._async_client.delete(f'{self._prefix}{key}')
 
 
-_mc = MemoryCache()
-_amc = AsyncWrapper(_mc)
-
-_current_client: ContextVar[Optional['CachifyClient']] = ContextVar('_current_client', default=None)
 _cachify: Optional['CachifyClient'] = None
 
 
@@ -75,19 +70,6 @@ class Cachify:
             default_expiration=default_expiration,
         )
 
-    def _with_client_context(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-        """
-        Run `func(*args, **kwargs)` with `_current_client` set to this instance's client.
-
-        This helper does not wrap or modify the result of `func`; it only ensures that
-        the correct `CachifyClient` is active during the call.
-        """
-        token = _current_client.set(self._client)
-        try:
-            return func(*args, **kwargs)
-        finally:
-            _current_client.reset(token)
-
     def cached(
         self,
         key: str,
@@ -111,9 +93,9 @@ class Cachify:
         reset(*args, **kwargs) matches the type of original function, accepts the same argument,
             and could be used to reset the cache.
         """
-        from ._cached import cached as _cached
+        from ._cached import _cached_impl  # pyright: ignore[reportPrivateUsage]
 
-        return cast(WrappedFunctionReset, self._with_client_context(_cached, key, ttl, enc_dec))
+        return _cached_impl(key=key, ttl=ttl, enc_dec=enc_dec, client_provider=lambda: self._client)
 
     def lock(
         self,
@@ -148,7 +130,11 @@ class Cachify:
         """
         from ._lock import lock as _lock
 
-        return cast('_lock_cls', self._with_client_context(_lock, key, nowait, timeout, exp))
+        lk = _lock(key=key, nowait=nowait, timeout=timeout, exp=exp)
+
+        lk._cachify = self._client  # pyright: ignore[reportPrivateUsage]
+
+        return lk
 
     def once(self, key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> WrappedFunctionLock:
         """
@@ -167,14 +153,19 @@ class Cachify:
         SyncOrAsyncRelease: Either a synchronous or asynchronous wrapped function with `release` and `is_locked`
             methods attached to it.
         """
-        from ._lock import once as _once
+        from ._lock import _once_impl  # pyright: ignore[reportPrivateUsage]
 
-        return cast(WrappedFunctionLock, self._with_client_context(_once, key, raise_on_locked, return_on_locked))
+        return _once_impl(
+            key=key,
+            raise_on_locked=raise_on_locked,
+            return_on_locked=return_on_locked,
+            client_provider=lambda: self._client,
+        )
 
 
 def init_cachify(
-    sync_client: SyncClient = _mc,
-    async_client: AsyncClient = _amc,
+    sync_client: Optional[SyncClient] = None,
+    async_client: Optional[AsyncClient] = None,
     default_lock_expiration: Optional[int] = 30,
     prefix: str = 'PYC-',
     *,
@@ -195,6 +186,11 @@ def init_cachify(
     is_global (bool, optional): Whether to register this client as the global instance.
         Defaults to True.
     """
+    if sync_client is None:
+        sync_client = MemoryCache()
+
+    if async_client is None:
+        async_client = AsyncWrapper(cache=isinstance(sync_client, MemoryCache) and sync_client or MemoryCache())
 
     global _cachify
     if is_global:
@@ -204,6 +200,15 @@ def init_cachify(
             prefix=prefix,
             default_expiration=default_lock_expiration,
         )
+
+        # is not needed, but kept to not ruin the function signature
+        return Cachify(
+            sync_client=sync_client,
+            async_client=async_client,
+            prefix=prefix,
+            default_expiration=default_lock_expiration,
+        )
+
     return Cachify(
         sync_client=sync_client,
         async_client=async_client,
@@ -213,10 +218,6 @@ def init_cachify(
 
 
 def get_cachify_client() -> CachifyClient:
-    client = _current_client.get()
-    if client is not None:
-        return client
-
     if _cachify is None:
         raise CachifyInitError('Cachify is not initialized, did you forget to call `init_cachify`?')
 

@@ -11,7 +11,6 @@ class MemoryCache:
 
     def get(self, name: str) -> Optional[Any]:
         val, exp_at = self._cache.get(name, (None, None))
-
         if not exp_at or exp_at > time.time():
             return val
 

@@ -46,7 +46,6 @@ async def test_cached_once_merge_async(init_cachify_fixture, mocker: MockerFixtu
     async_function_wrapped = cached(key='test_key')(async_function)
     once_wrapped = once(key='test_key')(async_function_wrapped)
 
-    once_wrapped(3, 4)
     results = await asyncio.gather(once_wrapped(3, 4), once_wrapped(3, 4))
     result = await once_wrapped(3, 4)
 

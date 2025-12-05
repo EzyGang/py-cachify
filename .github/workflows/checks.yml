@@ -11,7 +11,7 @@ on:
     branches: [main, v/*, rc/*]
 
 env:
-  UV_FROZEN: 1    
+  UV_FROZEN: 1
 
 jobs:
   unit-tests:
@@ -25,10 +25,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
-            version: "latest"
-            python-version: ${{ matrix.python }}
-            activate-environment: true
-            enable-cache: true
+          version: "latest"
+          python-version: ${{ matrix.python }}
+          activate-environment: true
+          enable-cache: true
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
@@ -65,10 +65,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
-            version: "latest"
-            python-version: ${{ matrix.python }}
-            activate-environment: true
-            enable-cache: true
+          version: "latest"
+          python-version: ${{ matrix.python }}
+          activate-environment: true
+          enable-cache: true
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
@@ -101,3 +101,53 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          python-version: ${{ matrix.python }}
+          activate-environment: true
+          enable-cache: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install Dependencies
+        run: |
+          uv sync --no-group docs
+      - name: Execute Tests
+        run: uv run task integration-tests
+  check:
+    name: Check CI Green
+    if: always()
+    needs:
+      - sonar
+      - lint
+      - unit-tests
+      - integration-tests
+    runs-on: Ubuntu-latest
+    steps:
+      - uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}

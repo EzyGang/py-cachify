@@ -6,7 +6,7 @@ from typing import Callable, TypeVar, Union, cast, overload
 from typing_extensions import ParamSpec
 
 from ._helpers import a_reset, encode_decode_value, get_full_key_from_signature, is_coroutine, reset
-from ._lib import get_cachify_client
+from ._lib import CachifyClient, get_cachify_client
 from ._types._common import Decoder, Encoder
 from ._types._reset_wrap import AsyncResetWrappedF, SyncResetWrappedF, WrappedFunctionReset
 
@@ -35,7 +35,15 @@ def cached(
     reset(*args, **kwargs) matches the type of original function, accepts the same argument,
         and could be used to reset the cache.
     """
+    return _cached_impl(key, ttl, enc_dec, get_cachify_client)
 
+
+def _cached_impl(
+    key: str,
+    ttl: Union[int, None] = None,
+    enc_dec: Union[tuple[Encoder, Decoder], None] = None,
+    client_provider: Callable[[], CachifyClient] = get_cachify_client,
+) -> WrappedFunctionReset:
     @overload
     def _cached_inner(  # type: ignore[overload-overlap]
         _func: Callable[_P, Awaitable[_R]],
@@ -60,7 +68,7 @@ def cached(
 
             @wraps(_awaitable_func)
             async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
-                cachify_client = get_cachify_client()
+                cachify_client = client_provider()
                 _key = get_full_key_from_signature(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
@@ -75,7 +83,12 @@ def cached(
                 _async_wrapper,
                 'reset',
                 partial(
-                    a_reset, signature=signature, key=key, operation_postfix='cached', original_func=_awaitable_func
+                    a_reset,
+                    _pyc_signature=signature,
+                    _pyc_key=key,
+                    _pyc_operation_postfix='cached',
+                    _pyc_original_func=_awaitable_func,
+                    _pyc_client_provider=client_provider,
                 ),
             )
 
@@ -85,7 +98,7 @@ def cached(
 
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
-                cachify_client = get_cachify_client()
+                cachify_client = client_provider()
                 _key = get_full_key_from_signature(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
@@ -99,7 +112,14 @@ def cached(
             setattr(
                 _sync_wrapper,
                 'reset',
-                partial(reset, signature=signature, key=key, operation_postfix='cached', original_func=_sync_func),
+                partial(
+                    reset,
+                    _pyc_signature=signature,
+                    _pyc_key=key,
+                    _pyc_operation_postfix='cached',
+                    _pyc_original_func=_sync_func,
+                    _pyc_client_provider=client_provider,
+                ),
             )
 
             return cast(SyncResetWrappedF[_P, _R], cast(object, _sync_wrapper))

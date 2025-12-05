@@ -6,17 +6,17 @@ from pytest_mock import MockerFixture
 import py_cachify._backend._lib
 from py_cachify import CachifyInitError
 from py_cachify._backend._clients import AsyncWrapper, MemoryCache
-from py_cachify._backend._lib import Cachify, CachifyClient, _current_client, get_cachify_client
-from py_cachify._backend._types._common import UnsetType
+from py_cachify._backend._lib import Cachify, CachifyClient, get_cachify_client, init_cachify
+from py_cachify._backend._types._common import UNSET
 
 
 @pytest.fixture
-def memory_cache():
+def memory_cache() -> MemoryCache:
     return MemoryCache()
 
 
 @pytest.fixture
-def async_wrapper(memory_cache):
+def async_wrapper(memory_cache) -> AsyncWrapper:
     return AsyncWrapper(memory_cache)
 
 
@@ -148,88 +148,196 @@ def test_get_cachify_raises_error():
         get_cachify_client()
 
 
-def test_get_cachify_client_returns_context_var_val():
-    _initialized_client = CachifyClient(
-        sync_client=memory_cache, default_expiration=30, async_client=async_wrapper, prefix='_PYC_'
-    )
-    token = _current_client.set(_initialized_client)
-
+def test_get_cachify_client_returns_global_value(init_cachify_fixture):
     _client = get_cachify_client()
 
-    try:
-        assert isinstance(_client, CachifyClient)
-        assert _client is _initialized_client
-    finally:
-        _current_client.reset(token)
+    assert isinstance(_client, CachifyClient)
 
 
-def test_cachify_cached_delegates_to_with_client_context(cachify_instance, mocker: MockerFixture):
-    ctx_spy = mocker.patch.object(cachify_instance, '_with_client_context', autospec=True, return_value='RESULT')
+def test_cachify_cached_delegates_to__cached_impl(cachify_instance, mocker: MockerFixture):
+    sentinel = object()
+    mocked_impl = mocker.patch(
+        'py_cachify._backend._cached._cached_impl',
+        return_value=sentinel,
+    )
 
-    result = cachify_instance.cached('key', ttl=123, enc_dec=None)
+    result = cachify_instance.cached(
+        key='k-{x}',
+        ttl=123,
+        enc_dec=('enc', 'dec'),
+    )
 
-    ctx_spy.assert_called_once()
-    # call_args[0] -> (self, func, key, ttl, enc_dec)
-    print(f'call args: {ctx_spy.call_args[0]}')
-    func_arg, key, ttl, enc_dec = ctx_spy.call_args[0]
-    # func_arg should be the module-level cached decorator factory
-    assert callable(func_arg)
-    assert key == 'key'
-    assert ttl == 123
-    assert enc_dec is None
-    assert result == 'RESULT'
+    assert result is sentinel
 
+    call = mocked_impl.call_args
+    assert call.kwargs['key'] == 'k-{x}'
+    assert call.kwargs['ttl'] == 123
+    assert call.kwargs['enc_dec'] == ('enc', 'dec')
 
-def test_cachify_lock_delegates_to_with_client_context(cachify_instance, mocker: MockerFixture):
-    ctx_spy = mocker.patch.object(cachify_instance, '_with_client_context', autospec=True, return_value='LOCK_RESULT')
-    lock_impl = mocker.patch('py_cachify._backend._lock.lock')
-
-    result = cachify_instance.lock('arg1', nowait=True)
-
-    ctx_spy.assert_called_once()
-    # call_args[0] -> (self, func, key, nowait, timeout, exp)
-    passed_func, key, nowait, timeout, exp = ctx_spy.call_args[0]
-    assert passed_func is lock_impl
-    assert key == 'arg1'
-    assert nowait is True
-    assert timeout is None
-    assert isinstance(exp, UnsetType)
-    assert result == 'LOCK_RESULT'
+    client_provider = call.kwargs['client_provider']
+    client = client_provider()
+    assert client is cachify_instance._client
 
 
-def test_cachify_once_delegates_to_with_client_context(cachify_instance, mocker: MockerFixture):
-    ctx_spy = mocker.patch.object(cachify_instance, '_with_client_context', autospec=True, return_value='ONCE_RESULT')
-    once_impl = mocker.patch('py_cachify._backend._lock.once')
+def test_cachify_lock_delegates_and_injects_client(cachify_instance, mocker: MockerFixture):
+    from types import SimpleNamespace
 
-    result = cachify_instance.once('arg1', raise_on_locked=True)
+    dummy_lock = SimpleNamespace()
+    mocked_lock = mocker.patch(
+        'py_cachify._backend._lock.lock',
+        return_value=dummy_lock,
+    )
 
-    ctx_spy.assert_called_once()
-    # call_args[0] -> (self, func, key, raise_on_locked, return_on_locked)
-    passed_func, key, raise_on_locked, return_on_locked = ctx_spy.call_args[0]
-    assert passed_func is once_impl
-    assert key == 'arg1'
-    assert raise_on_locked is True
-    assert return_on_locked is None
-    assert ctx_spy.call_args[1] == {}
-    assert result == 'ONCE_RESULT'
+    lk = cachify_instance.lock(
+        key='lk-{y}',
+        nowait=False,
+        timeout=1.5,
+        exp=999,
+    )
+
+    assert lk is dummy_lock
+
+    call = mocked_lock.call_args
+    assert call.kwargs['key'] == 'lk-{y}'
+    assert call.kwargs['nowait'] is False
+    assert call.kwargs['timeout'] == 1.5
+    assert call.kwargs['exp'] == 999
+
+    assert hasattr(lk, '_cachify')
+    assert lk._cachify is cachify_instance._client
+
+    # ensure default values also propagate correctly
+    cachify_instance.lock(key='foo')
+    _, kwargs_default = mocked_lock.call_args
+    assert kwargs_default['key'] == 'foo'
+    assert kwargs_default['nowait'] is True
+    assert kwargs_default['timeout'] is None
+    assert kwargs_default['exp'] is UNSET
 
 
-def test_with_client_context_sets_and_restores_contextvar(cachify_instance):
-    previous_client = object()
-    token = _current_client.set(previous_client)
+def test_cachify_once_delegates_to__once_impl(cachify_instance, mocker: MockerFixture):
+    sentinel = object()
+    mocked_once_impl = mocker.patch(
+        'py_cachify._backend._lock._once_impl',
+        return_value=sentinel,
+    )
 
-    inside_client = None
+    result = cachify_instance.once(
+        key='once-{z}',
+        raise_on_locked=True,
+        return_on_locked=42,
+    )
 
-    def inner():
-        nonlocal inside_client
-        inside_client = _current_client.get()
-        return 'ok'
+    assert result is sentinel
 
-    result = cachify_instance._with_client_context(inner)
+    call = mocked_once_impl.call_args
+    assert call.kwargs['key'] == 'once-{z}'
+    assert call.kwargs['raise_on_locked'] is True
+    assert call.kwargs['return_on_locked'] == 42
 
-    try:
-        assert result == 'ok'
-        assert inside_client is cachify_instance._client
-        assert _current_client.get() is previous_client
-    finally:
-        _current_client.reset(token)
+    client_provider = call.kwargs['client_provider']
+    client = client_provider()
+    assert client is cachify_instance._client
+
+    # defaults path
+    cachify_instance.once(key='foo')
+    _, kwargs_default = mocked_once_impl.call_args
+    assert kwargs_default['key'] == 'foo'
+    assert kwargs_default['raise_on_locked'] is False
+    assert kwargs_default['return_on_locked'] is None
+
+
+def test_cachify_internal_client_is_wired_correctly(cachify_instance, memory_cache, async_wrapper):
+    client = cachify_instance._client
+    assert client._sync_client is memory_cache
+    assert client._async_client is async_wrapper
+    assert client._prefix == '_PYC_'
+    assert client.default_expiration == 30
+
+
+def test_init_cachify_defaults_to_memory_cache_and_asyncwrapper(mocker: MockerFixture):
+    # ensure we start from a clean global
+    py_cachify._backend._lib._cachify = None  # type: ignore[attr-defined]
+
+    cachify_instance = init_cachify(sync_client=None, async_client=None, is_global=True)
+
+    # sync client should be MemoryCache
+    assert isinstance(cachify_instance._client._sync_client, MemoryCache)
+
+    # async client should be AsyncWrapper and wrap the same MemoryCache instance
+    assert isinstance(cachify_instance._client._async_client, AsyncWrapper)
+    assert cachify_instance._client._async_client._cache is cachify_instance._client._sync_client
+
+
+def test_init_cachify_reuses_provided_memory_cache_for_asyncwrapper(mocker: MockerFixture):
+    py_cachify._backend._lib._cachify = None
+
+    sync_client = MemoryCache()
+    cachify_instance = init_cachify(sync_client=sync_client, async_client=None, is_global=True)
+
+    # async wrapper should reuse the provided sync_client as its underlying cache
+    assert isinstance(cachify_instance._client._async_client, AsyncWrapper)
+    assert cachify_instance._client._async_client._cache is sync_client
+
+
+def test_init_cachify_is_global_flag_controls_global_registration():
+    py_cachify._backend._lib._cachify = None
+    cachify_instance = init_cachify(sync_client=None, async_client=None, is_global=False)
+    assert cachify_instance is not None
+    assert py_cachify._backend._lib._cachify is None
+
+    # when is_global is True, global client should be set
+    init_cachify(sync_client=None, async_client=None, is_global=True)
+    global_client = get_cachify_client()
+
+    assert isinstance(global_client, CachifyClient)
+    assert global_client is not cachify_instance
+    assert isinstance(global_client._async_client, AsyncWrapper)
+
+
+def test_init_cachify_uses_provided_async_client_unchanged():
+    py_cachify._backend._lib._cachify = None
+
+    sync_client = MemoryCache()
+    explicit_async = AsyncWrapper(cache=sync_client)
+
+    cachify_instance = init_cachify(
+        sync_client=sync_client,
+        async_client=explicit_async,
+        is_global=False,
+    )
+    assert cachify_instance._client._sync_client is sync_client
+
+    assert cachify_instance._client._async_client is explicit_async
+
+
+def test_init_cachify_creates_new_memory_cache_when_sync_not_memorycache(mocker: MockerFixture):
+    py_cachify._backend._lib._cachify = None
+
+    class DummySyncClient:
+        def __init__(self):
+            self.set_calls = []
+            self.get_calls = []
+            self.delete_calls = []
+
+        def set(self, name, value, ex=None):
+            self.set_calls.append((name, value, ex))
+
+        def get(self, name, default=None):
+            self.get_calls.append((name, default))
+            return default
+
+        def delete(self, *names):
+            self.delete_calls.append(names)
+
+    sync_client = DummySyncClient()
+    cachify_instance = init_cachify(sync_client=sync_client, async_client=None, is_global=False)
+
+    # internal sync client is our dummy
+    assert cachify_instance._client._sync_client is sync_client
+
+    # async client must be AsyncWrapper with a fresh MemoryCache, not the dummy
+    async_client = cachify_instance._client._async_client
+    assert isinstance(async_client, AsyncWrapper)
+    assert async_client._cache is not sync_client
+    assert isinstance(async_client._cache, MemoryCache)

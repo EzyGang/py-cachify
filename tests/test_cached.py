@@ -194,9 +194,9 @@ async def test_cached_uses_global_and_local_clients_async(init_cachify_fixture, 
 def test_local_cachify_wraps_global_cached_sync(init_cachify_fixture, mocker: MockerFixture):
     spy = mocker.spy(sys.modules[__name__], 'sync_function')
 
-    global_wrapped = cached(key='multi_layer_{arg1}_{arg2}')(sync_function)
+    global_wrapped = cached(key='multi_layer_global_{arg1}_{arg2}')(sync_function)
     local_cachify = init_cachify(prefix='LOCAL-MULTI-', is_global=False)
-    local_wrapped = local_cachify.cached(key='multi_layer_{arg1}_{arg2}')(global_wrapped)
+    local_wrapped = local_cachify.cached(key='multi_layer_local_{arg1}_{arg2}')(global_wrapped)
 
     # First round: local wrapper should compute once and populate both inner (global) and outer (local) caches
     assert local_wrapped(5, 6) == 11
