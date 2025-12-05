@@ -3,10 +3,10 @@ from collections.abc import Awaitable
 from functools import partial, wraps
 from typing import Callable, TypeVar, Union, cast, overload
 
-from typing_extensions import ParamSpec, deprecated
+from typing_extensions import ParamSpec
 
 from ._helpers import a_reset, encode_decode_value, get_full_key_from_signature, is_coroutine, reset
-from ._lib import get_cachify
+from ._lib import get_cachify_client
 from ._types._common import Decoder, Encoder
 from ._types._reset_wrap import AsyncResetWrappedF, SyncResetWrappedF, WrappedFunctionReset
 
@@ -60,52 +60,48 @@ def cached(
 
             @wraps(_awaitable_func)
             async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
-                cachify = get_cachify()
+                cachify_client = get_cachify_client()
                 _key = get_full_key_from_signature(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
-                if val := await cachify.a_get(key=_key):
+                if val := await cachify_client.a_get(key=_key):
                     return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
 
                 res = await _awaitable_func(*args, **kwargs)
-                await cachify.a_set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
+                await cachify_client.a_set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
                 return res
 
-            setattr(_async_wrapper, 'reset', partial(a_reset, signature=signature, key=key, operation_postfix='cached'))
+            setattr(
+                _async_wrapper,
+                'reset',
+                partial(
+                    a_reset, signature=signature, key=key, operation_postfix='cached', original_func=_awaitable_func
+                ),
+            )
 
             return cast(AsyncResetWrappedF[_P, _R], cast(object, _async_wrapper))
         else:
-            _sync_func = _func
+            _sync_func = cast(Callable[_P, _R], _func)  # type: ignore[redundant-cast]
 
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
-                cachify = get_cachify()
+                cachify_client = get_cachify_client()
                 _key = get_full_key_from_signature(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
-                if val := cachify.get(key=_key):
+                if val := cachify_client.get(key=_key):
                     return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
 
                 res = _sync_func(*args, **kwargs)
-                cachify.set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
+                cachify_client.set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
                 return res
 
-            setattr(_sync_wrapper, 'reset', partial(reset, signature=signature, key=key, operation_postfix='cached'))
+            setattr(
+                _sync_wrapper,
+                'reset',
+                partial(reset, signature=signature, key=key, operation_postfix='cached', original_func=_sync_func),
+            )
 
             return cast(SyncResetWrappedF[_P, _R], cast(object, _sync_wrapper))
 
     return cast(WrappedFunctionReset, cast(object, _cached_inner))
-
-
-@deprecated('sync_cached is deprecated, use cached instead. Scheduled for removal in 3.0.0')
-def sync_cached(
-    key: str, ttl: Union[int, None] = None, enc_dec: Union[tuple[Encoder, Decoder], None] = None
-) -> WrappedFunctionReset:
-    return cached(key=key, ttl=ttl, enc_dec=enc_dec)
-
-
-@deprecated('async_cached is deprecated, use cached instead. Scheduled for removal in 3.0.0')
-def async_cached(
-    key: str, ttl: Union[int, None] = None, enc_dec: Union[tuple[Encoder, Decoder], None] = None
-) -> WrappedFunctionReset:
-    return cached(key=key, ttl=ttl, enc_dec=enc_dec)

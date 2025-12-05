@@ -1,5 +1,5 @@
 import time
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 
 class MemoryCache:
@@ -9,7 +9,7 @@ class MemoryCache:
     def set(self, name: str, value: Any, ex: Union[int, None] = None) -> None:
         self._cache[name] = value, ex and time.time() + ex
 
-    def get(self, name: str) -> Any:
+    def get(self, name: str) -> Optional[Any]:
         val, exp_at = self._cache.get(name, (None, None))
 
         if not exp_at or exp_at > time.time():
@@ -30,7 +30,7 @@ class AsyncWrapper:
     def __init__(self, cache: MemoryCache) -> None:
         self._cache = cache
 
-    async def get(self, name: str) -> Any:
+    async def get(self, name: str) -> Optional[Any]:
         return self._cache.get(name=name)
 
     async def delete(self, *names: str) -> Any:

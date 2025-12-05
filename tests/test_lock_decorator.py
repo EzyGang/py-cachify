@@ -7,7 +7,7 @@ from time import sleep
 import pytest
 
 from py_cachify import CachifyLockError, init_cachify, lock
-from py_cachify._backend._lib import get_cachify
+from py_cachify._backend._lib import get_cachify_client
 from py_cachify._backend._types._common import UNSET
 
 
@@ -249,7 +249,7 @@ def test_lock_decorator_cleans_up_on_error(init_cachify_fixture):
     try:
         sync_function(123)
     except Exception:
-        cachify = get_cachify()
+        cachify = get_cachify_client()
         val = cachify.get('PYC-test_key-123')
 
         assert val is None
@@ -264,7 +264,7 @@ async def test_async_lock_decorator_cleans_up_on_error(init_cachify_fixture):
     try:
         await async_function(123)
     except Exception:
-        cachify = get_cachify()
+        cachify = get_cachify_client()
         val = await cachify.a_get('PYC-test_key-123')
 
         assert val is None

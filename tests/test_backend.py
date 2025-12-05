@@ -6,7 +6,8 @@ from pytest_mock import MockerFixture
 import py_cachify._backend._lib
 from py_cachify import CachifyInitError
 from py_cachify._backend._clients import AsyncWrapper, MemoryCache
-from py_cachify._backend._lib import Cachify, get_cachify
+from py_cachify._backend._lib import Cachify, CachifyClient, _current_client, get_cachify_client
+from py_cachify._backend._types._common import UnsetType
 
 
 @pytest.fixture
@@ -21,7 +22,17 @@ def async_wrapper(memory_cache):
 
 @pytest.fixture
 def cachify(memory_cache, async_wrapper):
-    return Cachify(sync_client=memory_cache, default_expiration=30, async_client=async_wrapper, prefix='_PYC_')
+    return CachifyClient(sync_client=memory_cache, default_expiration=30, async_client=async_wrapper, prefix='_PYC_')
+
+
+@pytest.fixture
+def cachify_instance(memory_cache, async_wrapper):
+    return Cachify(
+        sync_client=memory_cache,
+        async_client=async_wrapper,
+        prefix='_PYC_',
+        default_expiration=30,
+    )
 
 
 def test_memory_cache_set_and_get(memory_cache):
@@ -134,4 +145,91 @@ def test_init_cachify(init_cachify_fixture):
 
 def test_get_cachify_raises_error():
     with pytest.raises(CachifyInitError, match='Cachify is not initialized, did you forget to call `init_cachify`?'):
-        get_cachify()
+        get_cachify_client()
+
+
+def test_get_cachify_client_returns_context_var_val():
+    _initialized_client = CachifyClient(
+        sync_client=memory_cache, default_expiration=30, async_client=async_wrapper, prefix='_PYC_'
+    )
+    token = _current_client.set(_initialized_client)
+
+    _client = get_cachify_client()
+
+    try:
+        assert isinstance(_client, CachifyClient)
+        assert _client is _initialized_client
+    finally:
+        _current_client.reset(token)
+
+
+def test_cachify_cached_delegates_to_with_client_context(cachify_instance, mocker: MockerFixture):
+    ctx_spy = mocker.patch.object(cachify_instance, '_with_client_context', autospec=True, return_value='RESULT')
+
+    result = cachify_instance.cached('key', ttl=123, enc_dec=None)
+
+    ctx_spy.assert_called_once()
+    # call_args[0] -> (self, func, key, ttl, enc_dec)
+    print(f'call args: {ctx_spy.call_args[0]}')
+    func_arg, key, ttl, enc_dec = ctx_spy.call_args[0]
+    # func_arg should be the module-level cached decorator factory
+    assert callable(func_arg)
+    assert key == 'key'
+    assert ttl == 123
+    assert enc_dec is None
+    assert result == 'RESULT'
+
+
+def test_cachify_lock_delegates_to_with_client_context(cachify_instance, mocker: MockerFixture):
+    ctx_spy = mocker.patch.object(cachify_instance, '_with_client_context', autospec=True, return_value='LOCK_RESULT')
+    lock_impl = mocker.patch('py_cachify._backend._lock.lock')
+
+    result = cachify_instance.lock('arg1', nowait=True)
+
+    ctx_spy.assert_called_once()
+    # call_args[0] -> (self, func, key, nowait, timeout, exp)
+    passed_func, key, nowait, timeout, exp = ctx_spy.call_args[0]
+    assert passed_func is lock_impl
+    assert key == 'arg1'
+    assert nowait is True
+    assert timeout is None
+    assert isinstance(exp, UnsetType)
+    assert result == 'LOCK_RESULT'
+
+
+def test_cachify_once_delegates_to_with_client_context(cachify_instance, mocker: MockerFixture):
+    ctx_spy = mocker.patch.object(cachify_instance, '_with_client_context', autospec=True, return_value='ONCE_RESULT')
+    once_impl = mocker.patch('py_cachify._backend._lock.once')
+
+    result = cachify_instance.once('arg1', raise_on_locked=True)
+
+    ctx_spy.assert_called_once()
+    # call_args[0] -> (self, func, key, raise_on_locked, return_on_locked)
+    passed_func, key, raise_on_locked, return_on_locked = ctx_spy.call_args[0]
+    assert passed_func is once_impl
+    assert key == 'arg1'
+    assert raise_on_locked is True
+    assert return_on_locked is None
+    assert ctx_spy.call_args[1] == {}
+    assert result == 'ONCE_RESULT'
+
+
+def test_with_client_context_sets_and_restores_contextvar(cachify_instance):
+    previous_client = object()
+    token = _current_client.set(previous_client)
+
+    inside_client = None
+
+    def inner():
+        nonlocal inside_client
+        inside_client = _current_client.get()
+        return 'ok'
+
+    result = cachify_instance._with_client_context(inner)
+
+    try:
+        assert result == 'ok'
+        assert inside_client is cachify_instance._client
+        assert _current_client.get() is previous_client
+    finally:
+        _current_client.reset(token)

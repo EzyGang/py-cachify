@@ -7,7 +7,7 @@ from time import sleep
 import pytest
 
 from py_cachify import CachifyLockError, init_cachify, lock
-from py_cachify._backend._lib import Cachify
+from py_cachify._backend._lib import CachifyClient
 from py_cachify._backend._types._common import UNSET
 
 
@@ -88,7 +88,7 @@ async def test_waiting_lock_async(init_cachify_fixture, exp, timeout, expectatio
 
 
 def test_lock_cachify_returns_cachify_instance(init_cachify_fixture):
-    assert isinstance(lock_obj._cachify, Cachify)
+    assert isinstance(lock_obj._cachify, CachifyClient)
     assert lock_obj._cachify is not None
 
 

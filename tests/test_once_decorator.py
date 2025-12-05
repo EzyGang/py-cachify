@@ -4,7 +4,7 @@ from time import sleep
 
 import pytest
 
-from py_cachify import CachifyLockError, async_once, once, sync_once
+from py_cachify import CachifyLockError, once
 
 
 def test_once_decorator_sync_function(init_cachify_fixture):
@@ -85,22 +85,6 @@ async def test_once_decorator_return_on_locked_async(init_cachify_fixture):
     results = await asyncio.gather(async_function(3, 4), async_function(3, 4))
     assert to_return in results
     assert 7 in results
-
-
-def test_preserves_type_annotations(init_cachify_fixture):
-    @async_once(key='test_key-{arg1}')
-    async def async_function(arg1: int, arg2: int) -> int:
-        await asyncio.sleep(1)
-        return arg1 + arg2
-
-    @sync_once(key='test_key-{arg1}-{arg2}', raise_on_locked=True)
-    def sync_function(arg1: int, arg2: int) -> int:
-        sleep(1)
-        return arg1 + arg2
-
-    for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
-        assert sync_function.__annotations__[name] == clz
-        assert async_function.__annotations__[name] == clz
 
 
 def test_once_wrapped_async_function_has_release_and_is_locked_callables_attached(init_cachify_fixture):
