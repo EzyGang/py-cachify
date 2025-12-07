@@ -95,7 +95,12 @@ from py_cachify import init_cachify
 
 init_cachify()
 ```
-By default, it will use an in-memory cache.
+
+This call:
+
+- Configures the **global** client used by the top-level decorators: `cached`, `lock`, and `once`.
+- Returns a `Cachify` instance, but you don't have to use it if you only work with the global decorators.
+- Uses an in-memory cache by default (both for sync and async usage).
 
 
 If you want to use Redis:
@@ -104,13 +109,37 @@ from py_cachify import init_cachify
 from redis.asyncio import from_url as async_from_url
 from redis import from_url
 
-init_cachify(sync_client=from_url(redis_url), async_client=async_from_url(async_redis_client))
+
+# Example: configure global cachify with Redis for both sync and async flows
+init_cachify(
+    sync_client=from_url(redis_url),
+    async_client=async_from_url(redis_url),
+)
 ```
-Normally you wouldn't have to use both sync and async clients since an application usually works in a single mode i.e. sync/async.
+Normally you wouldn't have to use both sync and async clients since an application usually works in a single mode i.e. sync/async. You can pass only `sync_client` **or** only `async_client` if that matches your usage.
+
 
 Once initialized you can use everything that the library provides straight up without being worried about managing the cache yourself.
 
-❗ If you forgot to call `init_cachify` the `CachifyInitError` will be raised during runtime.
+
+❗ If you forgot to call `init_cachify` with `is_global=True` at least once, using the global decorators (`cached`, `lock`, `once`) will raise `CachifyInitError` during runtime.
+
+You can also create **dedicated instances** without touching the global client:
+
+```python
+from py_cachify import init_cachify
+
+# Global initialization for the top-level decorators
+init_cachify()
+
+# Local instance that does NOT touch the global client
+local_cache = init_cachify(is_global=False, prefix='LOCAL-')
+
+@local_cache.cached(key='local-{x}')
+def compute_local(x: int) -> int:
+    return x * 2
+```
+
 
 ## Basic examples
 

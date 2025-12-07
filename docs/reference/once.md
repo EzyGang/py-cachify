@@ -5,6 +5,11 @@
 The `once` decorator ensures that a decorated function can only be called once at a time based on a specified key.
 It can be applied to both synchronous and asynchronous functions, facilitating locking mechanisms to prevent concurrent executions.
 
+There are two main ways to use `once` with py-cachify:
+
+- Via the **global** `once` decorator exported from `py_cachify`, which relies on a globally initialized client.
+- Via **instance-based** `once` decorators obtained from a `Cachify` object created by `init_cachify(is_global=False)`.
+
 ---
 
 ## Function: ///once()///
@@ -48,6 +53,25 @@ async def my_async_function(arg: str):
     return 'Async function executed'
 ```
 
+### Instance-based Usage
+
+If you need multiple, independent "once" semantics (for example, per module or subsystem), you can create dedicated `Cachify` instances via `init_cachify(is_global=False)` and use their `once` method instead of the global decorator:
+
+```python
+from py_cachify import init_cachify
+
+# Create a dedicated instance that does not affect the global client
+local_cachify = init_cachify(is_global=False, prefix='LOCAL-')
+
+@local_cachify.once('local-once-{task_id}')
+def local_task(task_id: str) -> None:
+    # This function will be guarded by the local instance
+    ...
+```
+
+- Global `@once(...)` uses the client configured by a global `init_cachify()` call.
+- `@local_cachify.once(...)` uses a client that is completely independent from the global one.
+
 ### Releasing the once lock or checking if it is locked
 
 ```python
@@ -57,8 +81,16 @@ await my_async_function.is_locked(arg='arg-value')
 await my_async_function.release(arg='arg-value')
 ```
 
+The same pattern applies to instance-based usage:
+
+```python
+await local_task.is_locked(task_id='42')
+await local_task.release(task_id='42')
+```
+
 ### Note
-- If py-cachify is not initialized through `init_cachify`, a `CachifyInitError` will be raised.
+- If py-cachify is not initialized through `init_cachify` with `is_global=True`, using the global `once` decorator will raise a `CachifyInitError`.
+- `Cachify` instances created with `is_global=False` do not depend on global initialization and can be used independently.
 
 ### Type Hints Remark (Decorator only application)
 
