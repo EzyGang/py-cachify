@@ -143,9 +143,12 @@ def compute_local(x: int) -> int:
 
 ## Basic examples
 
+
 ### Caching
 
+
 Caching by using `@cached` decorator utilizing the flexibility of a dynamic key:
+
 
 ```python
 # Cache the result of the following function with dynamic key
@@ -158,6 +161,25 @@ async def sum_two(a: int, b: int) -> int:
     
 # Reset the cache for the call with arguments a=1, b=2
 await sub_two.reset(a=1, b=2)
+```
+
+### Multi-layer Usage
+
+It is possible to layer caches by stacking `cached` decorators (for example, a global cache inside a local instance cache).
+
+```python
+from py_cachify import cached, init_cachify
+
+# Global initialization for the top-level decorators
+init_cachify()
+
+# Local instance with a shorter TTL that wraps the global one
+local = init_cachify(is_global=False, prefix='LOCAL-')
+
+@local.cached(key='local-expensive-{x}', ttl=5)
+@cached(key='expensive-{x}', ttl=60)
+def expensive(x: int) -> int:
+    return x * 10
 ```
 
 Read more about `@cached` [here](https://py-cachify.readthedocs.io/latest/reference/cached/).

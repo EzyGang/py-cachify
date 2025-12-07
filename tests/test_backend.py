@@ -1,4 +1,5 @@
 import time
+from types import SimpleNamespace
 
 import pytest
 from pytest_mock import MockerFixture
@@ -155,10 +156,10 @@ def test_get_cachify_client_returns_global_value(init_cachify_fixture):
 
 
 def test_cachify_cached_delegates_to__cached_impl(cachify_instance, mocker: MockerFixture):
-    sentinel = object()
+    dummy_cached = SimpleNamespace()
     mocked_impl = mocker.patch(
         'py_cachify._backend._cached._cached_impl',
-        return_value=sentinel,
+        return_value=dummy_cached,
     )
 
     result = cachify_instance.cached(
@@ -167,7 +168,7 @@ def test_cachify_cached_delegates_to__cached_impl(cachify_instance, mocker: Mock
         enc_dec=('enc', 'dec'),
     )
 
-    assert result is sentinel
+    assert result is dummy_cached
 
     call = mocked_impl.call_args
     assert call.kwargs['key'] == 'k-{x}'
@@ -180,8 +181,6 @@ def test_cachify_cached_delegates_to__cached_impl(cachify_instance, mocker: Mock
 
 
 def test_cachify_lock_delegates_and_injects_client(cachify_instance, mocker: MockerFixture):
-    from types import SimpleNamespace
-
     dummy_lock = SimpleNamespace()
     mocked_lock = mocker.patch(
         'py_cachify._backend._lock.lock',
@@ -216,10 +215,10 @@ def test_cachify_lock_delegates_and_injects_client(cachify_instance, mocker: Moc
 
 
 def test_cachify_once_delegates_to__once_impl(cachify_instance, mocker: MockerFixture):
-    sentinel = object()
+    dummy_once = SimpleNamespace()
     mocked_once_impl = mocker.patch(
         'py_cachify._backend._lock._once_impl',
-        return_value=sentinel,
+        return_value=dummy_once,
     )
 
     result = cachify_instance.once(
@@ -228,7 +227,7 @@ def test_cachify_once_delegates_to__once_impl(cachify_instance, mocker: MockerFi
         return_on_locked=42,
     )
 
-    assert result is sentinel
+    assert result is dummy_once
 
     call = mocked_once_impl.call_args
     assert call.kwargs['key'] == 'once-{z}'

@@ -4,7 +4,7 @@
 
 ### Features & Enhancements
 
-- **Multiple cachify instances per app**:
+#### **Multiple cachify instances per app**:
   - `init_cachify` now supports `is_global: bool = True` and returns a `Cachify` instance.
   - When `is_global=True` (default), `init_cachify` configures the global client used by top-level `cached`, `lock`, and `once` and returns a `Cachify` instance backed by that client.
   - When `is_global=False`, `init_cachify` does **not** modify the global client and instead returns an independent `Cachify` instance exposing:
@@ -12,7 +12,7 @@
     - `Cachify.lock(...)`
     - `Cachify.once(...)`
 
-- **New public `Cachify` type**:
+#### **New public `Cachify` type**:
   - `Cachify` is now publicly exported from `py_cachify`.
   - It provides a convenient, instance-scoped API over the same high-level decorators:
     - `@Cachify.cached(...)`
@@ -20,11 +20,11 @@
     - `@Cachify.once(...)`
   - All instance methods share the same semantics as the corresponding top-level decorators, but are bound to a specific client/prefix.
 
-- **Improved reset and lock-query semantics in helpers**:
+#### **Improved reset and lock-query semantics in helpers**:
   - The helper functions `reset`, `a_reset`, `is_locked`, and `is_alocked` have been reworked to:
     - Accept additional internal parameters (`_pyc_key`, `_pyc_signature`, `_pyc_operation_postfix`, `_pyc_original_func`, `_pyc_client_provider`) to make them fully aware of which client and which wrapped function they are operating on and prevent collisions with user defined functions args and kwargs.
 
-- **Multi-layer caching support**:
+#### **Multi-layer caching support**:
   - Thanks to the helper changes and the instance-scoped API, it is now straightforward to stack multiple `cached` decorators, for example:
     - A global cache with a long TTL; and
     - A local instance cache with a shorter TTL on top of it.
@@ -33,14 +33,14 @@
     - Attempt to call `reset` on the inner wrapper(s), if they expose such a method, so the entire “stack” is reset for the given arguments.
   - This pattern is documented in the updated `cached` reference and tutorial.
 
-- **Stricter typing and tooling**:
+#### **Stricter typing and tooling**:
   - Python baseline bumped to **3.9+**.
   - Core types updated to use `collections.abc.Awaitable` and built-in generics (`dict[...]`, `tuple[...]`, etc.).
   - `typing-extensions` dependency bumped (>=4.15.0) and `basedpyright` configuration added for strict type checking on the `py_cachify` package.
 
 ### Breaking Changes
 
-- **Deprecated aliases removed**:
+#### **Deprecated aliases removed**:
   - The following deprecated functions, announced in 2.0.0 as scheduled for removal in 3.0.0, have now been removed:
     - `async_cached`
     - `sync_cached`
@@ -50,19 +50,19 @@
     - `cached` for both sync and async caching.
     - `once` for both sync and async “once at a time” locking.
 
-- **Python 3.8 support dropped**:
+#### **Python 3.8 support dropped**:
   - The supported Python versions are now 3.9–3.14.
   - Python 3.8 is no longer supported and is removed from classifiers and test matrix.
 
 ### Notes on Migration from 2.x to 3.0.0
 
-- If you only used:
+#### If you only used:
   - `init_cachify(...)`,
   - `cached`,
   - `lock`,
   - `once`,
   and **did not** use any of the deprecated aliases or internal APIs, you should be able to upgrade with no code changes.
-- If you used any of the deprecated aliases:
+#### If you used any of the deprecated aliases:
   - Replace:
     - `sync_cached` / `async_cached` with `cached` (it works for both sync and async).
     - `sync_once` / `async_once` with `once`.
