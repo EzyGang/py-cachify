@@ -1,4 +1,5 @@
-from typing import Awaitable, Callable, Union
+from collections.abc import Awaitable
+from typing import Callable, Union
 
 from typing_extensions import ParamSpec, Protocol, TypeVar, overload
 

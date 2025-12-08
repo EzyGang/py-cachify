@@ -4,8 +4,7 @@ import sys
 import pytest
 from pytest_mock import MockerFixture
 
-from py_cachify import CachifyInitError, cached
-from py_cachify._backend._cached import async_cached, sync_cached
+from py_cachify import CachifyInitError, cached, init_cachify
 
 
 def sync_function(arg1: int, arg2: int) -> int:
@@ -155,9 +154,86 @@ async def test_cached_works_on_async_methods(init_cachify_fixture):
     assert await tc.method_class.reset(tc.__class__, 1, 2) is None
 
 
-def test_async_cached_returns_cached():
-    assert async_cached(key='test').__qualname__.split('.')[-1] == '_cached_inner'
+def test_cached_uses_global_and_local_clients_sync(init_cachify_fixture, mocker: MockerFixture):
+    spy = mocker.spy(sys.modules[__name__], 'sync_function')
+
+    global_wrapped = cached(key='multi_client_{arg1}_{arg2}')(sync_function)
+
+    local_cachify = init_cachify(prefix='LOCAL-', is_global=False)
+    local_wrapped = local_cachify.cached(key='multi_client_{arg1}_{arg2}')(sync_function)
+
+    assert global_wrapped(10, 11) == 21
+    assert global_wrapped(10, 11) == 21  # hit global cache
+
+    assert local_wrapped(10, 12) == 22
+    assert local_wrapped(10, 12) == 22  # hit local cache
+
+    # One call per client (global + local) with caching working independently
+    assert spy.call_count == 2
 
 
-def test_sync_cached_returns_cached():
-    assert sync_cached(key='test').__qualname__.split('.')[-1] == '_cached_inner'
+@pytest.mark.asyncio
+async def test_cached_uses_global_and_local_clients_async(init_cachify_fixture, mocker: MockerFixture):
+    spy = mocker.spy(sys.modules[__name__], 'async_function')
+
+    global_wrapped = cached(key='multi_client_async_{arg1}_{arg2}')(async_function)
+
+    local_cachify = init_cachify(prefix='LOCAL-ASYNC-', is_global=False)
+    local_wrapped = local_cachify.cached(key='multi_client_async_{arg1}_{arg2}')(async_function)
+
+    assert await global_wrapped(10, 11) == 21
+    assert await global_wrapped(10, 11) == 21  # hit global cache
+
+    assert await local_wrapped(10, 12) == 22
+    assert await local_wrapped(10, 12) == 22  # hit local cache
+
+    # One call per client (global + local) with caching working independently
+    assert spy.call_count == 2
+
+
+def test_local_cachify_wraps_global_cached_sync(init_cachify_fixture, mocker: MockerFixture):
+    spy = mocker.spy(sys.modules[__name__], 'sync_function')
+
+    global_wrapped = cached(key='multi_layer_global_{arg1}_{arg2}')(sync_function)
+    local_cachify = init_cachify(prefix='LOCAL-MULTI-', is_global=False)
+    local_wrapped = local_cachify.cached(key='multi_layer_local_{arg1}_{arg2}')(global_wrapped)
+
+    # First round: local wrapper should compute once and populate both inner (global) and outer (local) caches
+    assert local_wrapped(5, 6) == 11
+    assert global_wrapped(5, 6) == 11
+    assert spy.call_count == 1  # no additional calls
+
+    # Reset via the local wrapper; this should clear both caches for these args
+    assert local_wrapped.reset(5, 6) is None
+
+    # After reset, calling through local wrapper should recompute and repopulate both caches
+    assert local_wrapped(5, 6) == 11
+    assert spy.call_count == 2
+
+    # Global wrapper should again hit its cache
+    assert global_wrapped(5, 6) == 11
+    assert spy.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_local_cachify_wraps_global_cached_async(init_cachify_fixture, mocker: MockerFixture):
+    spy = mocker.spy(sys.modules[__name__], 'async_function')
+
+    global_wrapped = cached(key='multi_layer_async_{arg1}_{arg2}')(async_function)
+    local_cachify = init_cachify(prefix='LOCAL-MULTI-ASYNC-', is_global=False)
+    local_wrapped = local_cachify.cached(key='multi_layer_async_{arg1}_{arg2}')(global_wrapped)
+
+    assert await local_wrapped(5, 6) == 11
+    assert await global_wrapped(5, 6) == 11
+    assert spy.call_count == 1  # no additional calls
+
+    # Reset via the local wrapper; this should clear both caches for these args
+    assert await local_wrapped.reset(5, 6) is None
+
+    # After reset, calling through local wrapper should recompute and repopulate both caches
+    assert await local_wrapped(5, 6) == 11
+    assert spy.call_count == 2
+
+    # Global wrapper should again hit its cache
+    assert await global_wrapped(5, 6) == 11
+    assert spy.call_count == 2

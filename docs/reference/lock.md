@@ -5,6 +5,12 @@
 The `lock` module provides a mechanism for managing locking within synchronous and asynchronous contexts. 
 The main class, `lock`, combines both synchronous and asynchronous locking operations. 
 
+There are two main ways to use locking with py-cachify:
+
+- Via the **global** `lock` factory exported from `py_cachify`, which relies on a globally initialized client.
+- Via **instance-based** locking obtained from a `Cachify` object created by `init_cachify(is_global=False)`.
+
+
 ## Class: ///lock///
 
 ### Description
@@ -71,7 +77,29 @@ async with lock('my_async_lock_key'):
 
 ```
 
+
 By using the `lock` class, you'll ensure that your function calls are properly synchronized, preventing race conditions in shared resources.
+
+### Instance-based usage
+
+If you need multiple, independent locking backends (for example, per module or subsystem), you can create dedicated `Cachify` instances via `init_cachify(is_global=False)` and use their `lock` method instead of the global factory:
+
+```python
+from py_cachify import init_cachify
+
+# Create a dedicated instance that does not affect the global client
+local_cachify = init_cachify(is_global=False, prefix='LOCAL-')
+
+local_lock = local_cachify.lock(key='local-lock-{name}')
+
+with local_lock:
+    # Critical section protected by the local instance
+    ...
+```
+
+- Global `lock(...)` uses the client configured by a global `init_cachify()` call.
+- `local_cachify.lock(...)` uses a client that is completely independent from the global one.
+
 
 ### Releasing the Lock or checking whether it's locked or not
 ```python
@@ -82,7 +110,10 @@ my_function.release(arg='arg-value')  # forcefully releases the lock
 
 ### Note
 
-- If py-cachify is not initialized through `init_cachify`, a `CachifyInitError` will be raised.
+
+- If py-cachify is not initialized through `init_cachify` with `is_global=True`, using the global `lock` factory or decorators will raise a `CachifyInitError`.
+- `Cachify` instances created with `is_global=False` do not depend on global initialization and can be used independently.
+
 
 ### Type Hints Remark (Decorator only application)
 

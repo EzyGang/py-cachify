@@ -1,9 +1,9 @@
 [project]
 name = "py-cachify"
+description = "Distributed locks, caching, and locking at hand"
 version = "3.0.0"
-description = "Distributed locks, caching, and locking decorators at hand"
 authors = [{ name = "Galtozzy", email = "galtozzy+git@gmail.com" }]
-requires-python = ">=3.8,<4.0"
+requires-python = ">=3.9,<4.0"
 readme = "README.md"
 license = "MIT"
 classifiers = [
@@ -19,7 +19,6 @@ classifiers = [
     "Typing :: Typed",
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -28,7 +27,9 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
 ]
-dependencies = ["typing-extensions>=4.12.2,<5"]
+dependencies = [
+    "typing-extensions>=4.15.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/EzyGang/py-cachify"
@@ -49,6 +50,7 @@ dev = [
     "pytest-asyncio>=0.24.0,<0.25",
     "pytest-socket>=0.7.0,<0.8",
     "ruff>=0.9.2,<0.10",
+    "basedpyright>=1.35.0",
 ]
 docs = [
     "mkdocs>=1.6.0,<2",
@@ -87,16 +89,14 @@ ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ 
 tests = "PYTHONPATH=. pytest tests/ -vvv"
 integration-tests = "PYTHONPATH=. pytest integration_tests/ --no-cov"
 
-docs-dev = "mkdocs serve"
+docs-dev = "mkdocs serve "
 ruff-lint = "ruff check ./py_cachify"
 mypy-lint = "mypy --install-types --non-interactive ./py_cachify/"
-poetry-check = "poetry check"
-pip-check = "pip check"
 
 [tool.ruff]
 line-length = 120
 extend-exclude = ["site-packages", "*.pyi"]
-target-version = 'py38'
+target-version = 'py39'
 
 [tool.ruff.lint]
 fixable = ["ALL"]
@@ -186,4 +186,16 @@ exclude_lines = [
     '__all__',
     'if TYPE_CHECKING:',
     'except ModuleNotFoundError:',
+]
+
+
+[tool.pyright]
+include = ["py_cachify"]
+exclude = ["tests"]
+reportAny = false
+typeCheckingMode = "strict"
+pythonVersion = "3.9"
+executionEnvironments = [
+  { root = "py_cachify" },
+  { root = "tests" }
 ]

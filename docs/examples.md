@@ -2,7 +2,7 @@
 
 Here's a small list of possible usage applications.
 
-Remember to make sure to call `init_cachify`
+Remember to make sure to call `init_cachify` or create a local instance with `init_cachify(is_global=False)` to use it instead.
 
 ## ///lock/// as a context manager
 ```python
@@ -71,6 +71,7 @@ def one_more_long_running_function() -> None:
 ```python
 from py_cachify import cached
 
+
 @cached(key='example_key', ttl=60)
 def expensive_function(x):
     print('Executing expensive operation...')
@@ -83,13 +84,49 @@ def async_expensive_function(arg_a: int, arg_b: int) -> int:
 
 ```
 
+## ///cached/// with instance-based usage
+
+```python
+from py_cachify import init_cachify
+
+# Create a dedicated instance that does not affect the global client
+local_cachify = init_cachify(is_global=False, prefix='LOCAL-')
+
+@local_cachify.cached(key='local-expensive-{x}', ttl=10)
+def local_expensive_function(x: int) -> int:
+    print('Executing local expensive operation...')
+    return x ** 3
+```
+
+## ///cached/// multi-layer usage
+
+```python
+from py_cachify import cached, init_cachify
+
+# Global initialization (used by the top-level @cached)
+init_cachify()
+
+# Local instance that adds a shorter TTL on top of the global cache
+local_cachify = init_cachify(is_global=False, prefix='LOCAL-')
+
+@local_cachify.cached(key='local-expensive-{x}', ttl=5)
+@cached(key='global-expensive-{x}', ttl=60)
+def expensive(x: int) -> int:
+    print('Executing expensive operation...')
+    return x * 10
+
+# Reset both layers for a given argument
+expensive.reset(42)
+```
+
+
 ## ///cached/// decorator with encoder/decoder
 ```python
 from py_cachify import cached
 
 
 def encoder(val: 'UnpicklableClass') -> dict:
-    return {'arg1': val._arg1, 'arg2': val._arg2}
+    return {'arg1': val.arg1, 'arg2': val.arg2}
 
 
 def decoder(val: dict) -> 'UnpicklableClass':

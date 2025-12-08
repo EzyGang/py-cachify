@@ -1,21 +1,22 @@
 import inspect
 import time
 from asyncio import sleep as asleep
+from collections.abc import Awaitable
 from functools import partial, wraps
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, cast
 
-from typing_extensions import ParamSpec, Self, deprecated, final, overload, override
+from typing_extensions import ParamSpec, Self, final, overload, override
 
 from ._exceptions import CachifyLockError
 from ._helpers import a_reset, get_full_key_from_signature, is_alocked, is_coroutine, is_locked, reset
-from ._lib import get_cachify
+from ._lib import get_cachify_client
 from ._logger import logger
 from ._types._common import UNSET, LockProtocolBase, UnsetType
 from ._types._lock_wrap import AsyncLockWrappedF, SyncLockWrappedF, WrappedFunctionLock
 
 
 if TYPE_CHECKING:
-    from ._lib import Cachify
+    from ._lib import CachifyClient
 
 
 _R = TypeVar('_R', covariant=True)
@@ -130,6 +131,7 @@ class lock(AsyncLockMethods, SyncLockMethods):
         self._nowait = nowait
         self._timeout = timeout
         self._exp = exp
+        self._bound_cachify_client: Union[CachifyClient, None] = None
 
     @overload
     def __call__(self, _func: Callable[_P, Awaitable[_R]]) -> AsyncLockWrappedF[_P, _R]: ...  # type: ignore[overload-overlap]
@@ -168,17 +170,31 @@ class lock(AsyncLockMethods, SyncLockMethods):
             setattr(
                 _async_wrapper,
                 'is_locked',
-                partial(is_alocked, signature=signature, key=self._key, operation_postfix='lock'),
+                partial(
+                    is_alocked,
+                    _pyc_signature=signature,
+                    _pyc_key=self._key,
+                    _pyc_operation_postfix='lock',
+                    _pyc_original_func=_awaitable_func,
+                    _pyc_client_provider=lambda: self._cachify,
+                ),
             )
             setattr(
                 _async_wrapper,
                 'release',
-                partial(a_reset, signature=signature, key=self._key, operation_postfix='lock'),
+                partial(
+                    a_reset,
+                    _pyc_signature=signature,
+                    _pyc_key=self._key,
+                    _pyc_operation_postfix='lock',
+                    _pyc_original_func=_awaitable_func,
+                    _pyc_client_provider=lambda: self._cachify,
+                ),
             )
 
             return cast(AsyncLockWrappedF[_P, _R], cast(object, _async_wrapper))
         else:
-            _sync_func = _func
+            _sync_func = cast(Callable[_P, _R], _func)  # type: ignore[redundant-cast]
 
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
@@ -191,20 +207,43 @@ class lock(AsyncLockMethods, SyncLockMethods):
             setattr(
                 _sync_wrapper,
                 'is_locked',
-                partial(is_locked, signature=signature, key=self._key, operation_postfix='lock'),
+                partial(
+                    is_locked,
+                    _pyc_signature=signature,
+                    _pyc_key=self._key,
+                    _pyc_operation_postfix='lock',
+                    _pyc_original_func=_sync_func,
+                    _pyc_client_provider=lambda: self._cachify,
+                ),
             )
             setattr(
-                _sync_wrapper, 'release', partial(reset, signature=signature, key=self._key, operation_postfix='lock')
+                _sync_wrapper,
+                'release',
+                partial(
+                    reset,
+                    _pyc_signature=signature,
+                    _pyc_key=self._key,
+                    _pyc_operation_postfix='lock',
+                    _pyc_original_func=_sync_func,
+                    _pyc_client_provider=lambda: self._cachify,
+                ),
             )
 
             return cast(SyncLockWrappedF[_P, _R], cast(object, _sync_wrapper))
 
     @property
     @override
-    def _cachify(self) -> 'Cachify':
-        return get_cachify()
+    def _cachify(self) -> 'CachifyClient':
+        if self._bound_cachify_client is not None:
+            return self._bound_cachify_client
 
-    def _recreate_cm(self) -> 'Self':
+        return get_cachify_client()
+
+    @_cachify.setter
+    def _cachify(self, client: 'CachifyClient') -> None:
+        self._bound_cachify_client = client
+
+    def _recreate_cm(self) -> 'Self':  # pyright: ignore[reportUnusedFunction]
         return self
 
     @override
@@ -246,7 +285,15 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
     SyncOrAsyncRelease: Either a synchronous or asynchronous wrapped function with `release` and `is_locked`
         methods attached to it.
     """
+    return _once_impl(key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked)
 
+
+def _once_impl(
+    key: str,
+    raise_on_locked: bool = False,
+    return_on_locked: Any = None,
+    client_provider: Callable[[], 'CachifyClient'] = get_cachify_client,
+) -> WrappedFunctionLock:
     @overload
     def _once_inner(  # type: ignore[overload-overlap]
         _func: Callable[_P, Awaitable[_R]],
@@ -271,7 +318,9 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
                 _key = get_full_key_from_signature(bound_args=bound_args, key=key, operation_postfix='once')
 
                 try:
-                    async with lock(key=_key):
+                    lk = lock(key=_key)
+                    lk._cachify = client_provider()  # pyright: ignore[reportPrivateUsage]
+                    async with lk:
                         return await _awaitable_func(*args, **kwargs)
                 except CachifyLockError:
                     if raise_on_locked:
@@ -279,15 +328,35 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return return_on_locked  # type: ignore[no-any-return]
 
-            setattr(_async_wrapper, 'release', partial(a_reset, signature=signature, key=key, operation_postfix='once'))
             setattr(
-                _async_wrapper, 'is_locked', partial(is_alocked, signature=signature, key=key, operation_postfix='once')
+                _async_wrapper,
+                'release',
+                partial(
+                    a_reset,
+                    _pyc_signature=signature,
+                    _pyc_key=key,
+                    _pyc_operation_postfix='once',
+                    _pyc_original_func=_awaitable_func,
+                    _pyc_client_provider=client_provider,
+                ),
+            )
+            setattr(
+                _async_wrapper,
+                'is_locked',
+                partial(
+                    is_alocked,
+                    _pyc_signature=signature,
+                    _pyc_key=key,
+                    _pyc_operation_postfix='once',
+                    _pyc_original_func=_awaitable_func,
+                    _pyc_client_provider=client_provider,
+                ),
             )
 
             return cast(AsyncLockWrappedF[_P, _R], cast(object, _async_wrapper))
 
         else:
-            _sync_func = _func
+            _sync_func = cast(Callable[_P, _R], _func)  # type: ignore[redundant-cast]
 
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
@@ -295,7 +364,9 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
                 _key = get_full_key_from_signature(bound_args=bound_args, key=key, operation_postfix='once')
 
                 try:
-                    with lock(key=_key):
+                    lk = lock(key=_key)
+                    lk._cachify = client_provider()  # pyright: ignore[reportPrivateUsage]
+                    with lk:
                         return _sync_func(*args, **kwargs)
                 except CachifyLockError:
                     if raise_on_locked:
@@ -303,21 +374,31 @@ def once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) 
 
                     return cast(_R, return_on_locked)
 
-            setattr(_sync_wrapper, 'release', partial(reset, signature=signature, key=key, operation_postfix='once'))
             setattr(
-                _sync_wrapper, 'is_locked', partial(is_locked, signature=signature, key=key, operation_postfix='once')
+                _sync_wrapper,
+                'release',
+                partial(
+                    reset,
+                    _pyc_signature=signature,
+                    _pyc_key=key,
+                    _pyc_operation_postfix='once',
+                    _pyc_original_func=_sync_func,
+                    _pyc_client_provider=client_provider,
+                ),
+            )
+            setattr(
+                _sync_wrapper,
+                'is_locked',
+                partial(
+                    is_locked,
+                    _pyc_signature=signature,
+                    _pyc_key=key,
+                    _pyc_operation_postfix='once',
+                    _pyc_original_func=_sync_func,
+                    _pyc_client_provider=client_provider,
+                ),
             )
 
             return cast(SyncLockWrappedF[_P, _R], cast(object, _sync_wrapper))
 
     return cast(WrappedFunctionLock, cast(object, _once_inner))
-
-
-@deprecated('sync_once is deprecated, use once instead. Scheduled for removal in 3.0.0')
-def sync_once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> WrappedFunctionLock:
-    return once(key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked)
-
-
-@deprecated('async_once is deprecated, use once instead. Scheduled for removal in 3.0.0')
-def async_once(key: str, raise_on_locked: bool = False, return_on_locked: Any = None) -> WrappedFunctionLock:
-    return once(key=key, raise_on_locked=raise_on_locked, return_on_locked=return_on_locked)
