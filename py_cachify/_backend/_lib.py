@@ -26,7 +26,7 @@ class CachifyClient:
         self.default_expiration = default_expiration
 
     def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
-        _ = self._sync_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl)
+        _ = self._sync_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl, nx=False)
 
     def get(self, key: str) -> Any:
         return (val := self._sync_client.get(name=f'{self._prefix}{key}')) and pickle.loads(val)
@@ -34,14 +34,32 @@ class CachifyClient:
     def delete(self, key: str) -> Any:
         return self._sync_client.delete(f'{self._prefix}{key}')
 
+    def try_acquire_lock(self, key: str, ttl: Optional[int]) -> bool:
+        """
+        Returns True if the lock was acquired, False if it is already held.
+        """
+        name = f'{self._prefix}{key}'
+        payload = pickle.dumps(1)
+        res = self._sync_client.set(name=name, value=payload, ex=ttl, nx=True)
+        return bool(res)
+
     async def a_get(self, key: str) -> Any:
         return (val := await self._async_client.get(name=f'{self._prefix}{key}')) and pickle.loads(val)
 
     async def a_set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
-        await self._async_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl)
+        await self._async_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl, nx=False)
 
     async def a_delete(self, key: str) -> Any:
         return await self._async_client.delete(f'{self._prefix}{key}')
+
+    async def a_try_acquire_lock(self, key: str, ttl: Optional[int]) -> bool:
+        """
+        Returns True if the lock was acquired, False if it is already held.
+        """
+        name = f'{self._prefix}{key}'
+        payload = pickle.dumps(1)
+        res = await self._async_client.set(name=name, value=payload, ex=ttl, nx=True)
+        return bool(res)
 
 
 _cachify: Optional['CachifyClient'] = None

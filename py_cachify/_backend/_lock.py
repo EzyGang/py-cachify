@@ -31,21 +31,20 @@ class AsyncLockMethods(LockProtocolBase):
     async def _a_acquire(self, key: str) -> None:
         stop_at = self._calc_stop_at()
         c = 10
-
         while True:
-            _is_locked = bool(await self.is_alocked())
+            acquired = await self._cachify.a_try_acquire_lock(key=self._key, ttl=self._get_ttl())
+            if acquired:
+                return
+
             self._raise_if_cached(
-                is_already_cached=_is_locked,
+                is_already_cached=True,
                 key=key,
                 do_raise=self._nowait or time.time() > stop_at,
                 do_log=bool(c >= 10),
             )
 
-            if not _is_locked:
-                await self._cachify.a_set(key=key, val=1, ttl=self._get_ttl())
-                return
-
             await asleep(0.1)
+            c += 1 if c < 10 else -10
 
     async def arelease(self) -> None:
         await self._cachify.a_delete(key=self._key)
@@ -65,20 +64,17 @@ class SyncLockMethods(LockProtocolBase):
     def _acquire(self, key: str) -> None:
         stop_at = self._calc_stop_at()
         c = 10
-
         while True:
-            _is_locked = bool(self.is_locked())
+            acquired = self._cachify.try_acquire_lock(key=self._key, ttl=self._get_ttl())
+            if acquired:
+                return
+
             self._raise_if_cached(
-                is_already_cached=_is_locked,
+                is_already_cached=True,
                 key=key,
                 do_raise=self._nowait or time.time() > stop_at,
                 do_log=bool(c >= 10),
             )
-
-            if not _is_locked:
-                self._cachify.set(key=key, val=1, ttl=self._get_ttl())
-                return
-
             time.sleep(0.1)
             c += 1 if c < 10 else -10
 

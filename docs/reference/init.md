@@ -227,7 +227,7 @@ Even if the underlying clients are both in-memory, the prefixes and separation o
 
 ## Custom Clients
 
-The py-cachify library supports Redis synchronous and asynchronous clients out of the box.
+The py-cachify library supports Redis (and Redis-compatible backends such as DragonflyDB, which use the same client APIs) for synchronous and asynchronous clients out of the box.
 However, if you want to use other caching backends (such as Memcached, database-based, or file-based solutions),
 you can create custom clients by complying with the `SyncClient` and `AsyncClient` protocols.
 
@@ -235,15 +235,43 @@ These custom implementations should match the following method signatures:
 
 - For **synchronous clients (`SyncClient`)**:
   - `get(name: str) -> Optional[Any]`
-  - `set(name: str, value: Any, ex: Optional[int] = None) -> Any`
+  - `set(name: str, value: Any, ex: Optional[int] = None, nx: bool = False) -> Any`
   - `delete(*names: str) -> Any`
 
 - For **asynchronous clients (`AsyncClient`)**:
   - `get(name: str) -> Awaitable[Optional[Any]]`
-  - `set(name: str, value: Any, ex: Optional[int] = None) -> Awaitable[Any]`
+  - `set(name: str, value: Any, ex: Optional[int] = None, nx: bool = False) -> Awaitable[Any]`
   - `delete(*names: str) -> Awaitable[Any]`
 
-By adhering to these protocols, you can integrate your custom backend while maintaining compatibility with the py-cachify caching mechanisms.
+### NX flag and locking semantics
+
+The `nx` flag on `set` is crucial for the correctness of the locking APIs (`lock` and `once`):
+
+- When `nx` is **False**:
+  - `set(name, value, ex=..., nx=False)` should behave like a normal "upsert" operation: always set/overwrite the key.
+  - The return value is backend-specific and not used by py-cachify in this mode.
+
+- When `nx` is **True**:
+  - `set(name, value, ex=..., nx=True)` must implement **set-if-not-exists** semantics atomically:
+    - If the key does **not** exist (or is treated as expired), it should set the value and return a truthy value (e.g. `True`, `"OK"`, `b"OK"`).
+    - If the key **already exists** (and is not expired), it should **not** modify the value and return a falsy value (e.g. `False`, `None`).
+  - py-cachify relies on this behavior to implement `lock` / `once` as “acquire lock if free” via a single atomic operation.
+  - In particular, we interpret the return value of `set(..., nx=True)` as a boolean indicating whether the lock has been acquired.
+
+For Redis and Redis-compatible backends such as DragonflyDB, this usually maps directly to:
+
+```python
+redis_client.set(name, value, ex=ex, nx=nx)
+```
+
+which internally uses the `SET key value NX EX ttl` command and returns a truthy value when the key was set and `None` when it was not.
+
+For custom backends:
+
+- To have **correct distributed locking semantics**, you must implement `set(..., nx=True)` as an atomic "set-if-absent" operation and return a truthy/falsy value as described above.
+- If your backend cannot provide atomic `nx=True` behavior, `lock` and `once` will only offer best-effort mutual exclusion and may admit concurrent entries under rare races.
+
+By adhering to these protocols (including the `nx` semantics), you can integrate your custom backend while maintaining compatibility with py-cachify's caching and locking mechanisms.
 
 ### Example Custom Client Integration
 
@@ -255,8 +283,10 @@ class CustomSyncClient:
         # Implementation for getting a value from the cache
         ...
 
-    def set(self, name: str, value: Any, ex: Optional[int] = None) -> Any:
-        # Implementation for setting a value in the cache
+    def set(self, name: str, value: Any, ex: Optional[int] = None, nx: bool = False) -> Any:
+        # Implementation for setting a value in the cache.
+        # When nx=True, this MUST act as an atomic "set-if-not-exists" and
+        # return a truthy value on success and a falsy value on failure.
         ...
 
     def delete(self, *names: str) -> Any:
@@ -268,8 +298,10 @@ class CustomAsyncClient:
         # Implementation for asynchronously getting a value from the cache
         ...
 
-    async def set(self, name: str, value: Any, ex: Optional[int] = None) -> Awaitable[Any]:
-        # Implementation for asynchronously setting a value in the cache
+    async def set(self, name: str, value: Any, ex: Optional[int] = None, nx: bool = False) -> Awaitable[Any]:
+        # Implementation for asynchronously setting a value in the cache.
+        # When nx=True, this MUST act as an atomic "set-if-not-exists" and
+        # return a truthy value on success and a falsy value on failure.
         ...
 
     async def delete(self, *names: str) -> Awaitable[Any]:
@@ -290,7 +322,7 @@ custom_cachify = init_cachify(
 )
 ```
 
-This flexibility allows you to utilize a caching backend of your choice while leveraging the py-cachify library's capabilities effectively.
+This flexibility allows you to utilize a caching backend of your choice while leveraging the py-cachify library's capabilities effectively, including robust `lock` / `once` behavior when `nx` is implemented atomically. 
 
 ---
 
