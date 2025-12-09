@@ -114,6 +114,38 @@ def test_cachify_delete(cachify):
     assert cachify.get('key') is None
 
 
+def test_cachify_try_acquire_lock_acquires_when_free(cachify_instance):
+    acquired = cachify_instance._client.try_acquire_lock('lock-key', ttl=30)
+    assert acquired is True
+    # underlying cache should now have the lock set
+    assert cachify_instance._client._sync_client.get(f'{cachify_instance._client._prefix}lock-key') is not None
+
+
+def test_cachify_try_acquire_lock_fails_when_held(cachify_instance):
+    client = cachify_instance._client
+    # first acquire
+    assert client.try_acquire_lock('lock-key', ttl=30) is True
+    # second attempt should fail because nx=True semantics
+    assert client.try_acquire_lock('lock-key', ttl=30) is False
+
+
+@pytest.mark.asyncio
+async def test_cachify_a_try_acquire_lock_acquires_when_free(cachify_instance):
+    acquired = await cachify_instance._client.a_try_acquire_lock('lock-key', ttl=30)
+    assert acquired is True
+    # underlying async cache (AsyncWrapper over MemoryCache) should now have the lock set
+    assert await cachify_instance._client._async_client.get(f'{cachify_instance._client._prefix}lock-key') is not None
+
+
+@pytest.mark.asyncio
+async def test_cachify_a_try_acquire_lock_fails_when_held(cachify_instance):
+    client = cachify_instance._client
+    # first acquire
+    assert await client.a_try_acquire_lock('lock-key', ttl=30) is True
+    # second attempt should fail because nx=True semantics
+    assert await client.a_try_acquire_lock('lock-key', ttl=30) is False
+
+
 @pytest.mark.asyncio
 async def test_cachify_a_get(cachify):
     cachify.set('key', 'value')
