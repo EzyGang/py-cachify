@@ -19,7 +19,13 @@ class AsyncClient(Protocol):
     def delete(self, *names: str) -> Awaitable[Any]:
         raise NotImplementedError
 
-    def set(self, name: str, value: Any, ex: Union[int, None] = None) -> Awaitable[Any]:
+    def set(
+        self,
+        name: str,
+        value: Any,
+        ex: Union[int, None] = None,
+        nx: bool = False,
+    ) -> Awaitable[Any]:
         raise NotImplementedError
 
 
@@ -30,7 +36,13 @@ class SyncClient(Protocol):
     def delete(self, *names: str) -> Any:
         raise NotImplementedError
 
-    def set(self, name: str, value: Any, ex: Union[int, None] = None) -> Any:
+    def set(
+        self,
+        name: str,
+        value: Any,
+        ex: Union[int, None] = None,
+        nx: bool = False,
+    ) -> Any:
         raise NotImplementedError
 
 

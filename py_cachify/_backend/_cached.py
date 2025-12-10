@@ -72,7 +72,7 @@ def _cached_impl(
                 _key = get_full_key_from_signature(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
-                if val := await cachify_client.a_get(key=_key):
+                if (val := await cachify_client.a_get(key=_key)) is not None:
                     return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
 
                 res = await _awaitable_func(*args, **kwargs)
@@ -102,7 +102,7 @@ def _cached_impl(
                 _key = get_full_key_from_signature(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
-                if val := cachify_client.get(key=_key):
+                if (val := cachify_client.get(key=_key)) is not None:
                     return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
 
                 res = _sync_func(*args, **kwargs)
