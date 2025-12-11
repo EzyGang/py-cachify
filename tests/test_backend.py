@@ -23,7 +23,13 @@ def async_wrapper(memory_cache) -> AsyncWrapper:
 
 @pytest.fixture
 def cachify(memory_cache, async_wrapper):
-    return CachifyClient(sync_client=memory_cache, default_expiration=30, async_client=async_wrapper, prefix='_PYC_')
+    return CachifyClient(
+        sync_client=memory_cache,
+        async_client=async_wrapper,
+        default_expiration=30,
+        default_cache_ttl=None,
+        prefix='_PYC_',
+    )
 
 
 @pytest.fixture
@@ -33,6 +39,7 @@ def cachify_instance(memory_cache, async_wrapper):
         async_client=async_wrapper,
         prefix='_PYC_',
         default_expiration=30,
+        default_cache_ttl=None,
     )
 
 
@@ -284,6 +291,7 @@ def test_cachify_internal_client_is_wired_correctly(cachify_instance, memory_cac
     assert client._async_client is async_wrapper
     assert client._prefix == '_PYC_'
     assert client.default_expiration == 30
+    assert client.default_cache_ttl is None
 
 
 def test_init_cachify_defaults_to_memory_cache_and_asyncwrapper(mocker: MockerFixture):

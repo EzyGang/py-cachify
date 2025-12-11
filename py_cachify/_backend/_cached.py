@@ -1,13 +1,13 @@
 import inspect
 from collections.abc import Awaitable
 from functools import partial, wraps
-from typing import Callable, TypeVar, Union, cast, overload
+from typing import Callable, Optional, TypeVar, Union, cast, overload
 
 from typing_extensions import ParamSpec
 
 from ._helpers import a_reset, encode_decode_value, get_full_key_from_signature, is_coroutine, reset
 from ._lib import CachifyClient, get_cachify_client
-from ._types._common import Decoder, Encoder
+from ._types._common import UNSET, Decoder, Encoder, UnsetType
 from ._types._reset_wrap import AsyncResetWrappedF, SyncResetWrappedF, WrappedFunctionReset
 
 
@@ -17,7 +17,9 @@ _S = TypeVar('_S')
 
 
 def cached(
-    key: str, ttl: Union[int, None] = None, enc_dec: Union[tuple[Encoder, Decoder], None] = None
+    key: str,
+    ttl: Union[Optional[int], UnsetType] = UNSET,
+    enc_dec: Union[tuple[Encoder, Decoder], None] = None,
 ) -> WrappedFunctionReset:
     """
     Decorator that caches the result of a function based on the specified key, time-to-live (ttl),
@@ -25,8 +27,9 @@ def cached(
 
     Args:
     key (str): The key used to identify the cached result, could be a format string.
-    ttl (Union[int, None], optional): The time-to-live for the cached result.
-        Defaults to None, means indefinitely.
+    ttl (Union[int, None, UnsetType], optional): The time-to-live for the cached result.
+        If UNSET (default), the current cachify client's default_cache_ttl is used.
+        If None, means indefinitely.
     enc_dec (Union[Tuple[Encoder, Decoder], None], optional): The encoding and decoding functions for the cached value.
         Defaults to None.
 
@@ -35,12 +38,13 @@ def cached(
     reset(*args, **kwargs) matches the type of original function, accepts the same argument,
         and could be used to reset the cache.
     """
-    return _cached_impl(key, ttl, enc_dec, get_cachify_client)
+
+    return _cached_impl(key=key, ttl=ttl, enc_dec=enc_dec, client_provider=get_cachify_client)
 
 
 def _cached_impl(
     key: str,
-    ttl: Union[int, None] = None,
+    ttl: Union[Optional[int], UnsetType] = UNSET,
     enc_dec: Union[tuple[Encoder, Decoder], None] = None,
     client_provider: Callable[[], CachifyClient] = get_cachify_client,
 ) -> WrappedFunctionReset:
@@ -63,6 +67,11 @@ def _cached_impl(
         if enc_dec is not None:
             enc, dec = enc_dec
 
+        def _resolve_ttl(client: CachifyClient) -> Optional[int]:
+            if isinstance(ttl, UnsetType):
+                return client.default_cache_ttl
+            return ttl
+
         if is_coroutine(_func):
             _awaitable_func = _func
 
@@ -76,7 +85,12 @@ def _cached_impl(
                     return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
 
                 res = await _awaitable_func(*args, **kwargs)
-                await cachify_client.a_set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
+
+                await cachify_client.a_set(
+                    key=_key,
+                    val=encode_decode_value(encoder_decoder=enc, val=res),
+                    ttl=_resolve_ttl(cachify_client),
+                )
                 return res
 
             setattr(
@@ -106,7 +120,12 @@ def _cached_impl(
                     return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
 
                 res = _sync_func(*args, **kwargs)
-                cachify_client.set(key=_key, val=encode_decode_value(encoder_decoder=enc, val=res), ttl=ttl)
+
+                cachify_client.set(
+                    key=_key,
+                    val=encode_decode_value(encoder_decoder=enc, val=res),
+                    ttl=_resolve_ttl(cachify_client),
+                )
                 return res
 
             setattr(

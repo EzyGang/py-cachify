@@ -22,8 +22,22 @@ There are two main ways to use caching with py-cachify:
 | Parameter            | Type                            | Description                                                                                                   |
 |---------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `key`               | `str`                           | The key used to identify the cached result, which can utilize formatted strings to create dynamic keys. (i.e. `key='my_key-{func_arg}'`)       |
-| `ttl`               | `Union[int, None]`, optional    | Time-to-live for the cached result, in seconds. Defaults to `None`, which means the cache does not expire.   |
+
+| `ttl`               | `Union[int, None]`, optional    | Time-to-live (seconds) for the cached result. If omitted, the decorator uses the cache client's `default_cache_ttl` (configured via `init_cachify`). If `ttl` is `None`, the value is stored without expiration. If `ttl` is an integer, that value is used directly.   |
 | `enc_dec`           | `Union[Tuple[Encoder, Decoder], None]`, optional  | A tuple containing the encoding and decoding functions for the cached value. Defaults to `None`, which means that no encoding or decoding functions will be applied. |
+
+
+### Default TTL behavior
+
+The effective TTL for a cached value is determined as follows:
+
+1. If you pass an explicit integer, for example `@cached(..., ttl=30)`, that TTL is used.
+2. If you pass `ttl=None`, the cache entry is stored **without expiration** (infinite TTL in most backends).
+3. If you omit `ttl` entirely, the decorator will fall back to the underlying client's `default_cache_ttl`:
+   - `default_cache_ttl` is configured via `init_cachify(default_cache_ttl=...)` for both global and instance-based usage.
+   - If `default_cache_ttl` is `None` (the default), omitting `ttl` behaves like “no expiration”.
+
+This lets you define a global or instance-specific default TTL once and only override it where needed.
 
 ### Returns
 
@@ -43,18 +57,22 @@ There are two main ways to use caching with py-cachify:
 ### Global Usage Example
 
 ```python
-from py_cachify import cached
+from py_cachify import cached, init_cachify
 
 
-@cached('my_cache_key', ttl=60)
+# Configure a default cache TTL of 60 seconds for all cached values
+init_cachify(default_cache_ttl=60)
+
+
+@cached('my_cache_key')
 def compute_expensive_operation(param):
-    # Imagine an expensive computation here
+    # Uses default_cache_ttl=60 as TTL
     return param * 2
 
 
 @cached('my_async_cache_key-{param}', ttl=30)
 async def fetch_data(param):
-    # Imagine an async operation to fetch data
+    # Overrides the default and uses ttl=30
     return {'data': param}
 ```
 
@@ -66,10 +84,11 @@ If you need multiple independent caches (for example, per module or subsystem), 
 from py_cachify import init_cachify
 
 # Create a dedicated instance that does not affect the global client
-local_cachify = init_cachify(is_global=False, prefix='LOCAL-')
-
-@local_cachify.cached(key='local-{x}-{y}', ttl=10)
+# and set a default TTL of 300 seconds for this instance
+local_cachify = init_cachify(is_global=False, prefix='LOCAL-', default_cache_ttl=300)
+@local_cachify.cached(key='local-{x}-{y}')
 def local_sum(x: int, y: int) -> int:
+    # Uses the instance-level default_cache_ttl=300
     return x + y
 ```
 
