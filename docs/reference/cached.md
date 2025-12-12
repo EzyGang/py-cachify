@@ -37,7 +37,7 @@ The effective TTL for a cached value is determined as follows:
    - `default_cache_ttl` is configured via `init_cachify(default_cache_ttl=...)` for both global and instance-based usage.
    - If `default_cache_ttl` is `None` (the default), omitting `ttl` behaves like “no expiration”.
 
-This lets you define a global or instance-specific default TTL once and only override it where needed.
+This lets you define a global or instance-specific default TTL once and only override it where needed. When you do not configure `default_cache_ttl` at all (leaving it as `None`) and also omit `ttl` on the decorator, the behavior is the same as in previous versions of py-cachify: cached values are stored without expiration by default.
 
 ### Returns
 
