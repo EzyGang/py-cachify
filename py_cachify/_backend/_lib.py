@@ -19,11 +19,13 @@ class CachifyClient:
         async_client: AsyncClient,
         default_expiration: Optional[int],
         prefix: str,
+        default_cache_ttl: Optional[int] = None,
     ) -> None:
         self._sync_client = sync_client
         self._async_client = async_client
         self._prefix = prefix
         self.default_expiration = default_expiration
+        self.default_cache_ttl = default_cache_ttl
 
     def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
         _ = self._sync_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl, nx=False)
@@ -80,18 +82,20 @@ class Cachify:
         async_client: AsyncClient,
         prefix: str,
         default_expiration: Optional[int],
+        default_cache_ttl: Optional[int],
     ) -> None:
         self._client = CachifyClient(
             sync_client=sync_client,
             async_client=async_client,
-            prefix=prefix,
             default_expiration=default_expiration,
+            default_cache_ttl=default_cache_ttl,
+            prefix=prefix,
         )
 
     def cached(
         self,
         key: str,
-        ttl: Union[int, None] = None,
+        ttl: Union[Optional[int], UnsetType] = UNSET,
         enc_dec: Union[tuple[Encoder, Decoder], None] = None,
     ) -> WrappedFunctionReset:
         """
@@ -100,8 +104,9 @@ class Cachify:
 
         Args:
         key (str): The key used to identify the cached result, could be a format string.
-        ttl (Union[int, None], optional): The time-to-live for the cached result.
-            Defaults to None, means indefinitely.
+        ttl (Union[int, None, UnsetType], optional): The time-to-live for the cached result.
+            If UNSET (default), default_cache_ttl from cachify client is used.
+            If None, means indefinitely.
         enc_dec (Union[Tuple[Encoder, Decoder], None], optional): The encoding and decoding functions for
           the cached value.
             Defaults to None.
@@ -185,6 +190,7 @@ def init_cachify(
     sync_client: Optional[SyncClient] = None,
     async_client: Optional[AsyncClient] = None,
     default_lock_expiration: Optional[int] = 30,
+    default_cache_ttl: Optional[int] = None,
     prefix: str = 'PYC-',
     *,
     is_global: bool = True,
@@ -199,6 +205,8 @@ def init_cachify(
         Defaults to AsyncWrapper(cache=MemoryCache()).
     default_lock_expiration (Optional[int], optional): The default expiration time for locks.
         Defaults to 30.
+    default_cache_ttl (Optional[int], optional): The default cache TTL (time-to-live) for cached values.
+        Defaults to None, meaning infinite cache time when ttl is UNSET.
     prefix (str, optional): The prefix to use for keys.
         Defaults to 'PYC-'.
     is_global (bool, optional): Whether to register this client as the global instance.
@@ -215,16 +223,17 @@ def init_cachify(
         _cachify = CachifyClient(
             sync_client=sync_client,
             async_client=async_client,
-            prefix=prefix,
             default_expiration=default_lock_expiration,
+            default_cache_ttl=default_cache_ttl,
+            prefix=prefix,
         )
-
         # is not needed, but kept to not ruin the function signature
         return Cachify(
             sync_client=sync_client,
             async_client=async_client,
             prefix=prefix,
             default_expiration=default_lock_expiration,
+            default_cache_ttl=default_cache_ttl,
         )
 
     return Cachify(
@@ -232,6 +241,7 @@ def init_cachify(
         async_client=async_client,
         prefix=prefix,
         default_expiration=default_lock_expiration,
+        default_cache_ttl=default_cache_ttl,
     )
 
 

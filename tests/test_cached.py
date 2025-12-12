@@ -5,6 +5,8 @@ import pytest
 from pytest_mock import MockerFixture
 
 from py_cachify import CachifyInitError, cached, init_cachify
+from py_cachify._backend._lib import Cachify
+from py_cachify._backend._types._common import UNSET
 
 
 def sync_function(arg1: int, arg2: int) -> int:
@@ -21,6 +23,11 @@ def decoder(val: int) -> int:
 
 def encoder(val: int) -> int:
     return val + 5
+
+
+def _get_internal_client(cachify_instance: Cachify):
+    # helper to access the bound internal client in tests
+    return cachify_instance._client
 
 
 def test_cached_decorator_sync_function(init_cachify_fixture, mocker: MockerFixture):
@@ -237,3 +244,100 @@ async def test_local_cachify_wraps_global_cached_async(init_cachify_fixture, moc
     # Global wrapper should again hit its cache
     assert await global_wrapped(5, 6) == 11
     assert spy.call_count == 2
+
+
+def test_cached_default_ttl_uses_global_default_cache_ttl(mocker: MockerFixture):
+    # global default_cache_ttl=60, ttl left as UNSET on decorator
+    cachify_instance = init_cachify(default_cache_ttl=60, is_global=True)
+    client = _get_internal_client(cachify_instance)
+
+    spy_set = mocker.spy(client._sync_client, 'set')  # type: ignore[attr-defined]
+
+    wrapped = cached(key='ttl_default_{arg1}_{arg2}')(sync_function)
+    assert wrapped(1, 2) == 3
+
+    assert spy_set.call_count == 1
+    _, kwargs = spy_set.call_args
+    assert kwargs['ex'] == 60
+
+
+def test_cached_ttl_none_overrides_default_cache_ttl(mocker: MockerFixture):
+    # default_cache_ttl=60 but ttl=None should result in ex=None (infinite)
+    cachify_instance = init_cachify(default_cache_ttl=60, is_global=True)
+    client = _get_internal_client(cachify_instance)
+
+    spy_set = mocker.spy(client._sync_client, 'set')  # type: ignore[attr-defined]
+
+    wrapped = cached(key='ttl_none_{arg1}_{arg2}', ttl=None)(sync_function)
+    assert wrapped(2, 3) == 5
+
+    assert spy_set.call_count == 1
+    _, kwargs = spy_set.call_args
+    assert kwargs['ex'] is None
+
+
+def test_cached_ttl_explicit_int_overrides_default_cache_ttl(mocker: MockerFixture):
+    # default_cache_ttl=60 but explicit ttl=5 wins
+    cachify_instance = init_cachify(default_cache_ttl=60, is_global=True)
+    client = _get_internal_client(cachify_instance)
+
+    spy_set = mocker.spy(client._sync_client, 'set')  # type: ignore[attr-defined]
+
+    wrapped = cached(key='ttl_int_{arg1}_{arg2}', ttl=5)(sync_function)
+    assert wrapped(3, 4) == 7
+
+    assert spy_set.call_count == 1
+    _, kwargs = spy_set.call_args
+    assert kwargs['ex'] == 5
+
+
+def test_cached_ttl_unset_with_default_cache_ttl_none_means_infinite(mocker: MockerFixture):
+    # default_cache_ttl=None and ttl left as UNSET should lead to ex=None
+    cachify_instance = init_cachify(default_cache_ttl=None, is_global=True)
+    client = _get_internal_client(cachify_instance)
+
+    spy_set = mocker.spy(client._sync_client, 'set')  # type: ignore[attr-defined]
+
+    wrapped = cached(key='ttl_unset_none_{arg1}_{arg2}')(sync_function)
+    assert wrapped(4, 5) == 9
+
+    assert spy_set.call_count == 1
+    _, kwargs = spy_set.call_args
+    assert kwargs['ex'] is None
+
+
+def test_cachify_instance_cached_uses_its_own_default_cache_ttl(mocker: MockerFixture):
+    global_cachify = init_cachify(default_cache_ttl=10, is_global=True)
+    local_cachify = init_cachify(prefix='LOCAL-TTL-', default_cache_ttl=20, is_global=False)
+
+    global_client = _get_internal_client(global_cachify)
+    local_client = _get_internal_client(local_cachify)
+
+    spy_global = mocker.spy(global_client._sync_client, 'set')  # type: ignore[attr-defined]
+    spy_local = mocker.spy(local_client._sync_client, 'set')  # type: ignore[attr-defined]
+
+    global_wrapped = cached(key='ttl_scope_{arg1}_{arg2}')(sync_function)
+    local_wrapped = local_cachify.cached(key='ttl_scope_{arg1}_{arg2}')(sync_function)
+
+    assert global_wrapped(1, 1) == 2
+    assert local_wrapped(1, 2) == 3
+
+    _, kwargs_global = spy_global.call_args
+    _, kwargs_local = spy_local.call_args
+
+    assert kwargs_global['ex'] == 10
+    assert kwargs_local['ex'] == 20
+
+
+def test_cached_accepts_unset_type_ttl_without_overriding_default(mocker: MockerFixture):
+    cachify_instance = init_cachify(default_cache_ttl=33, is_global=True)
+    client = _get_internal_client(cachify_instance)
+
+    spy_set = mocker.spy(client._sync_client, 'set')  # type: ignore[attr-defined]
+
+    wrapped = cached(key='ttl_unset_type_{arg1}_{arg2}', ttl=UNSET)(sync_function)
+    assert wrapped(6, 7) == 13
+
+    assert spy_set.call_count == 1
+    _, kwargs = spy_set.call_args
+    assert kwargs['ex'] == 33

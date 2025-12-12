@@ -48,6 +48,7 @@ def init_cachify(
     sync_client: Optional[SyncClient] = None,
     async_client: Optional[AsyncClient] = None,
     default_lock_expiration: Optional[int] = 30,
+    default_cache_ttl: Optional[int] = None,
     prefix: str = 'PYC-',
     *,
     is_global: bool = True,
@@ -62,6 +63,7 @@ def init_cachify(
 | `sync_client`             | `Optional[SyncClient]`| The synchronous client used for caching operations. If `None`, a new in-memory client is created.                                                                                                                                                                                        |
 | `async_client`            | `Optional[AsyncClient]`| The asynchronous client used for caching operations. If `None`, a new async client is created around an in-memory cache (see notes below for details).                                                                                                                                  |
 | `default_lock_expiration` | `Optional[int]`       | Default expiration time (in seconds) for locks. Defaults to `30`.                                                                                                                                                                                                                       |
+| `default_cache_ttl`       | `Optional[int]`       | Default TTL (in seconds) for cached values when a decorator omits `ttl`. `None` (the default) means values are stored without expiration when `ttl` is not explicitly specified.                                                                                                       |
 | `prefix`                  | `str`                 | String prefix to prepend to all keys used in caching and locks. Defaults to `'PYC-'`.                                                                                                                                                                                                   |
 | `is_global`               | `bool`                | Controls whether this call registers a **global** client. If `True` (default), the created client becomes the global backend used by the top-level `cached`, `lock`, and `once` decorators. If `False`, the global backend is not touched and only a dedicated `Cachify` instance is returned. |
 
@@ -117,6 +119,19 @@ In practice:
   - `async_client=...`
 - If you need both sync and async usage to share the **same backend** (for example, Redis), pass both clients explicitly.
 
+### Default cache TTL behavior
+
+The `default_cache_ttl` parameter controls the **default TTL for cached values** used by both the global `@cached` decorator and instance-based `Cachify.cached`:
+
+- If `default_cache_ttl` is an integer (for example, `60`):
+  - Any `@cached(...)` or `Cachify.cached(...)` call that omits `ttl` will use that integer as the TTL.
+- If `default_cache_ttl` is `None` (the default):
+  - Any decorator that omits `ttl` will store values **without expiration** (behaving like `ttl=None` for the underlying client).
+- If a decorator passes an explicit `ttl`:
+  - `ttl=None` means “no expiration” regardless of `default_cache_ttl`.
+  - `ttl=<int>` uses that integer and ignores `default_cache_ttl`.
+
+
 ---
 
 ## Usage Examples
@@ -136,6 +151,7 @@ init_cachify(
     sync_client=redis_from_url("redis://localhost:6379/0"),
     async_client=async_redis_from_url("redis://localhost:6379/1"),
     default_lock_expiration=60,
+    default_cache_ttl=300,
     prefix='APP-',
 )
 
