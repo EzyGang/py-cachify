@@ -22,9 +22,6 @@
 <a href="https://github.com/EzyGang/py-cachify/actions/workflows/checks.yml/badge.svg" target="_blank">
     <img src="https://github.com/EzyGang/py-cachify/actions/workflows/checks.yml/badge.svg" alt="Pre-build checks and Tests">
 </a>
-<a href="https://github.com/EzyGang/py-cachify/actions/workflows/integration-tests.yml/badge.svg" target="_blank">
-    <img src="https://github.com/EzyGang/py-cachify/actions/workflows/integration-tests.yml/badge.svg" alt="Tests Status">
-</a>
 <a href="https://py-cachify.readthedocs.io/en/latest/?badge=latest" target="_blank">
     <img src="https://readthedocs.org/projects/py-cachify/badge/?version=latest" alt="Documentation Status">
 </a>
