@@ -8,6 +8,7 @@ In short, 3.0.0 focuses on:
 - Stronger locking semantics backed by atomic `nx` support in cache clients.
 - A configurable `default_cache_ttl` with clearer TTL precedence rules.
 - Cleanup of long-deprecated aliases and stricter type checking on modern Python versions.
+- Documentation updates and improvements, including a separate page to use with Agentic systems and LLMs.
 
 ### Features & Enhancements
 
