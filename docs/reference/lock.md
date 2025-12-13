@@ -3,7 +3,9 @@
 ## Overview
 
 The `lock` module provides a mechanism for managing locking within synchronous and asynchronous contexts. 
-The main class, `lock`, combines both synchronous and asynchronous locking operations. 
+
+The main class, `lock`, combines both synchronous and asynchronous locking operations and relies on an underlying cache client that supports atomic "set-if-not-exists" (`nx`) semantics for correct distributed locking behavior.
+
 
 There are two main ways to use locking with py-cachify:
 
@@ -55,6 +57,16 @@ It can be used in both synchronous and asynchronous contexts.
 ## Error Handling
 
 - **`CachifyLockError`**: Raised when an operation on a lock is invalid or a lock cannot be acquired.
+
+## Backend Requirements and `nx` Semantics
+
+The correctness of `lock` (and decorators built on top of it) depends on the underlying cache client providing an atomic "set-if-not-exists" operation via an `nx` flag:
+
+- When `nx=False`, a `set` call should behave like a normal upsert and overwrite existing values.
+- When `nx=True`, a `set` call must atomically set the value **only if** the key does not already exist, and return a truthy indication on success and a falsy indication otherwise.
+
+Built-in clients implement this behavior and use it to acquire and release locks safely. Custom clients should follow the same contract as documented in the initialization reference to ensure that locks behave correctly in concurrent and distributed scenarios.
+
 
 ## Usage Example
 

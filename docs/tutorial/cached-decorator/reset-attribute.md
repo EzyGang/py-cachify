@@ -176,4 +176,9 @@ The `reset()` function has the same signature as the original function, which is
 
 This concludes our tutorial for the `@cached()` decorator.
 
+A couple of important behavioral notes to keep in mind:
+
+- When you do not pass `ttl` to `@cached`, the effective TTL is taken from the configured `default_cache_ttl` (if any), and if both are omitted the value is stored without expiration; passing `ttl=None` always forces “no expiration”, even when a default TTL exists.
+
+
 Next, we'll learn about the locks and a handy decorator that will help you incorporate locking logic without a headache.

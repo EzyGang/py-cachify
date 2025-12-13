@@ -14,6 +14,9 @@ There are two main ways to use it:
 
 This function must be called at least once (with `is_global=True`) before using the global decorators.
 
+If you are upgrading from 2.x, you may also want to review the [3.0.0 release notes](../release-notes.md#300) for a high-level summary of new configuration options (such as `default_cache_ttl`) and behavior changes that affect initialization.
+
+
 ## Function: ///init_cachify///
 
 ### Description

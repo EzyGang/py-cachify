@@ -90,6 +90,7 @@ plugins:
   # Material for MkDocs
   - search
   - termynal
+  - include-markdown
 nav:
   - Introduction: "index.md"
   - Tutorial - User Guide:
@@ -120,6 +121,7 @@ nav:
       - help/help.md
       - help/contribution.md
   - Release Notes: release-notes.md
+  - LLM Full: llm-full.md
 
 hooks:
   - docs/scripts/hooks.py

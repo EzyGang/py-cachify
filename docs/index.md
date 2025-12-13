@@ -1,6 +1,6 @@
 <p align="center">
 <a href="https://py-cachify.readthedocs.io/latest/" target="_blank">
-    <img src="./img/project-header.png" alt="header">
+    <img src="/img/project-header.png" alt="header">
 </a>
 <a href="https://opensource.org/licenses/MIT" target="_blank">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
@@ -40,6 +40,7 @@
 
 **Py-Cachify** is a robust library tailored for developers looking to enhance their Python applications with elegant caching and locking mechanisms.
 Whether you're building synchronous or asynchronous applications, Py-Cachify has you covered!
+It acts as a thin, backend-agnostic wrapper over your favorite cache client, letting you focus on business logic instead of juggling low-level get/set calls.
 
 ## Key Features
 - **Flexible Caching**: Effortlessly cache your function results, dramatically reducing execution time for expensive computations and I/O-bound tasks.
@@ -49,7 +50,7 @@ Utilize customizable keys and time-to-live (TTL) parameters.
 Prevent race conditions and manage shared resources effectively across both sync and async contexts.
 
 - **Backend Agnostic**: Easily integrate with different cache backends.
-Choose between in-memory, Redis, or any custom backend that adheres to the provided client interfaces.
+Choose between in-memory, Redis, DragonflyDB, or any custom backend that adheres to the provided client interfaces.
 
 - **Decorators for Ease**: Use intuitive decorators like `@cached()` and `@lock()` to wrap your functions,
 maintain clean code, and benefit from automatic cache management.
@@ -92,10 +93,14 @@ Examples can be found **[here](examples.md)**.
 
 You can read more in-depth tutorials [here](tutorial/index.md).
 
-First, to start working with the library, you will have to initialize it by using the provided `init_cachify` function:
+
+First, to start working with the library, you will have to initialize it by using the provided `init_cachify` function (for global usage), or create one or more dedicated instances when you need isolated caches:
+
 ```python
 from py_cachify import init_cachify
 
+
+# Configure the global Cachify instance used by top-level decorators
 init_cachify()
 ```
 
@@ -119,11 +124,18 @@ init_cachify(
 )
 ```
 
-Normally you wouldn't have to use both sync and async clients in a single app, since applications usually work in either sync or async mode. You can pass only `sync_client` **or** only `async_client` if that matches your usage.
 
-Once initialized you can use everything that the library provides straight up without being worried about managing the cache yourself.
+Normally you wouldn't have to use both sync and async clients in a single app, since applications usually work in either sync or async mode. You can pass only `sync_client` **or** only `async_client` if that matches your usage, or both if you want sync and async code paths to share the same backend.
 
-❗ If you forgot to call `init_cachify` with `is_global=True` (default) at least once, using the global decorators (`cached`, `lock`, `once`) will raise `CachifyInitError` at runtime.
+
+
+Once the global client is initialized you can use everything that the library provides straight up without being worried about managing the cache yourself.
+
+
+
+❗ If you forgot to call `init_cachify` with `is_global=True` (default) at least once, using the global decorators (`cached`, `lock`, `once`) will raise `CachifyInitError` at runtime. Instance-based usage via `init_cachify(is_global=False)` does not depend on this global initialization.
+
+
 
 ### Using dedicated instances
 
@@ -144,10 +156,15 @@ def compute_local(x: int) -> int:
     return x * 2
 ```
 
-- Global decorators (`@cached`, `@lock`, `@once`) use the client configured by the first `init_cachify()` call.
-- The `local_cache` instance has its own client and prefix and exposes `local_cache.cached`, `local_cache.lock`, and `local_cache.once`.
 
-You can create as many such instances as needed.
+- Global decorators (`@cached`, `@lock`, `@once`) use the client configured by the first `init_cachify(is_global=True)` call.
+
+- The `local_cache` instance has its own client and prefix and exposes `local_cache.cached`, `local_cache.lock`, and `local_cache.once` bound to that instance.
+
+
+
+You can create as many such instances as needed, each with its own backend, prefix, and configuration (including `default_cache_ttl`), without affecting the global one.
+
 
 ## Basic examples
 

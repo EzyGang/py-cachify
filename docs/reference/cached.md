@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `cached` decorator provides a caching mechanism that stores the result of a function based on a specified key, time-to-live (TTL), and optional encoding/decoding functions. It can be applied to both synchronous and asynchronous functions, facilitating quick access to previously computed results.
+The `cached` decorator provides a caching mechanism that stores the result of a function based on a specified key, time-to-live (TTL), and optional encoding/decoding functions. It can be applied to both synchronous and asynchronous functions, facilitating quick access to previously computed results. This includes respecting a configurable `default_cache_ttl` when no explicit `ttl` is provided.
 
 ---
 
@@ -23,16 +23,16 @@ There are two main ways to use caching with py-cachify:
 |---------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `key`               | `str`                           | The key used to identify the cached result, which can utilize formatted strings to create dynamic keys. (i.e. `key='my_key-{func_arg}'`)       |
 
-| `ttl`               | `Union[int, None]`, optional    | Time-to-live (seconds) for the cached result. If omitted, the decorator uses the cache client's `default_cache_ttl` (configured via `init_cachify`). If `ttl` is `None`, the value is stored without expiration. If `ttl` is an integer, that value is used directly.   |
+| `ttl`               | `Union[int, None]`, optional    | Time-to-live (seconds) for the cached result. If omitted, the decorator uses the cache client's `default_cache_ttl` (configured via `init_cachify`). If `ttl` is `None`, the value is stored without expiration. If `ttl` is an integer, that value is used directly and overrides any `default_cache_ttl`.   |
 | `enc_dec`           | `Union[Tuple[Encoder, Decoder], None]`, optional  | A tuple containing the encoding and decoding functions for the cached value. Defaults to `None`, which means that no encoding or decoding functions will be applied. |
 
 
 ### Default TTL behavior
 
-The effective TTL for a cached value is determined as follows:
+The effective TTL for a cached value is determined as follows (higher items take precedence over lower ones):
 
-1. If you pass an explicit integer, for example `@cached(..., ttl=30)`, that TTL is used.
-2. If you pass `ttl=None`, the cache entry is stored **without expiration** (infinite TTL in most backends).
+1. If you pass an explicit integer, for example `@cached(..., ttl=30)`, that TTL is used and overrides any `default_cache_ttl`.
+2. If you pass `ttl=None`, the cache entry is stored **without expiration** (infinite TTL in most backends), even if `default_cache_ttl` is configured.
 3. If you omit `ttl` entirely, the decorator will fall back to the underlying client's `default_cache_ttl`:
    - `default_cache_ttl` is configured via `init_cachify(default_cache_ttl=...)` for both global and instance-based usage.
    - If `default_cache_ttl` is `None` (the default), omitting `ttl` behaves like “no expiration”.
@@ -52,7 +52,7 @@ This lets you define a global or instance-specific default TTL once and only ove
 
 2. **For Asynchronous Functions**:
     - Similar checks are performed in an asynchronous context using `await`.
-    - The caching behavior mirrors the synchronous version.
+    - The caching behavior mirrors the synchronous version. 
 
 ### Global Usage Example
 
@@ -65,13 +65,13 @@ init_cachify(default_cache_ttl=60)
 
 
 @cached('my_cache_key')
-def compute_expensive_operation(param):
+def compute_expensive_operation(param: int) -> int:
     # Uses default_cache_ttl=60 as TTL
     return param * 2
 
 
 @cached('my_async_cache_key-{param}', ttl=30)
-async def fetch_data(param):
+async def fetch_data(param: int) -> dict:
     # Overrides the default and uses ttl=30
     return {'data': param}
 ```

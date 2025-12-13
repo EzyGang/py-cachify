@@ -58,6 +58,7 @@ docs = [
     "pygments>=2.18.0,<3",
     "termynal>=0.12.1,<0.13 ; python_version >= '3.8.1' and python_version < '4.0'",
     "beautifulsoup4>=4.12.3,<5",
+    "mkdocs-include-markdown-plugin>=7.2.0",
 ]
 integration = ["redis>=5.0.7,<6"]
 
@@ -89,7 +90,7 @@ ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ 
 tests = "PYTHONPATH=. pytest tests/ -vvv"
 integration-tests = "PYTHONPATH=. pytest integration_tests/ --no-cov"
 
-docs-dev = "mkdocs serve "
+docs-dev = "mkdocs serve"
 ruff-lint = "ruff check ./py_cachify"
 mypy-lint = "mypy --install-types --non-interactive ./py_cachify/"
 

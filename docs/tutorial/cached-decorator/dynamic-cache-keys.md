@@ -11,6 +11,7 @@ from py_cachify import init_cachify, cached
 
 
 # here we are initializing py-cachify to use an in-memory cache
+# for global decorators like @cached, @lock, @once
 init_cachify()
 
 
@@ -36,6 +37,8 @@ async def main() -> None:
 if __name__ == '__main__':
     asyncio.run(main())
 ```
+
+> Note: in more advanced scenarios you can also create a dedicated instance with `init_cachify(is_global=False)` and use `instance.cached(...)` instead of the global `@cached`. The dynamic key rules shown here work the same way for both global and instance-based usage.
 
 
 ## Understanding what has changed

@@ -45,6 +45,8 @@
 
 **Py-Cachify** is a robust library tailored for developers looking to enhance their Python applications with elegant caching and locking mechanisms.
 Whether you're building synchronous or asynchronous applications, Py-Cachify has you covered!
+It acts as a thin, backend-agnostic wrapper over your favorite cache client, letting you focus on business logic instead of juggling low-level get/set calls.
+
 
 ## Key Features:
 - **Flexible Caching**: Effortlessly cache your function results, dramatically reducing execution time for expensive computations and I/O-bound tasks.
@@ -54,7 +56,7 @@ Utilize customizable keys and time-to-live (TTL) parameters.
 Prevent race conditions and manage shared resources effectively across both sync and async contexts.
 
 - **Backend Agnostic**: Easily integrate with different cache backends. 
-Choose between in-memory, Redis, or any custom backend that adheres to the provided client interfaces.
+Choose between in-memory, Redis, DragonflyDB, or any custom backend that adheres to the provided client interfaces.
 
 - **Decorators for Ease**: Use intuitive decorators like `@cached()` and `@lock()` to wrap your functions, 
 maintain clean code, and benefit from automatic cache management.

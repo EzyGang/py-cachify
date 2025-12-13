@@ -2,6 +2,13 @@
 
 ## [3.0.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.0.0)
 
+In short, 3.0.0 focuses on:
+
+- Instance-based usage (`Cachify`) and multiple independent caches per app.
+- Stronger locking semantics backed by atomic `nx` support in cache clients.
+- A configurable `default_cache_ttl` with clearer TTL precedence rules.
+- Cleanup of long-deprecated aliases and stricter type checking on modern Python versions.
+
 ### Features & Enhancements
 
 #### **Multiple cachify instances per app**:
@@ -22,7 +29,27 @@
 
 #### **Improved reset and lock-query semantics in helpers**:
   - The helper functions `reset`, `a_reset`, `is_locked`, and `is_alocked` have been reworked to:
-    - Accept additional internal parameters (`_pyc_key`, `_pyc_signature`, `_pyc_operation_postfix`, `_pyc_original_func`, `_pyc_client_provider`) to make them fully aware of which client and which wrapped function they are operating on and prevent collisions with user defined functions args and kwargs.
+    - Accept internal parameters (`_pyc_key`, `_pyc_signature`, `_pyc_operation_postfix`, `_pyc_original_func`, `_pyc_client_provider`) to make them fully aware of which client and which wrapped function they are operating on and prevent collisions with user defined functions args and kwargs.
+
+#### **Configurable default cache TTL**:
+  - `init_cachify` and `Cachify` now accept an optional `default_cache_ttl` parameter.
+  - If a `@cached` decorator does **not** specify `ttl`, the `default_cache_ttl` of the underlying client is used as the fallback.
+  - Passing `ttl=None` to `@cached` now explicitly means “no expiration”, even if `default_cache_ttl` is set.
+  - Effective TTL precedence:
+    1. If `@cached(ttl=...)` is provided, that value is used.
+    2. Else, if the client has `default_cache_ttl` set, that value is used.
+    3. Else, entries are stored without expiration.
+
+#### **Stronger lock correctness with atomic `nx` support**:
+  - Lock acquisition and the `once` decorator now rely on an atomic “set-if-not-exists” (`nx`) operation provided by the underlying cache client.
+  - Built-in clients (in-memory, Redis examples) have been updated to implement `set(..., nx=True)` semantics for lock keys.
+  - This significantly reduces race conditions in concurrent environments and makes lock behavior more predictable.
+
+#### **More predictable `cached` behavior for `None` results**:
+  - The `cached` decorator now correctly distinguishes between:
+    - “No cache entry for this key”; and
+    - “This key is cached with a value of `None`”.
+  - This ensures that functions legitimately returning `None` are still cached and not recomputed on every call.
 
 #### **Multi-layer caching support**:
   - Thanks to the helper changes and the instance-scoped API, it is now straightforward to stack multiple `cached` decorators, for example:
@@ -55,6 +82,13 @@
   - Python 3.8 is no longer supported and is removed from classifiers and test matrix.
 
 ### Notes on Migration from 2.x to 3.0.0
+
+#### If you implemented (used) a custom cache client:
+  - Ensure your client supports an atomic "set-if-not-exists" semantics used by locks and `once`.
+  - Concretely, the client should implement a `set(key, value, ttl=None, nx=False)` (or equivalent) method where:
+    - `nx=False` behaves like a normal set; and
+    - `nx=True` only sets the value if the key does *not* already exist, returning an appropriate success indicator.
+  - Without `nx` semantics, lock and `once` behavior may no longer be correct in 3.0.0.
 
 #### If you only used:
   - `init_cachify(...)`,

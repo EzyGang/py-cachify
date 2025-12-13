@@ -4,6 +4,8 @@
 
 The `once` decorator ensures that a decorated function can only be called once at a time based on a specified key.
 It can be applied to both synchronous and asynchronous functions, facilitating locking mechanisms to prevent concurrent executions.
+Internally it reuses the same distributed locking mechanism as `lock`, relying on an underlying cache client that supports atomic "set-if-not-exists" (`nx`) semantics.
+
 
 There are two main ways to use `once` with py-cachify:
 
@@ -32,10 +34,12 @@ If the function is called while it is still locked, it can either raise an excep
       - `is_locked(*args, **kwargs)`: Method to check if the function is currently locked.
       - `release(*args, **kwargs)`: Method to release the lock.
 
-### Method Behavior
+
 - **If the wrapped function is called while locked**:
       - If `raise_on_locked` is `True`: A `CachifyLockError` exception is raised.
       - If `return_on_locked` is specified: The decorator returns the specified value instead of invoking the function.
+      - If neither is provided, the call is simply skipped and the default `None` is returned.
+
 
 ### Usage Example
 
@@ -91,6 +95,9 @@ await local_task.release(task_id='42')
 ### Note
 - If py-cachify is not initialized through `init_cachify` with `is_global=True`, using the global `once` decorator will raise a `CachifyInitError`.
 - `Cachify` instances created with `is_global=False` do not depend on global initialization and can be used independently.
+- The correctness of `once` in concurrent or distributed environments depends on the underlying cache client providing an atomic "set-if-not-exists" (`nx`) operation (see the initialization reference and custom client section for details). Redis/DragonflyDB support his by default.
+
+
 
 ### Type Hints Remark (Decorator only application)
 
