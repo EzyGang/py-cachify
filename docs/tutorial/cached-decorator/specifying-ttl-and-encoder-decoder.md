@@ -8,6 +8,9 @@ Sometimes you don't need to cache a function result indefinitely and you need to
 Py-Cachify has got you covered and allows for an optional `ttl` param to pass into the decorator.
 This value will be passed down to a cache client and usually means how long the set value will live for in seconds.
 
+ 
+In addition to per-decorator `ttl`, you can also configure a global or instance-level `default_cache_ttl` via `init_cachify`. When `ttl` is omitted on `@cached`, that `default_cache_ttl` is used; when you pass `ttl=None`, the value is stored without expiration even if `default_cache_ttl` is configured; when you pass an explicit integer `ttl`, it overrides any default.
+
 ## Let's see it in action
 
 
@@ -18,10 +21,12 @@ from py_cachify import init_cachify, cached
 
 
 # here we are initializing py-cachify to use an in-memory cache
-init_cachify()
+
+# and setting a default_cache_ttl that will be used when ttl is omitted
+init_cachify(default_cache_ttl=10)
 
 
-# notice ttl, that will cache the result for one second
+# notice ttl, that will cache the result for one second and override default_cache_ttl
 @cached(key='sum_two-{a}-{b}', ttl=1)
 async def sum_two(a: int, b: int) -> int:
     # Let's put print here to see what was the function called with
@@ -37,14 +42,18 @@ async def main() -> None:
     await asyncio.sleep(2)
 
     # And we will call it again to check what will happen
-    print(f'Second call result: {await increment_int_by(5, 5)}')
+
+    print(f'Second call result: {await sum_two(5, 5)}')
+
 
 
 if __name__ == '__main__':
     asyncio.run(main())
 ```
 
-The only changes we introduced are the removal of the third call, adding the sleep, and providing a `ttl` param.
+
+The only changes we introduced are the removal of the third call, adding the sleep, and providing a `ttl` param that overrides the configured `default_cache_ttl`.
+
 
 After running the example:
 <!-- termynal -->
@@ -60,7 +69,9 @@ Second call result: 10
 
 ```
 
-As you can see the cache has expired and allowed the function to be called again.
+
+As you can see the cache has expired (after the 1 second `ttl`) and allowed the function to be called again. If we had omitted `ttl` entirely, the `default_cache_ttl=10` configured in `init_cachify` would have been used instead.
+
 
 ## Encoders/Decoders
 

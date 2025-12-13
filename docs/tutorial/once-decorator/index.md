@@ -2,7 +2,8 @@
 
 ## Description
 
-This does not deserve a separate tutorial, since this `@once` decorator is just a wrapper around the `lock`, but it's too cool to not show 🙂
+
+The `@once` decorator is a convenience wrapper around the same distributed locking mechanism used by `lock`, but tailored for “only one run at a time” semantics on a given key.
 
 `once` can come in handy when you have a lot of background tasks, which usually are powered by `celery`, `darq`, `taskiq`, or `dramatiq`.
 
@@ -33,8 +34,9 @@ def check_order(order_id: UUID) -> None
 So in this scenario, we don't care about the results of each task, but we DO care that we are not running the second task for the same `order_id` twice
 since it could break things.
 
-This is where `@once` could come in handy, it will make sure that only one task is being run at the same time,
-and all subsequent tasks on the same `order_id` will exit while at least one task is running.
+
+This is where `@once` could come in handy: it will make sure that only one task is being run at the same time for a given `order_id`, and all subsequent tasks on the same `order_id` will exit early while at least one task is running.
+
 
 The full code will look like this:
 
@@ -66,11 +68,15 @@ You can always check the full reference for once [here](../../reference/once.md)
 
 ## Conslusion
 
-This concludes the tutorial for the py-cachify.
+
+This concludes the tutorial for py-cachify.
 
 We have covered the basics of the package and glanced over common cases,
 the topics of caching and locking are pretty common yet they are always unique to the specifics of the app and tasks that the programmer wants to solve.
 
-Py-Cachify tries to help you cover your specific cases giving you the tools that you can adapt to your needs without bloating your codebase.
+
+
+Py-Cachify tries to help you cover your specific cases by giving you lock- and once-based tools built on the same underlying mechanism, so you can adapt them to your needs without bloating your codebase.
+
 
 For full API reference [here](../../reference/init.md).

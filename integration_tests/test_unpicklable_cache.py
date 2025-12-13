@@ -2,17 +2,18 @@ import sys
 
 import pytest
 from pytest_mock import MockerFixture
+from typing_extensions import Any
 
 from py_cachify import cached
 
 
 class UnpicklableClass:
     def __init__(self, arg1: str, arg2: str) -> None:
-        self._arg1 = arg1
-        self._arg2 = arg2
+        self.arg1 = arg1
+        self.arg2 = arg2
 
     def __eq__(self, other: 'UnpicklableClass') -> bool:
-        return self._arg1 == other._arg1 and self._arg2 == other._arg2
+        return self.arg1 == other.arg1 and self.arg2 == other.arg2
 
     def __reduce__(self):
         raise TypeError('This class is not picklable')
@@ -30,10 +31,10 @@ def test_cached_decorator_without_encoder():
 
 
 def test_cached_decorator_with_encoder_decoder(mocker: MockerFixture):
-    def encoder(val: UnpicklableClass) -> dict:
-        return {'arg1': val._arg1, 'arg2': val._arg2}
+    def encoder(val: UnpicklableClass) -> dict[str, Any]:
+        return {'arg1': val.arg1, 'arg2': val.arg2}
 
-    def decoder(val: dict) -> UnpicklableClass:
+    def decoder(val: dict[str, Any]) -> UnpicklableClass:
         return UnpicklableClass(**val)
 
     spy_on_create = mocker.spy(sys.modules[__name__], 'create_unpicklable_class')

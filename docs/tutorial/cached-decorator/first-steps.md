@@ -2,9 +2,15 @@
 
 Judging by the package's name py-cachify provides cache-based utilities, so let's start by doing some simple caching :)
 
+
+Py-Cachify is a thin, backend-agnostic wrapper over your cache client (for example Redis or DragonflyDB), giving you a clean decorator-based API instead of manually wiring get/set logic.
+
 The initialization details can be found [here](../initial-setup/initialization.md).
 
-For the sake of all the examples here, we will use the in-memory cache and an async environment, but everything will be the same for the sync one.
+
+
+For the sake of all the examples here, we will use the in-memory cache and an async environment, but everything will be the same for the sync one. In more advanced scenarios you can also create dedicated `Cachify` instances with `init_cachify(is_global=False)` for per-module or per-subsystem caches instead of relying only on the global decorators.
+
 
 ## Function to cache
 

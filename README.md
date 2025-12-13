@@ -45,6 +45,8 @@
 
 **Py-Cachify** is a robust library tailored for developers looking to enhance their Python applications with elegant caching and locking mechanisms.
 Whether you're building synchronous or asynchronous applications, Py-Cachify has you covered!
+It acts as a thin, backend-agnostic wrapper over your favorite cache client, letting you focus on business logic instead of juggling low-level get/set calls.
+
 
 ## Key Features:
 - **Flexible Caching**: Effortlessly cache your function results, dramatically reducing execution time for expensive computations and I/O-bound tasks.
@@ -54,7 +56,7 @@ Utilize customizable keys and time-to-live (TTL) parameters.
 Prevent race conditions and manage shared resources effectively across both sync and async contexts.
 
 - **Backend Agnostic**: Easily integrate with different cache backends. 
-Choose between in-memory, Redis, or any custom backend that adheres to the provided client interfaces.
+Choose between in-memory, Redis, DragonflyDB, or any custom backend that adheres to the provided client interfaces.
 
 - **Decorators for Ease**: Use intuitive decorators like `@cached()` and `@lock()` to wrap your functions, 
 maintain clean code, and benefit from automatic cache management.
@@ -95,7 +97,12 @@ from py_cachify import init_cachify
 
 init_cachify()
 ```
-By default, it will use an in-memory cache.
+
+This call:
+
+- Configures the **global** client used by the top-level decorators: `cached`, `lock`, and `once`.
+- Returns a `Cachify` instance, but you don't have to use it if you only work with the global decorators.
+- Uses an in-memory cache by default (both for sync and async usage).
 
 
 If you want to use Redis:
@@ -104,19 +111,46 @@ from py_cachify import init_cachify
 from redis.asyncio import from_url as async_from_url
 from redis import from_url
 
-init_cachify(sync_client=from_url(redis_url), async_client=async_from_url(async_redis_client))
+
+# Example: configure global cachify with Redis for both sync and async flows
+init_cachify(
+    sync_client=from_url(redis_url),
+    async_client=async_from_url(redis_url),
+)
 ```
-Normally you wouldn't have to use both sync and async clients since an application usually works in a single mode i.e. sync/async.
+Normally you wouldn't have to use both sync and async clients since an application usually works in a single mode i.e. sync/async. You can pass only `sync_client` **or** only `async_client` if that matches your usage.
+
 
 Once initialized you can use everything that the library provides straight up without being worried about managing the cache yourself.
 
-❗ If you forgot to call `init_cachify` the `CachifyInitError` will be raised during runtime.
+
+❗ If you forgot to call `init_cachify` with `is_global=True` at least once, using the global decorators (`cached`, `lock`, `once`) will raise `CachifyInitError` during runtime.
+
+You can also create **dedicated instances** without touching the global client:
+
+```python
+from py_cachify import init_cachify
+
+# Global initialization for the top-level decorators
+init_cachify()
+
+# Local instance that does NOT touch the global client
+local_cache = init_cachify(is_global=False, prefix='LOCAL-')
+
+@local_cache.cached(key='local-{x}')
+def compute_local(x: int) -> int:
+    return x * 2
+```
+
 
 ## Basic examples
 
+
 ### Caching
 
+
 Caching by using `@cached` decorator utilizing the flexibility of a dynamic key:
+
 
 ```python
 # Cache the result of the following function with dynamic key
@@ -129,6 +163,25 @@ async def sum_two(a: int, b: int) -> int:
     
 # Reset the cache for the call with arguments a=1, b=2
 await sub_two.reset(a=1, b=2)
+```
+
+### Multi-layer Usage
+
+It is possible to layer caches by stacking `cached` decorators (for example, a global cache inside a local instance cache).
+
+```python
+from py_cachify import cached, init_cachify
+
+# Global initialization for the top-level decorators
+init_cachify()
+
+# Local instance with a shorter TTL that wraps the global one
+local = init_cachify(is_global=False, prefix='LOCAL-')
+
+@local.cached(key='local-expensive-{x}', ttl=5)
+@cached(key='expensive-{x}', ttl=60)
+def expensive(x: int) -> int:
+    return x * 10
 ```
 
 Read more about `@cached` [here](https://py-cachify.readthedocs.io/latest/reference/cached/).

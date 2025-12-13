@@ -1,13 +1,10 @@
-from ._backend._cached import async_cached as async_cached
 from ._backend._cached import cached as cached
-from ._backend._cached import sync_cached as sync_cached
 from ._backend._exceptions import CachifyInitError as CachifyInitError
 from ._backend._exceptions import CachifyLockError as CachifyLockError
+from ._backend._lib import Cachify as Cachify
 from ._backend._lib import init_cachify as init_cachify
-from ._backend._lock import async_once as async_once
 from ._backend._lock import lock as lock
 from ._backend._lock import once as once
-from ._backend._lock import sync_once as sync_once
 from ._backend._types._common import AsyncClient as AsyncClient
 from ._backend._types._common import Decoder as Decoder
 from ._backend._types._common import Encoder as Encoder

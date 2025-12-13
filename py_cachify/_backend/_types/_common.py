@@ -1,15 +1,12 @@
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Protocol, TypeVar, Union
+from collections.abc import Awaitable
+from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, Union
 
-from typing_extensions import ParamSpec, TypeAlias
+from typing_extensions import TypeAlias
 
 
 if TYPE_CHECKING:
-    from .._lib import Cachify
+    from .._lib import CachifyClient
 
-
-_R = TypeVar('_R')
-_P = ParamSpec('_P')
-_S = TypeVar('_S')
 
 Encoder: TypeAlias = Callable[[Any], Any]
 Decoder: TypeAlias = Callable[[Any], Any]
@@ -22,7 +19,13 @@ class AsyncClient(Protocol):
     def delete(self, *names: str) -> Awaitable[Any]:
         raise NotImplementedError
 
-    def set(self, name: str, value: Any, ex: Union[int, None] = None) -> Awaitable[Any]:
+    def set(
+        self,
+        name: str,
+        value: Any,
+        ex: Union[int, None] = None,
+        nx: bool = False,
+    ) -> Awaitable[Any]:
         raise NotImplementedError
 
 
@@ -33,7 +36,13 @@ class SyncClient(Protocol):
     def delete(self, *names: str) -> Any:
         raise NotImplementedError
 
-    def set(self, name: str, value: Any, ex: Union[int, None] = None) -> Any:
+    def set(
+        self,
+        name: str,
+        value: Any,
+        ex: Union[int, None] = None,
+        nx: bool = False,
+    ) -> Any:
         raise NotImplementedError
 
 
@@ -57,7 +66,7 @@ class LockProtocolBase(Protocol):
     ) -> None: ...  # pragma: no cover
 
     @property
-    def _cachify(self) -> 'Cachify': ...  # pragma: no cover
+    def _cachify(self) -> 'CachifyClient': ...  # pragma: no cover
 
     def _calc_stop_at(self) -> float: ...  # pragma: no cover
 

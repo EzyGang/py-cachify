@@ -1,5 +1,106 @@
 # Release Notes
 
+## [3.0.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.0.0)
+
+In short, 3.0.0 focuses on:
+
+- Instance-based usage (`Cachify`) and multiple independent caches per app.
+- Stronger locking semantics backed by atomic `nx` support in cache clients.
+- A configurable `default_cache_ttl` with clearer TTL precedence rules.
+- Cleanup of long-deprecated aliases and stricter type checking on modern Python versions.
+
+### Features & Enhancements
+
+#### **Multiple cachify instances per app**:
+  - `init_cachify` now supports `is_global: bool = True` and returns a `Cachify` instance.
+  - When `is_global=True` (default), `init_cachify` configures the global client used by top-level `cached`, `lock`, and `once` and returns a `Cachify` instance backed by that client.
+  - When `is_global=False`, `init_cachify` does **not** modify the global client and instead returns an independent `Cachify` instance exposing:
+    - `Cachify.cached(...)`
+    - `Cachify.lock(...)`
+    - `Cachify.once(...)`
+
+#### **New public `Cachify` type**:
+  - `Cachify` is now publicly exported from `py_cachify`.
+  - It provides a convenient, instance-scoped API over the same high-level decorators:
+    - `@Cachify.cached(...)`
+    - `@Cachify.lock(...)`
+    - `@Cachify.once(...)`
+  - All instance methods share the same semantics as the corresponding top-level decorators, but are bound to a specific client/prefix.
+
+#### **Improved reset and lock-query semantics in helpers**:
+  - The helper functions `reset`, `a_reset`, `is_locked`, and `is_alocked` have been reworked to:
+    - Accept internal parameters (`_pyc_key`, `_pyc_signature`, `_pyc_operation_postfix`, `_pyc_original_func`, `_pyc_client_provider`) to make them fully aware of which client and which wrapped function they are operating on and prevent collisions with user defined functions args and kwargs.
+
+#### **Configurable default cache TTL**:
+  - `init_cachify` and `Cachify` now accept an optional `default_cache_ttl` parameter.
+  - If a `@cached` decorator does **not** specify `ttl`, the `default_cache_ttl` of the underlying client is used as the fallback.
+  - Passing `ttl=None` to `@cached` now explicitly means “no expiration”, even if `default_cache_ttl` is set.
+  - Effective TTL precedence:
+    1. If `@cached(ttl=...)` is provided, that value is used.
+    2. Else, if the client has `default_cache_ttl` set, that value is used.
+    3. Else, entries are stored without expiration.
+
+#### **Stronger lock correctness with atomic `nx` support**:
+  - Lock acquisition and the `once` decorator now rely on an atomic “set-if-not-exists” (`nx`) operation provided by the underlying cache client.
+  - Built-in clients (in-memory, Redis examples) have been updated to implement `set(..., nx=True)` semantics for lock keys.
+  - This significantly reduces race conditions in concurrent environments and makes lock behavior more predictable.
+
+#### **More predictable `cached` behavior for `None` results**:
+  - The `cached` decorator now correctly distinguishes between:
+    - “No cache entry for this key”; and
+    - “This key is cached with a value of `None`”.
+  - This ensures that functions legitimately returning `None` are still cached and not recomputed on every call.
+
+#### **Multi-layer caching support**:
+  - Thanks to the helper changes and the instance-scoped API, it is now straightforward to stack multiple `cached` decorators, for example:
+    - A global cache with a long TTL; and
+    - A local instance cache with a shorter TTL on top of it.
+  - Calling `reset(*args, **kwargs)` on the outermost wrapper will:
+    - Clear that wrapper’s cache entry; and
+    - Attempt to call `reset` on the inner wrapper(s), if they expose such a method, so the entire “stack” is reset for the given arguments.
+  - This pattern is documented in the updated `cached` reference and tutorial.
+
+#### **Stricter typing and tooling**:
+  - Python baseline bumped to **3.9+**.
+  - Core types updated to use `collections.abc.Awaitable` and built-in generics (`dict[...]`, `tuple[...]`, etc.).
+  - `typing-extensions` dependency bumped (>=4.15.0) and `basedpyright` configuration added for strict type checking on the `py_cachify` package.
+
+### Breaking Changes
+
+#### **Deprecated aliases removed**:
+  - The following deprecated functions, announced in 2.0.0 as scheduled for removal in 3.0.0, have now been removed:
+    - `async_cached`
+    - `sync_cached`
+    - `async_once`
+    - `sync_once`
+  - Use the unified decorators instead:
+    - `cached` for both sync and async caching.
+    - `once` for both sync and async “once at a time” locking.
+
+#### **Python 3.8 support dropped**:
+  - The supported Python versions are now 3.9–3.14.
+  - Python 3.8 is no longer supported and is removed from classifiers and test matrix.
+
+### Notes on Migration from 2.x to 3.0.0
+
+#### If you implemented (used) a custom cache client:
+  - Ensure your client supports an atomic "set-if-not-exists" semantics used by locks and `once`.
+  - Concretely, the client should implement a `set(key, value, ttl=None, nx=False)` (or equivalent) method where:
+    - `nx=False` behaves like a normal set; and
+    - `nx=True` only sets the value if the key does *not* already exist, returning an appropriate success indicator.
+  - Without `nx` semantics, lock and `once` behavior may no longer be correct in 3.0.0.
+
+#### If you only used:
+  - `init_cachify(...)`,
+  - `cached`,
+  - `lock`,
+  - `once`,
+  and **did not** use any of the deprecated aliases or internal APIs, you should be able to upgrade with no code changes.
+#### If you used any of the deprecated aliases:
+  - Replace:
+    - `sync_cached` / `async_cached` with `cached` (it works for both sync and async).
+    - `sync_once` / `async_once` with `once`.
+
 ## [2.0.10](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.10) 
 
 ### Features & Enchancements
