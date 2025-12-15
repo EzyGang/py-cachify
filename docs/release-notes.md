@@ -46,12 +46,6 @@ In short, 3.0.0 focuses on:
   - Built-in clients (in-memory, Redis examples) have been updated to implement `set(..., nx=True)` semantics for lock keys.
   - This significantly reduces race conditions in concurrent environments and makes lock behavior more predictable.
 
-#### **More predictable `cached` behavior for `None` results**:
-  - The `cached` decorator now correctly distinguishes between:
-    - “No cache entry for this key”; and
-    - “This key is cached with a value of `None`”.
-  - This ensures that functions legitimately returning `None` are still cached and not recomputed on every call.
-
 #### **Multi-layer caching support**:
   - Thanks to the helper changes and the instance-scoped API, it is now straightforward to stack multiple `cached` decorators, for example:
     - A global cache with a long TTL; and
