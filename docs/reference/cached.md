@@ -22,7 +22,6 @@ There are two main ways to use caching with py-cachify:
 | Parameter            | Type                            | Description                                                                                                   |
 |---------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `key`               | `str`                           | The key used to identify the cached result, which can utilize formatted strings to create dynamic keys. (i.e. `key='my_key-{func_arg}'`)       |
-
 | `ttl`               | `Union[int, None]`, optional    | Time-to-live (seconds) for the cached result. If omitted, the decorator uses the cache client's `default_cache_ttl` (configured via `init_cachify`). If `ttl` is `None`, the value is stored without expiration. If `ttl` is an integer, that value is used directly and overrides any `default_cache_ttl`.   |
 | `enc_dec`           | `Union[Tuple[Encoder, Decoder], None]`, optional  | A tuple containing the encoding and decoding functions for the cached value. Defaults to `None`, which means that no encoding or decoding functions will be applied. |
 
