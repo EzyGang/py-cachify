@@ -20,12 +20,14 @@ class CachifyClient:
         default_expiration: Optional[int],
         prefix: str,
         default_cache_ttl: Optional[int] = None,
+        lock_poll_interval: float = 0.1,
     ) -> None:
         self._sync_client = sync_client
         self._async_client = async_client
         self._prefix = prefix
         self.default_expiration = default_expiration
         self.default_cache_ttl = default_cache_ttl
+        self.lock_poll_interval = lock_poll_interval
 
     def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
         _ = self._sync_client.set(f'{self._prefix}{key}', pickle.dumps(val), ex=ttl, nx=False)
@@ -83,6 +85,7 @@ class Cachify:
         prefix: str,
         default_expiration: Optional[int],
         default_cache_ttl: Optional[int],
+        lock_poll_interval: float = 0.1,
     ) -> None:
         self._client = CachifyClient(
             sync_client=sync_client,
@@ -90,6 +93,7 @@ class Cachify:
             default_expiration=default_expiration,
             default_cache_ttl=default_cache_ttl,
             prefix=prefix,
+            lock_poll_interval=lock_poll_interval,
         )
 
     def cached(
@@ -192,6 +196,7 @@ def init_cachify(
     default_lock_expiration: Optional[int] = 30,
     default_cache_ttl: Optional[int] = None,
     prefix: str = 'PYC-',
+    lock_poll_interval: float = 0.1,
     *,
     is_global: bool = True,
 ) -> Cachify:
@@ -209,6 +214,8 @@ def init_cachify(
         Defaults to None, meaning infinite cache time when ttl is UNSET.
     prefix (str, optional): The prefix to use for keys.
         Defaults to 'PYC-'.
+    lock_poll_interval (float, optional): The interval in seconds to wait between lock acquisition
+        attempts when polling. Defaults to 0.1.
     is_global (bool, optional): Whether to register this client as the global instance.
         Defaults to True.
     """
@@ -226,6 +233,7 @@ def init_cachify(
             default_expiration=default_lock_expiration,
             default_cache_ttl=default_cache_ttl,
             prefix=prefix,
+            lock_poll_interval=lock_poll_interval,
         )
         # is not needed, but kept to not ruin the function signature
         return Cachify(
@@ -234,6 +242,7 @@ def init_cachify(
             prefix=prefix,
             default_expiration=default_lock_expiration,
             default_cache_ttl=default_cache_ttl,
+            lock_poll_interval=lock_poll_interval,
         )
 
     return Cachify(
@@ -242,6 +251,7 @@ def init_cachify(
         prefix=prefix,
         default_expiration=default_lock_expiration,
         default_cache_ttl=default_cache_ttl,
+        lock_poll_interval=lock_poll_interval,
     )
 
 

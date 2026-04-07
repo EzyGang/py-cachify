@@ -59,10 +59,16 @@ def test_memory_cache_get_with_default(memory_cache: MemoryCache) -> None:
     assert memory_cache.get('nonexistent_key') is None
 
 
-def test_memory_cache_delete(memory_cache: MemoryCache) -> None:
-    memory_cache.set('key', 'value')
-    memory_cache.delete('key')
-    assert memory_cache.get('key') is None
+def test_memory_cache_get_expired_key(memory_cache: MemoryCache, mocker: MockerFixture) -> None:
+    mocker.patch.object(time, 'time', side_effect=[100, 200])
+    memory_cache.set('key', 'value', ex=50)
+    result = memory_cache.get('key')
+    assert result is None
+
+
+def test_memory_cache_delete_nonexistent(memory_cache: MemoryCache) -> None:
+    memory_cache.delete('nonexistent_key')
+    assert memory_cache.get('nonexistent_key') is None
 
 
 @pytest.mark.asyncio

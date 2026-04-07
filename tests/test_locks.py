@@ -196,3 +196,52 @@ async def test_is_locked_on_lock_obj_async(init_cachify_fixture: None, sleep_tim
     assert await test_lock.is_alocked() is expected
 
     await task
+
+
+def test_lock_poll_interval_is_stored_in_cachify_client():
+    cachify_instance = init_cachify(lock_poll_interval=0.05, is_global=True)
+    assert cachify_instance._client.lock_poll_interval == 0.05
+
+
+def test_lock_poll_interval_is_used_in_sync_lock(mocker: Any):
+    sleep_mock = mocker.patch('time.sleep')
+    _ = init_cachify(lock_poll_interval=0.05, is_global=True)
+
+    @lock(key='poll-test', nowait=False, timeout=2.0)
+    def sync_function() -> None:
+        sleep(0.5)
+
+    thread1 = Thread(target=sync_function)
+    thread1.start()
+    sleep(0.1)
+
+    thread2 = Thread(target=lambda: sync_function())
+    thread2.start()
+    thread2.join()
+    thread1.join()
+
+    poll_intervals = [call.args[0] for call in sleep_mock.call_args_list if call.args[0] == 0.05]
+    assert len(poll_intervals) > 0
+
+
+@pytest.mark.asyncio
+async def test_lock_poll_interval_is_used_in_async_lock(mocker: Any):
+    async def mock_sleep(interval: float) -> None:
+        await asleep(0.01)
+
+    sleep_mock = mocker.patch('py_cachify._backend._lock.asleep', side_effect=mock_sleep)
+    _ = init_cachify(lock_poll_interval=0.05, is_global=True)
+
+    @lock(key='poll-test-async', nowait=False, timeout=2.0)
+    async def async_function() -> None:
+        await asleep(0.2)
+
+    task1 = asyncio.create_task(async_function())
+    await asleep(0.05)
+
+    task2 = asyncio.create_task(async_function())
+    await task2
+    await task1
+
+    poll_intervals = [call.args[0] for call in sleep_mock.call_args_list if call.args[0] == 0.05]
+    assert len(poll_intervals) > 0

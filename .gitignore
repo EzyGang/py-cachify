@@ -311,7 +311,7 @@ celerybeat-schedule.*
 
 env.bak/
 venv.bak/
-
+scratch
 *.sublime-project
 
 # Package control specific files Package

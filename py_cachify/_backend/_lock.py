@@ -31,6 +31,8 @@ class AsyncLockMethods(LockProtocolBase):
     async def _a_acquire(self, key: str) -> None:
         stop_at = self._calc_stop_at()
         c = 10
+        poll_interval = self._cachify.lock_poll_interval
+
         while True:
             acquired = await self._cachify.a_try_acquire_lock(key=self._key, ttl=self._get_ttl())
             if acquired:
@@ -43,7 +45,7 @@ class AsyncLockMethods(LockProtocolBase):
                 do_log=bool(c >= 10),
             )
 
-            await asleep(0.1)
+            await asleep(poll_interval)
             c += 1 if c < 10 else -10
 
     async def arelease(self) -> None:
@@ -64,6 +66,8 @@ class SyncLockMethods(LockProtocolBase):
     def _acquire(self, key: str) -> None:
         stop_at = self._calc_stop_at()
         c = 10
+        poll_interval = self._cachify.lock_poll_interval
+
         while True:
             acquired = self._cachify.try_acquire_lock(key=self._key, ttl=self._get_ttl())
             if acquired:
@@ -75,7 +79,7 @@ class SyncLockMethods(LockProtocolBase):
                 do_raise=self._nowait or time.time() > stop_at,
                 do_log=bool(c >= 10),
             )
-            time.sleep(0.1)
+            time.sleep(poll_interval)
             c += 1 if c < 10 else -10
 
     def release(self) -> None:

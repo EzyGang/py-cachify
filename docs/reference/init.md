@@ -53,6 +53,7 @@ def init_cachify(
     default_lock_expiration: Optional[int] = 30,
     default_cache_ttl: Optional[int] = None,
     prefix: str = 'PYC-',
+    lock_poll_interval: float = 0.1,
     *,
     is_global: bool = True,
 ) -> Cachify:  # returns a Cachify instance
@@ -65,9 +66,10 @@ def init_cachify(
 |---------------------------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `sync_client`             | `Optional[SyncClient]`| The synchronous client used for caching operations. If `None`, a new in-memory client is created.                                                                                                                                                                                        |
 | `async_client`            | `Optional[AsyncClient]`| The asynchronous client used for caching operations. If `None`, a new async client is created around an in-memory cache (see notes below for details).                                                                                                                                  |
-| `default_lock_expiration` | `Optional[int]`       | Default expiration time (in seconds) for locks. Defaults to `30`.                                                                                                                                                                                                                       |
+| `default_lock_expiration` | `Optional[int]`       | Default expiration time (in seconds) for locks. Defaults to `30`.                                                                                                                                                       |
 | `default_cache_ttl`       | `Optional[int]`       | Default TTL (in seconds) for cached values when a decorator omits `ttl`. `None` (the default) means values are stored without expiration when `ttl` is not explicitly specified.                                                                                                       |
 | `prefix`                  | `str`                 | String prefix to prepend to all keys used in caching and locks. Defaults to `'PYC-'`.                                                                                                                                                                                                   |
+| `lock_poll_interval`      | `float`               | Interval in seconds between lock acquisition attempts when polling. Defaults to `0.1`. Lower values make locks more responsive but increase load on the cache backend.                                                                                                                  |
 | `is_global`               | `bool`                | Controls whether this call registers a **global** client. If `True` (default), the created client becomes the global backend used by the top-level `cached`, `lock`, and `once` decorators. If `False`, the global backend is not touched and only a dedicated `Cachify` instance is returned. |
 
 ### Returns
@@ -131,8 +133,32 @@ The `default_cache_ttl` parameter controls the **default TTL for cached values**
 - If `default_cache_ttl` is `None` (the default):
   - Any decorator that omits `ttl` will store values **without expiration** (behaving like `ttl=None` for the underlying client).
 - If a decorator passes an explicit `ttl`:
-  - `ttl=None` means “no expiration” regardless of `default_cache_ttl`.
+  - `ttl=None` means "no expiration" regardless of `default_cache_ttl`.
   - `ttl=<int>` uses that integer and ignores `default_cache_ttl`.
+
+
+### Lock polling behavior
+
+The `lock_poll_interval` parameter controls how frequently py-cachify retries lock acquisition when a lock is already held by another process:
+
+- When a lock is requested with `nowait=False`, the library polls the cache backend until the lock becomes available or the `timeout` is reached.
+- `lock_poll_interval` (default: `0.1` seconds) specifies the sleep duration between polling attempts.
+- **Lower values** (e.g., `0.01`) make lock acquisition more responsive but increase the number of requests to the cache backend.
+- **Higher values** (e.g., `0.5` or `1.0`) reduce backend load but may increase the time before a waiting lock is acquired after the previous holder releases it.
+
+This setting applies globally to all locks created from this `Cachify` instance, including those used by the `@lock` and `@once` decorators.
+
+Example:
+
+```python
+from py_cachify import init_cachify
+
+# Reduce polling frequency for locks to decrease Redis load
+init_cachify(
+    lock_poll_interval=0.5,  # Poll every 500ms instead of 100ms
+    default_lock_expiration=30,
+)
+```
 
 
 ---

@@ -68,6 +68,32 @@ The correctness of `lock` (and decorators built on top of it) depends on the und
 Built-in clients implement this behavior and use it to acquire and release locks safely. Custom clients should follow the same contract as documented in the initialization reference to ensure that locks behave correctly in concurrent and distributed scenarios.
 
 
+## Lock Polling and `nowait=False`
+
+When you create a lock with `nowait=False`, the library uses a polling mechanism to repeatedly attempt lock acquisition until it succeeds or the `timeout` is reached:
+
+- The lock checks availability at intervals specified by `lock_poll_interval` (configured in `init_cachify()`)
+- Default interval: `0.1` seconds (100ms)
+- Between attempts, the lock sleeps to avoid busy-waiting and reduce load on the cache backend
+- Once the lock is acquired or the timeout expires, polling stops
+
+You can adjust `lock_poll_interval` when initializing to trade off between responsiveness and backend load:
+
+```python
+from py_cachify import init_cachify, lock
+
+# Use a longer polling interval to reduce Redis load
+init_cachify(lock_poll_interval=0.5)
+
+# This lock will check every 500ms when waiting
+@lock(key='heavy-operation', nowait=False, timeout=30)
+def process_large_dataset():
+    ...
+```
+
+For more details, see the [initialization reference](init.md#lock-polling-behavior).
+
+
 ## Usage Example
 
 ```python
