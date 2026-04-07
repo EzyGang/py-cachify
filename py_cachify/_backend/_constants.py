@@ -1,4 +1,4 @@
 from typing import Literal
 
 
-OperationPostfix = Literal['once', 'cached', 'lock']
+OperationPostfix = Literal['once', 'cached', 'lock', 'pool']

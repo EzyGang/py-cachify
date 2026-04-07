@@ -1,4 +1,4 @@
-import asyncio
+import functools
 import inspect
 from collections.abc import Awaitable
 from typing import Any, Callable, TypeVar, Union
@@ -74,7 +74,11 @@ def get_full_key_from_signature(
 def is_coroutine(
     func: Union[Callable[_P, Awaitable[_R]], Callable[_P, _R]],
 ) -> TypeIs[Callable[_P, Awaitable[_R]]]:
-    return asyncio.iscoroutinefunction(func)
+
+    while isinstance(func, functools.partial):
+        func = func.func
+
+    return inspect.iscoroutinefunction(func) or (callable(func) and inspect.iscoroutinefunction(func.__call__))  # pyright: ignore[reportFunctionMemberAccess]
 
 
 def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any) -> Any:

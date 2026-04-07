@@ -1,4 +1,5 @@
 # pyright: reportPrivateUsage=false
+import functools
 import inspect
 import re
 from typing import Any
@@ -12,6 +13,7 @@ from py_cachify._backend._helpers import (
     a_reset,
     get_full_key_from_signature,
     is_alocked,
+    is_coroutine,
     is_locked,
     reset,
 )
@@ -174,3 +176,87 @@ def test_is_locked_accesses_get_with_key(
 
     mock.assert_called_once_with(key='key_val1_val2_val3-cached')
     assert res is bool(val)
+
+
+def test_is_coroutine_with_async_func() -> None:
+    """Test is_coroutine detects async function."""
+
+    async def async_func() -> str:
+        return 'async'
+
+    assert is_coroutine(async_func) is True
+
+
+def test_is_coroutine_with_sync_func() -> None:
+    """Test is_coroutine returns False for sync function."""
+
+    def sync_func() -> str:
+        return 'sync'
+
+    assert is_coroutine(sync_func) is False
+
+
+def test_is_coroutine_with_partial_async() -> None:
+    """Test is_coroutine with functools.partial wrapping async."""
+
+    async def async_base(a: int, b: int) -> int:
+        return a + b
+
+    partial_async = functools.partial(async_base, 10)
+    assert is_coroutine(partial_async) is True
+
+
+def test_is_coroutine_with_partial_sync() -> None:
+    """Test is_coroutine with functools.partial wrapping sync."""
+
+    def sync_base(a: int, b: int) -> int:
+        return a + b
+
+    partial_sync = functools.partial(sync_base, 10)
+    assert is_coroutine(partial_sync) is False
+
+
+def test_is_coroutine_with_class_call() -> None:
+    """Test is_coroutine with class having async __call__."""
+
+    class AsyncCallable:
+        async def __call__(self) -> str:
+            return 'called'
+
+    instance = AsyncCallable()
+    assert is_coroutine(instance) is True
+
+
+def test_is_coroutine_with_lambda() -> None:
+    """Test is_coroutine with lambda (always sync)."""
+
+    def lambda_func(x):
+        return x * 2
+
+    assert is_coroutine(lambda_func) is False
+
+
+def test_get_full_key_from_signature_pool_postfix(args_kwargs_signature: inspect.Signature) -> None:
+    """Test 'pool' operation postfix."""
+    bound_args = args_kwargs_signature.bind('value1', 'value2', arg3='value3')
+    result = get_full_key_from_signature(bound_args, 'key_{}_{}_{arg3}', operation_postfix='pool')
+    assert result == 'key_value1_value2_value3-pool'
+
+
+def test_get_full_key_with_complex_format(args_kwargs_signature: inspect.Signature) -> None:
+    """Test complex key formatting."""
+    bound_args = args_kwargs_signature.bind('user123', 'action', arg3='type')
+    result = get_full_key_from_signature(bound_args, 'user-{0}-{1}-{arg3}', operation_postfix='pool')
+    assert result == 'user-user123-action-type-pool'
+
+
+def test_get_full_key_pool_with_args_kwargs(args_kwargs_signature: inspect.Signature) -> None:
+    """Test *args, **kwargs handling."""
+
+    def func_with_varargs(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    sig = inspect.signature(func_with_varargs)
+    bound_args = sig.bind('a', 'b', key='value')
+    result = get_full_key_from_signature(bound_args, 'key-{0}-{key}', operation_postfix='pool')
+    assert result == 'key-a-value-pool'
