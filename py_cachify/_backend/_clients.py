@@ -1,3 +1,4 @@
+import asyncio
 import threading
 import time
 from typing import Any, Optional, Union
@@ -42,21 +43,22 @@ class MemoryCache:
 
     def delete(self, *names: str) -> None:
         for key in names:
-            if key not in self._cache:
-                continue
-
-            del self._cache[key]
+            self._cache.pop(key, None)
 
 
 class AsyncWrapper:
     def __init__(self, cache: MemoryCache) -> None:
         self._cache = cache
+        self._lock = asyncio.Lock()
 
     async def get(self, name: str) -> Optional[Any]:
-        return self._cache.get(name)
+        async with self._lock:
+            return self._cache.get(name)
 
-    async def delete(self, *names: str) -> Any:
-        self._cache.delete(*names)
+    async def delete(self, *names: str) -> None:
+        async with self._lock:
+            self._cache.delete(*names)
 
-    async def set(self, name: str, value: Any, ex: Union[int, None] = None, nx: bool = False) -> Optional[Any]:
-        return self._cache.set(name, value, ex, nx)
+    async def set(self, name: str, value: Any, ex: Union[int, None] = None, nx: bool = False) -> Optional[bool]:
+        async with self._lock:
+            return self._cache.set(name, value, ex, nx)

@@ -21,6 +21,25 @@ configure when creating a lock and how to use them effectively.
     - This parameter sets an expiration time (in seconds) for the lock. After this time, the lock will automatically be released, regardless of whether the operation has been completed.
     - This can help to prevent deadlocks in cases where an app may fail to release the lock due to an error or abrupt termination.
 
+### Lock Polling Interval (Global Setting)
+
+When `nowait=False`, the lock uses a polling mechanism to check if the lock has become available. The interval between these polling attempts is controlled by the `lock_poll_interval` parameter in `init_cachify()`:
+
+- **Default**: `0.1` seconds (100 milliseconds)
+- **Lower values**: More responsive lock acquisition but higher load on the cache backend
+- **Higher values**: Reduced backend load but potentially longer wait times after a lock is released
+
+You can configure this when initializing py-cachify:
+
+```python
+from py_cachify import init_cachify
+
+# Poll every 500ms instead of the default 100ms
+init_cachify(lock_poll_interval=0.5)
+```
+
+This setting applies to all locks and `once` decorators that use this Cachify instance.
+
 
 ## Some examples
 

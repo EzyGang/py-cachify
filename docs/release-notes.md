@@ -1,5 +1,25 @@
 # Release Notes
 
+## [3.1.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.1.0)
+
+### Features & Enhancements
+
+#### **Configurable lock polling interval**:
+  - `init_cachify` now accepts a `lock_poll_interval` parameter (default: `0.1` seconds).
+  - This controls how frequently the library polls for lock availability when `nowait=False`.
+  - Lower values make lock acquisition more responsive but increase load on the cache backend.
+  - Higher values reduce backend load but may increase wait times.
+
+#### **Thread-safe async memory cache**:
+  - The in-memory async cache wrapper (`AsyncWrapper`) now uses an `asyncio.Lock` to protect concurrent access.
+  - This prevents race conditions when multiple async tasks access the same in-memory cache simultaneously.
+
+### Improvements
+
+- Minor code cleanup in `MemoryCache.delete()` for better efficiency.
+
+---
+
 ## [3.0.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.0.0)
 
 In short, 3.0.0 focuses on:
