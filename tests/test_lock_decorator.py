@@ -1,8 +1,10 @@
+# pyright: reportPrivateUsage=false
 import asyncio
 from asyncio import sleep as asleep
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from time import sleep
+from typing import Any
 
 import pytest
 
@@ -18,7 +20,9 @@ from py_cachify._backend._types._common import UNSET
         (1, 3, 5, nullcontext(13), nullcontext(15)),
     ],
 )
-def test_lock_decorator_no_wait_sync(init_cachify_fixture, sleep_time, input1, input2, result1, result2):
+def test_lock_decorator_no_wait_sync(
+    init_cachify_fixture: None, sleep_time: float, input1: int, input2: int, result1: Any, result2: Any
+) -> None:
     @lock(key='test_key-{arg}')
     def sync_function(arg: int) -> int:
         sleep(sleep_time)
@@ -45,7 +49,9 @@ def test_lock_decorator_no_wait_sync(init_cachify_fixture, sleep_time, input1, i
     ],
 )
 @pytest.mark.asyncio
-async def test_lock_decorator_no_wait_async(init_cachify_fixture, sleep_time, input1, input2, result1, result2):
+async def test_lock_decorator_no_wait_async(
+    init_cachify_fixture: None, sleep_time: float, input1: int, input2: int, result1: Any, result2: Any
+) -> None:
     @lock(key='test_key-{arg}')
     async def async_function(arg: int) -> int:
         await asleep(sleep_time)
@@ -69,7 +75,9 @@ async def test_lock_decorator_no_wait_async(init_cachify_fixture, sleep_time, in
         (0, 1, 3, nullcontext(13), nullcontext(13)),
     ],
 )
-def test_lock_decorator_no_wait_false_sync(init_cachify_fixture, sleep_time, timeout, input, result1, result2):
+def test_lock_decorator_no_wait_false_sync(
+    init_cachify_fixture: None, sleep_time: float, timeout: float, input: int, result1: Any, result2: Any
+) -> None:
     @lock(key='test_key-{arg}', nowait=False, timeout=timeout)
     def sync_function(arg: int) -> int:
         sleep(sleep_time)
@@ -97,7 +105,9 @@ def test_lock_decorator_no_wait_false_sync(init_cachify_fixture, sleep_time, tim
     ],
 )
 @pytest.mark.asyncio
-async def test_lock_decorator_no_wait_false_async(init_cachify_fixture, sleep_time, timeout, input, result1, result2):
+async def test_lock_decorator_no_wait_false_async(
+    init_cachify_fixture: None, sleep_time: float, timeout: float, input: int, result1: Any, result2: Any
+) -> None:
     @lock(key='test_key-{arg}', nowait=False, timeout=timeout)
     async def async_function(arg: int) -> int:
         await asleep(sleep_time)
@@ -123,7 +133,15 @@ async def test_lock_decorator_no_wait_false_async(init_cachify_fixture, sleep_ti
         (3, 2, 1, 4, nullcontext(15), nullcontext(15)),
     ],
 )
-def test_lock_decorator_expiration_sync(init_cachify_fixture, sleep_time, timeout, exp, default_exp, result1, result2):
+def test_lock_decorator_expiration_sync(
+    init_cachify_fixture: None,
+    sleep_time: float,
+    timeout: float,
+    exp: Any,
+    default_exp: 'int | None',
+    result1: Any,
+    result2: Any,
+) -> None:
     init_cachify(default_lock_expiration=default_exp)
 
     @lock(key='test_key-{arg}', nowait=False, timeout=timeout, exp=exp)
@@ -156,8 +174,14 @@ def test_lock_decorator_expiration_sync(init_cachify_fixture, sleep_time, timeou
 )
 @pytest.mark.asyncio
 async def test_lock_decorator_expiration_async(
-    init_cachify_fixture, sleep_time, timeout, exp, default_exp, result1, result2
-):
+    init_cachify_fixture: None,
+    sleep_time: float,
+    timeout: float,
+    exp: Any,
+    default_exp: 'int | None',
+    result1: Any,
+    result2: Any,
+) -> None:
     init_cachify(default_lock_expiration=default_exp)
 
     @lock(key='test_key-{arg}', nowait=False, timeout=timeout, exp=exp)
@@ -175,7 +199,7 @@ async def test_lock_decorator_expiration_async(
         assert r2 == await task2
 
 
-def test_lock_works_on_methods(init_cachify_fixture):
+def test_lock_works_on_methods(init_cachify_fixture: None) -> None:
     class TestClass:
         t: str = 'test'
 
@@ -194,7 +218,7 @@ def test_lock_works_on_methods(init_cachify_fixture):
             return a + b
 
     tc = TestClass()
-    assert tc.method(1, 2) == 3
+    assert tc.method(1, 2) == 3  # pyright: ignore[reportCallIssue]
     assert tc.method.release(tc, 1, 2) is None
     assert tc.method.is_locked(tc, 1, 2) is False
     # Fix the type annotation to support
@@ -202,13 +226,13 @@ def test_lock_works_on_methods(init_cachify_fixture):
     assert tc.method_static.release(1, 2) is None
     assert tc.method_static.is_locked(1, 2) is False
     # Fix the type annotation to support
-    assert tc.method_class(1, 2) == 3
+    assert tc.method_class(1, 2) == 3  # pyright: ignore[reportCallIssue]
     assert tc.method_class.release(tc.__class__, 1, 2) is None
     assert tc.method_class.is_locked(tc.__class__, 1, 2) is False
 
 
 @pytest.mark.asyncio
-async def test_cached_works_on_async_methods(init_cachify_fixture):
+async def test_cached_works_on_async_methods(init_cachify_fixture: None) -> None:
     class TestClass:
         t: str = 'test'
 
@@ -228,7 +252,7 @@ async def test_cached_works_on_async_methods(init_cachify_fixture):
 
     tc = TestClass()
 
-    assert await tc.method(1, 2) == 3
+    assert await tc.method(1, 2) == 3  # pyright: ignore[reportCallIssue]
     assert await tc.method.release(tc, 1, 2) is None
     assert await tc.method.is_locked(tc, 1, 2) is False
     # Fix the type annotation to support
@@ -236,12 +260,12 @@ async def test_cached_works_on_async_methods(init_cachify_fixture):
     assert await tc.method_static.release(1, 2) is None
     assert await tc.method_static.is_locked(1, 2) is False
     # Fix the type annotation to support
-    assert await tc.method_class(1, 2) == 3
+    assert await tc.method_class(1, 2) == 3  # pyright: ignore[reportCallIssue]
     assert await tc.method_class.release(tc.__class__, 1, 2) is None
     assert await tc.method_class.is_locked(tc.__class__, 1, 2) is False
 
 
-def test_lock_decorator_cleans_up_on_error(init_cachify_fixture):
+def test_lock_decorator_cleans_up_on_error(init_cachify_fixture: None) -> None:
     @lock(key='test_key-{arg}', nowait=False, timeout=15, exp=30)
     def sync_function(arg: int) -> int:
         raise RuntimeError()
@@ -256,7 +280,7 @@ def test_lock_decorator_cleans_up_on_error(init_cachify_fixture):
 
 
 @pytest.mark.asyncio
-async def test_async_lock_decorator_cleans_up_on_error(init_cachify_fixture):
+async def test_async_lock_decorator_cleans_up_on_error(init_cachify_fixture: None) -> None:
     @lock(key='test_key-{arg}', nowait=False, timeout=15, exp=30)
     async def async_function(arg: int) -> int:
         raise RuntimeError()

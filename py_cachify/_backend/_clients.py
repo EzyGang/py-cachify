@@ -53,10 +53,10 @@ class AsyncWrapper:
         self._cache = cache
 
     async def get(self, name: str) -> Optional[Any]:
-        return self._cache.get(name=name)
+        return self._cache.get(name)
 
     async def delete(self, *names: str) -> Any:
         self._cache.delete(*names)
 
     async def set(self, name: str, value: Any, ex: Union[int, None] = None, nx: bool = False) -> Optional[Any]:
-        return self._cache.set(name=name, value=value, ex=ex, nx=nx)
+        return self._cache.set(name, value, ex, nx)

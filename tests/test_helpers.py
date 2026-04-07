@@ -1,5 +1,7 @@
+# pyright: reportPrivateUsage=false
 import inspect
 import re
+from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
@@ -16,22 +18,22 @@ from py_cachify._backend._helpers import (
 from py_cachify._backend._lib import get_cachify_client
 
 
-def method_with_args_kwargs_args(*args, **kwargs) -> None:
+def method_with_args_kwargs_args(*args: Any, **kwargs: Any) -> None:
     pass
 
 
 @pytest.fixture
-def args_kwargs_signature():
+def args_kwargs_signature() -> inspect.Signature:
     return inspect.signature(method_with_args_kwargs_args)
 
 
-def test_get_full_key_valid_arguments(args_kwargs_signature):
+def test_get_full_key_valid_arguments(args_kwargs_signature: inspect.Signature) -> None:
     bound_args = args_kwargs_signature.bind('value1', 'value2', arg3='value3')
     result = get_full_key_from_signature(bound_args, 'key_{}_{}_{arg3}', operation_postfix='cached')
     assert result == 'key_value1_value2_value3-cached'
 
 
-def test_get_full_key_invalid_key_format(args_kwargs_signature):
+def test_get_full_key_invalid_key_format(args_kwargs_signature: inspect.Signature) -> None:
     bound_args = args_kwargs_signature.bind('value1', 'value2')
     bound_args.apply_defaults()
 
@@ -42,13 +44,13 @@ def test_get_full_key_invalid_key_format(args_kwargs_signature):
         get_full_key_from_signature(bound_args, 'key_{}_{}_{}', operation_postfix='cached')
 
 
-def test_get_full_key_empty_key_and_arguments(args_kwargs_signature):
+def test_get_full_key_empty_key_and_arguments(args_kwargs_signature: inspect.Signature) -> None:
     bound_args = args_kwargs_signature.bind()
     result = get_full_key_from_signature(bound_args, 'key_with_no_args', operation_postfix='cached')
     assert result == 'key_with_no_args-cached'
 
 
-def test_get_full_key_mixed_placeholders(args_kwargs_signature):
+def test_get_full_key_mixed_placeholders(args_kwargs_signature: inspect.Signature) -> None:
     bound_args = args_kwargs_signature.bind('value1', 'value2', arg3='value3')
     bound_args.apply_defaults()
 
@@ -61,7 +63,9 @@ def test_get_full_key_mixed_placeholders(args_kwargs_signature):
         _ = get_full_key_from_signature(bound_args, 'key_{}_{}_{}_{invalid_arg}', operation_postfix='cached')
 
 
-def test_reset_calls_delete_with_key(init_cachify_fixture, args_kwargs_signature, mocker: MockerFixture):
+def test_reset_calls_delete_with_key(
+    init_cachify_fixture: None, args_kwargs_signature: inspect.Signature, mocker: MockerFixture
+) -> None:
     mock = mocker.patch('py_cachify._backend._lib.CachifyClient.delete')
 
     reset(
@@ -79,7 +83,9 @@ def test_reset_calls_delete_with_key(init_cachify_fixture, args_kwargs_signature
 
 
 @pytest.mark.asyncio
-async def test_a_reset_calls_delete_with_key(init_cachify_fixture, args_kwargs_signature, mocker: MockerFixture):
+async def test_a_reset_calls_delete_with_key(
+    init_cachify_fixture: None, args_kwargs_signature: inspect.Signature, mocker: MockerFixture
+) -> None:
     mock = mocker.patch('py_cachify._backend._lib.CachifyClient.a_delete')
 
     await a_reset(
@@ -99,8 +105,8 @@ async def test_a_reset_calls_delete_with_key(init_cachify_fixture, args_kwargs_s
 @pytest.mark.asyncio
 @pytest.mark.parametrize('val', [0, 1])
 async def test_is_alocked_accesses_a_get_with_key(
-    init_cachify_fixture, args_kwargs_signature, mocker: MockerFixture, val
-):
+    init_cachify_fixture: None, args_kwargs_signature: inspect.Signature, mocker: MockerFixture, val: int
+) -> None:
     mock = mocker.patch('py_cachify._backend._lib.CachifyClient.a_get', return_value=val)
 
     res = await is_alocked(
@@ -118,15 +124,15 @@ async def test_is_alocked_accesses_a_get_with_key(
     assert res is bool(val)
 
 
-def test_call_original_logs_debug_on_exception(mocker: MockerFixture):
+def test_call_original_logs_debug_on_exception(mocker: MockerFixture) -> None:
     class Obj:
-        def reset(self, *args, **kwargs):
+        def reset(self, *args: Any, **kwargs: Any) -> None:
             raise ValueError('boom')
 
     obj = Obj()
     log_mock = mocker.patch('py_cachify._backend._helpers.logger')
 
-    result = _call_original(obj, 'reset', 1, kw=2)
+    result = _call_original(obj, 'reset', 1, kw=2)  # pyright: ignore[reportArgumentType]
 
     assert result is None
     log_mock.debug.assert_called_once()
@@ -134,15 +140,15 @@ def test_call_original_logs_debug_on_exception(mocker: MockerFixture):
 
 
 @pytest.mark.asyncio
-async def test_acall_original_logs_debug_on_exception(mocker: MockerFixture):
+async def test_acall_original_logs_debug_on_exception(mocker: MockerFixture) -> None:
     class Obj:
-        async def reset(self, *args, **kwargs):
+        async def reset(self, *args: Any, **kwargs: Any) -> None:
             raise ValueError('boom')
 
     obj = Obj()
     log_mock = mocker.patch('py_cachify._backend._helpers.logger')
 
-    result = await _acall_original(obj, 'reset', 1, kw=2)
+    result = await _acall_original(obj, 'reset', 1, kw=2)  # pyright: ignore[reportArgumentType]
 
     assert result is None
     log_mock.debug.assert_called_once()
@@ -150,7 +156,9 @@ async def test_acall_original_logs_debug_on_exception(mocker: MockerFixture):
 
 
 @pytest.mark.parametrize('val', [0, 1])
-def test_is_locked_accesses_get_with_key(init_cachify_fixture, args_kwargs_signature, mocker: MockerFixture, val):
+def test_is_locked_accesses_get_with_key(
+    init_cachify_fixture: None, args_kwargs_signature: inspect.Signature, mocker: MockerFixture, val: int
+) -> None:
     mock = mocker.patch('py_cachify._backend._lib.CachifyClient.get', return_value=val)
 
     res = is_locked(

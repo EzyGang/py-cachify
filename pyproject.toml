@@ -45,7 +45,6 @@ dev = [
     "pytest-mock>=3.14.0,<4",
     "pytest-cov>=7.0.0,<8",
     "taskipy>=1.13.0,<2",
-    "mypy>=1.11.1,<2",
     "coverage>=7.6.1,<8",
     "pytest-asyncio>=1.0.0,<2",
     "pytest-socket>=0.7.0,<0.8",
@@ -60,9 +59,12 @@ docs = [
     "beautifulsoup4>=4.12.3,<5",
     "mkdocs-include-markdown-plugin>=7.2.0",
 ]
-integration = ["redis>=5.0.7,<6"]
+integration = [
+    "redis>=5.3.1",
+]
 
 [tool.uv]
+exclude-newer = "5 days"
 default-groups = [
     "dev",
     "docs",
@@ -84,7 +86,7 @@ include = [
 ]
 
 [tool.taskipy.tasks]
-format-and-lint = "task ruff && task mypy-lint"
+format-and-lint = "task ruff && task pyright-lint"
 
 ruff = "ruff format ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ && ruff check ./py_cachify/ ./tests/ ./integration_tests/ ./docs/scripts/ --fix --unsafe-fixes"
 tests = "PYTHONPATH=. pytest tests/ -vvv"
@@ -92,7 +94,7 @@ integration-tests = "PYTHONPATH=. pytest integration_tests/ --no-cov"
 
 docs-dev = "mkdocs serve"
 ruff-lint = "ruff check ./py_cachify"
-mypy-lint = "mypy --install-types --non-interactive ./py_cachify/"
+pyright-lint = "basedpyright ./py_cachify/"
 
 [tool.ruff]
 line-length = 120
@@ -134,18 +136,6 @@ known-first-party = ["py_cachify"]
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
-
-[tool.mypy]
-# Mypy configuration:
-# https://mypy.readthedocs.io/en/latest/config_file.html
-strict = true
-pretty = true
-
-exclude = ['test_']
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_errors = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"

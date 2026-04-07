@@ -1,5 +1,7 @@
+# pyright: reportPrivateUsage=false
 import time
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
@@ -17,12 +19,12 @@ def memory_cache() -> MemoryCache:
 
 
 @pytest.fixture
-def async_wrapper(memory_cache) -> AsyncWrapper:
+def async_wrapper(memory_cache: MemoryCache) -> AsyncWrapper:
     return AsyncWrapper(memory_cache)
 
 
 @pytest.fixture
-def cachify(memory_cache, async_wrapper):
+def cachify(memory_cache: MemoryCache, async_wrapper: AsyncWrapper) -> CachifyClient:
     return CachifyClient(
         sync_client=memory_cache,
         async_client=async_wrapper,
@@ -33,7 +35,7 @@ def cachify(memory_cache, async_wrapper):
 
 
 @pytest.fixture
-def cachify_instance(memory_cache, async_wrapper):
+def cachify_instance(memory_cache: MemoryCache, async_wrapper: AsyncWrapper) -> Cachify:
     return Cachify(
         sync_client=memory_cache,
         async_client=async_wrapper,
@@ -43,28 +45,28 @@ def cachify_instance(memory_cache, async_wrapper):
     )
 
 
-def test_memory_cache_set_and_get(memory_cache):
+def test_memory_cache_set_and_get(memory_cache: MemoryCache) -> None:
     memory_cache.set('key', 'value', ex=10)
     assert memory_cache.get('key') == 'value'
 
 
-def test_memory_cache_set_and_get_with_expiry(memory_cache):
+def test_memory_cache_set_and_get_with_expiry(memory_cache: MemoryCache) -> None:
     memory_cache.set('key', 'value', ex=-1)
     assert memory_cache.get('key') is None
 
 
-def test_memory_cache_get_with_default(memory_cache):
+def test_memory_cache_get_with_default(memory_cache: MemoryCache) -> None:
     assert memory_cache.get('nonexistent_key') is None
 
 
-def test_memory_cache_delete(memory_cache):
+def test_memory_cache_delete(memory_cache: MemoryCache) -> None:
     memory_cache.set('key', 'value')
     memory_cache.delete('key')
     assert memory_cache.get('key') is None
 
 
 @pytest.mark.asyncio
-async def test_async_wrapper_get(async_wrapper, mocker: MockerFixture):
+async def test_async_wrapper_get(async_wrapper: AsyncWrapper, mocker: MockerFixture) -> None:
     mocker.patch.object(time, 'time', return_value=0)
     async_wrapper._cache.set('key', 'value', ex=10)
 
@@ -73,14 +75,14 @@ async def test_async_wrapper_get(async_wrapper, mocker: MockerFixture):
 
 
 @pytest.mark.asyncio
-async def test_async_wrapper_get_with_default(async_wrapper, mocker: MockerFixture):
+async def test_async_wrapper_get_with_default(async_wrapper: AsyncWrapper, mocker: MockerFixture) -> None:
     mocker.patch.object(time, 'time', return_value=0)
     result = await async_wrapper.get('nonexistent_key')
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_async_wrapper_delete(async_wrapper, mocker: MockerFixture):
+async def test_async_wrapper_delete(async_wrapper: AsyncWrapper, mocker: MockerFixture) -> None:
     mocker.patch.object(time, 'time', return_value=0)
     async_wrapper._cache.set('key', 'value')
 
@@ -89,46 +91,46 @@ async def test_async_wrapper_delete(async_wrapper, mocker: MockerFixture):
 
 
 @pytest.mark.asyncio
-async def test_async_wrapper_set(async_wrapper, mocker: MockerFixture):
+async def test_async_wrapper_set(async_wrapper: AsyncWrapper, mocker: MockerFixture) -> None:
     mocker.patch.object(time, 'time', return_value=0)
     await async_wrapper.set('key', 'value', ex=10)
     assert async_wrapper._cache.get('key') == 'value'
 
 
-def test_cachify_set_and_get(cachify):
+def test_cachify_set_and_get(cachify: CachifyClient) -> None:
     cachify.set('key', 'value', ttl=10)
     assert cachify.get('key') == 'value'
 
 
-def test_cachify_set_and_get_with_ttl(cachify):
+def test_cachify_set_and_get_with_ttl(cachify: CachifyClient) -> None:
     cachify.set('key', 'value', ttl=-1)
     assert cachify.get('key') is None
 
 
-def test_cachify_get_with_nonexistent_key(cachify):
+def test_cachify_get_with_nonexistent_key(cachify: CachifyClient) -> None:
     assert cachify.get('nonexistent_key') is None
 
 
-def test_cachify_get(cachify):
+def test_cachify_get(cachify: CachifyClient) -> None:
     cachify.set('key', 'value')
     result = cachify.get('key')
     assert result == 'value'
 
 
-def test_cachify_delete(cachify):
+def test_cachify_delete(cachify: CachifyClient) -> None:
     cachify.set('key', 'value')
     cachify.delete('key')
     assert cachify.get('key') is None
 
 
-def test_cachify_try_acquire_lock_acquires_when_free(cachify_instance):
+def test_cachify_try_acquire_lock_acquires_when_free(cachify_instance: Cachify) -> None:
     acquired = cachify_instance._client.try_acquire_lock('lock-key', ttl=30)
     assert acquired is True
     # underlying cache should now have the lock set
     assert cachify_instance._client._sync_client.get(f'{cachify_instance._client._prefix}lock-key') is not None
 
 
-def test_cachify_try_acquire_lock_fails_when_held(cachify_instance):
+def test_cachify_try_acquire_lock_fails_when_held(cachify_instance: Cachify) -> None:
     client = cachify_instance._client
     # first acquire
     assert client.try_acquire_lock('lock-key', ttl=30) is True
@@ -137,7 +139,7 @@ def test_cachify_try_acquire_lock_fails_when_held(cachify_instance):
 
 
 @pytest.mark.asyncio
-async def test_cachify_a_try_acquire_lock_acquires_when_free(cachify_instance):
+async def test_cachify_a_try_acquire_lock_acquires_when_free(cachify_instance: Cachify) -> None:
     acquired = await cachify_instance._client.a_try_acquire_lock('lock-key', ttl=30)
     assert acquired is True
     # underlying async cache (AsyncWrapper over MemoryCache) should now have the lock set
@@ -145,7 +147,7 @@ async def test_cachify_a_try_acquire_lock_acquires_when_free(cachify_instance):
 
 
 @pytest.mark.asyncio
-async def test_cachify_a_try_acquire_lock_fails_when_held(cachify_instance):
+async def test_cachify_a_try_acquire_lock_fails_when_held(cachify_instance: Cachify) -> None:
     client = cachify_instance._client
     # first acquire
     assert await client.a_try_acquire_lock('lock-key', ttl=30) is True
@@ -154,47 +156,47 @@ async def test_cachify_a_try_acquire_lock_fails_when_held(cachify_instance):
 
 
 @pytest.mark.asyncio
-async def test_cachify_a_get(cachify):
+async def test_cachify_a_get(cachify: CachifyClient) -> None:
     cachify.set('key', 'value')
     result = await cachify.a_get('key')
     assert result == 'value'
 
 
 @pytest.mark.asyncio
-async def test_cachify_a_get_with_nonexistent_key(cachify):
+async def test_cachify_a_get_with_nonexistent_key(cachify: CachifyClient) -> None:
     result = await cachify.a_get('nonexistent_key')
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_cachify_a_delete(cachify):
+async def test_cachify_a_delete(cachify: CachifyClient) -> None:
     cachify.set('key', 'value')
     await cachify.a_delete('key')
     assert cachify.get('key') is None
 
 
 @pytest.mark.asyncio
-async def test_cachify_a_set(cachify):
+async def test_cachify_a_set(cachify: CachifyClient) -> None:
     await cachify.a_set('key', 'value')
     assert cachify.get('key') == 'value'
 
 
-def test_init_cachify(init_cachify_fixture):
+def test_init_cachify(init_cachify_fixture: None) -> None:
     assert py_cachify._backend._lib._cachify is not None
 
 
-def test_get_cachify_raises_error():
+def test_get_cachify_raises_error() -> None:
     with pytest.raises(CachifyInitError, match='Cachify is not initialized, did you forget to call `init_cachify`?'):
         get_cachify_client()
 
 
-def test_get_cachify_client_returns_global_value(init_cachify_fixture):
+def test_get_cachify_client_returns_global_value(init_cachify_fixture: None) -> None:
     _client = get_cachify_client()
 
     assert isinstance(_client, CachifyClient)
 
 
-def test_cachify_cached_delegates_to__cached_impl(cachify_instance, mocker: MockerFixture):
+def test_cachify_cached_delegates_to__cached_impl(cachify_instance: Cachify, mocker: MockerFixture) -> None:
     dummy_cached = SimpleNamespace()
     mocked_impl = mocker.patch(
         'py_cachify._backend._cached._cached_impl',
@@ -204,7 +206,7 @@ def test_cachify_cached_delegates_to__cached_impl(cachify_instance, mocker: Mock
     result = cachify_instance.cached(
         key='k-{x}',
         ttl=123,
-        enc_dec=('enc', 'dec'),
+        enc_dec=('enc', 'dec'),  # pyright: ignore[reportArgumentType]
     )
 
     assert result is dummy_cached
@@ -219,7 +221,7 @@ def test_cachify_cached_delegates_to__cached_impl(cachify_instance, mocker: Mock
     assert client is cachify_instance._client
 
 
-def test_cachify_lock_delegates_and_injects_client(cachify_instance, mocker: MockerFixture):
+def test_cachify_lock_delegates_and_injects_client(cachify_instance: Cachify, mocker: MockerFixture) -> None:
     dummy_lock = SimpleNamespace()
     mocked_lock = mocker.patch(
         'py_cachify._backend._lock.lock',
@@ -253,7 +255,7 @@ def test_cachify_lock_delegates_and_injects_client(cachify_instance, mocker: Moc
     assert kwargs_default['exp'] is UNSET
 
 
-def test_cachify_once_delegates_to__once_impl(cachify_instance, mocker: MockerFixture):
+def test_cachify_once_delegates_to__once_impl(cachify_instance: Cachify, mocker: MockerFixture) -> None:
     dummy_once = SimpleNamespace()
     mocked_once_impl = mocker.patch(
         'py_cachify._backend._lock._once_impl',
@@ -285,7 +287,9 @@ def test_cachify_once_delegates_to__once_impl(cachify_instance, mocker: MockerFi
     assert kwargs_default['return_on_locked'] is None
 
 
-def test_cachify_internal_client_is_wired_correctly(cachify_instance, memory_cache, async_wrapper):
+def test_cachify_internal_client_is_wired_correctly(
+    cachify_instance: Cachify, memory_cache: MemoryCache, async_wrapper: AsyncWrapper
+) -> None:
     client = cachify_instance._client
     assert client._sync_client is memory_cache
     assert client._async_client is async_wrapper
@@ -294,7 +298,7 @@ def test_cachify_internal_client_is_wired_correctly(cachify_instance, memory_cac
     assert client.default_cache_ttl is None
 
 
-def test_init_cachify_defaults_to_memory_cache_and_asyncwrapper(mocker: MockerFixture):
+def test_init_cachify_defaults_to_memory_cache_and_asyncwrapper(mocker: MockerFixture) -> None:
     # ensure we start from a clean global
     py_cachify._backend._lib._cachify = None  # type: ignore[attr-defined]
 
@@ -308,7 +312,7 @@ def test_init_cachify_defaults_to_memory_cache_and_asyncwrapper(mocker: MockerFi
     assert cachify_instance._client._async_client._cache is cachify_instance._client._sync_client
 
 
-def test_init_cachify_reuses_provided_memory_cache_for_asyncwrapper(mocker: MockerFixture):
+def test_init_cachify_reuses_provided_memory_cache_for_asyncwrapper(mocker: MockerFixture) -> None:
     py_cachify._backend._lib._cachify = None
 
     sync_client = MemoryCache()
@@ -319,7 +323,7 @@ def test_init_cachify_reuses_provided_memory_cache_for_asyncwrapper(mocker: Mock
     assert cachify_instance._client._async_client._cache is sync_client
 
 
-def test_init_cachify_is_global_flag_controls_global_registration():
+def test_init_cachify_is_global_flag_controls_global_registration() -> None:
     py_cachify._backend._lib._cachify = None
     cachify_instance = init_cachify(sync_client=None, async_client=None, is_global=False)
     assert cachify_instance is not None
@@ -334,7 +338,7 @@ def test_init_cachify_is_global_flag_controls_global_registration():
     assert isinstance(global_client._async_client, AsyncWrapper)
 
 
-def test_init_cachify_uses_provided_async_client_unchanged():
+def test_init_cachify_uses_provided_async_client_unchanged() -> None:
     py_cachify._backend._lib._cachify = None
 
     sync_client = MemoryCache()
@@ -350,23 +354,23 @@ def test_init_cachify_uses_provided_async_client_unchanged():
     assert cachify_instance._client._async_client is explicit_async
 
 
-def test_init_cachify_creates_new_memory_cache_when_sync_not_memorycache(mocker: MockerFixture):
+def test_init_cachify_creates_new_memory_cache_when_sync_not_memorycache(mocker: MockerFixture) -> None:
     py_cachify._backend._lib._cachify = None
 
     class DummySyncClient:
-        def __init__(self):
-            self.set_calls = []
-            self.get_calls = []
-            self.delete_calls = []
+        def __init__(self) -> None:
+            self.set_calls: list[tuple[Any, Any, Any]] = []
+            self.get_calls: list[tuple[Any, Any]] = []
+            self.delete_calls: list[tuple[Any, ...]] = []
 
-        def set(self, name, value, ex=None):
+        def set(self, name: Any, value: Any, ex: Any = None, nx: Any = False) -> None:
             self.set_calls.append((name, value, ex))
 
-        def get(self, name, default=None):
+        def get(self, name: Any, default: Any = None) -> Any:
             self.get_calls.append((name, default))
             return default
 
-        def delete(self, *names):
+        def delete(self, *names: Any) -> None:
             self.delete_calls.append(names)
 
     sync_client = DummySyncClient()
