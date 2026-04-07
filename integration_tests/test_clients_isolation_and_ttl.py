@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 import sys
 from time import sleep
 
@@ -5,6 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from py_cachify import cached
+from py_cachify._backend._lib import Cachify
 
 
 def _sync_func(x: int) -> int:
@@ -16,7 +18,7 @@ async def _async_func(x: int) -> int:
 
 
 def test_sync_global_vs_local_redis_isolation(
-    cachify_local_redis_second,
+    cachify_local_redis_second: Cachify,
     mocker: MockerFixture,
 ) -> None:
     spy = mocker.spy(sys.modules[__name__], '_sync_func')
@@ -41,7 +43,7 @@ def test_sync_global_vs_local_redis_isolation(
 
 @pytest.mark.asyncio
 async def test_async_global_vs_local_redis_isolation(
-    cachify_local_redis_second,
+    cachify_local_redis_second: Cachify,
     mocker: MockerFixture,
 ) -> None:
     spy = mocker.spy(sys.modules[__name__], '_async_func')
@@ -65,7 +67,7 @@ async def test_async_global_vs_local_redis_isolation(
 
 
 def test_ttl_global_vs_local_redis(
-    cachify_local_redis_second,
+    cachify_local_redis_second: Cachify,
     mocker: MockerFixture,
 ) -> None:
     spy = mocker.spy(sys.modules[__name__], '_sync_func')
@@ -91,7 +93,7 @@ def test_ttl_global_vs_local_redis(
 
 
 def test_sync_multilayer_global_redis_inner_local_inmemory_outer_ttl(
-    cachify_local_in_memory_client,
+    cachify_local_in_memory_client: Cachify,
     mocker: MockerFixture,
 ) -> None:
     spy = mocker.spy(sys.modules[__name__], '_sync_func')
@@ -122,7 +124,7 @@ def test_sync_multilayer_global_redis_inner_local_inmemory_outer_ttl(
 
 @pytest.mark.asyncio
 async def test_async_multilayer_global_redis_inner_local_inmemory_outer_ttl(
-    cachify_local_in_memory_client,
+    cachify_local_in_memory_client: Cachify,
     mocker: MockerFixture,
 ) -> None:
     spy = mocker.spy(sys.modules[__name__], '_async_func')
@@ -152,7 +154,7 @@ async def test_async_multilayer_global_redis_inner_local_inmemory_outer_ttl(
 
 
 def test_ttl_global_vs_local_inmemory(
-    cachify_local_in_memory_client,
+    cachify_local_in_memory_client: Cachify,
     mocker: MockerFixture,
 ) -> None:
     spy = mocker.spy(sys.modules[__name__], '_sync_func')

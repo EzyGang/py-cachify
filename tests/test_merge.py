@@ -20,7 +20,7 @@ async def async_function(arg1: int, arg2: int) -> int:
     return arg1 + arg2
 
 
-def test_cached_once_merge(init_cachify_fixture, mocker: MockerFixture):
+def test_cached_once_merge(init_cachify_fixture: None, mocker: MockerFixture) -> None:
     spy = mocker.spy(sys.modules[__name__], 'sync_function')
     sync_function_wrapped = cached(key='test_key')(sync_function)
     once_wrapped = once(key='test_key')(sync_function_wrapped)
@@ -41,7 +41,7 @@ def test_cached_once_merge(init_cachify_fixture, mocker: MockerFixture):
 
 
 @pytest.mark.asyncio
-async def test_cached_once_merge_async(init_cachify_fixture, mocker: MockerFixture):
+async def test_cached_once_merge_async(init_cachify_fixture: None, mocker: MockerFixture) -> None:
     spy = mocker.spy(sys.modules[__name__], 'async_function')
     async_function_wrapped = cached(key='test_key')(async_function)
     once_wrapped = once(key='test_key')(async_function_wrapped)

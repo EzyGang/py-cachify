@@ -28,10 +28,10 @@ class CachifyClient:
         self.default_cache_ttl = default_cache_ttl
 
     def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
-        _ = self._sync_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl, nx=False)
+        _ = self._sync_client.set(f'{self._prefix}{key}', pickle.dumps(val), ex=ttl, nx=False)
 
     def get(self, key: str) -> Any:
-        return (val := self._sync_client.get(name=f'{self._prefix}{key}')) and pickle.loads(val)
+        return (val := self._sync_client.get(f'{self._prefix}{key}')) and pickle.loads(val)
 
     def delete(self, key: str) -> Any:
         return self._sync_client.delete(f'{self._prefix}{key}')
@@ -42,14 +42,14 @@ class CachifyClient:
         """
         name = f'{self._prefix}{key}'
         payload = pickle.dumps(1)
-        res = self._sync_client.set(name=name, value=payload, ex=ttl, nx=True)
+        res = self._sync_client.set(name, payload, ex=ttl, nx=True)
         return bool(res)
 
     async def a_get(self, key: str) -> Any:
-        return (val := await self._async_client.get(name=f'{self._prefix}{key}')) and pickle.loads(val)
+        return (val := await self._async_client.get(f'{self._prefix}{key}')) and pickle.loads(val)
 
     async def a_set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
-        await self._async_client.set(name=f'{self._prefix}{key}', value=pickle.dumps(val), ex=ttl, nx=False)
+        await self._async_client.set(f'{self._prefix}{key}', pickle.dumps(val), ex=ttl, nx=False)
 
     async def a_delete(self, key: str) -> Any:
         return await self._async_client.delete(f'{self._prefix}{key}')
@@ -60,7 +60,7 @@ class CachifyClient:
         """
         name = f'{self._prefix}{key}'
         payload = pickle.dumps(1)
-        res = await self._async_client.set(name=name, value=payload, ex=ttl, nx=True)
+        res = await self._async_client.set(name, payload, ex=ttl, nx=True)
         return bool(res)
 
 

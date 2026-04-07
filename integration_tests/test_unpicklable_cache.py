@@ -12,7 +12,10 @@ class UnpicklableClass:
         self.arg1 = arg1
         self.arg2 = arg2
 
-    def __eq__(self, other: 'UnpicklableClass') -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, UnpicklableClass):
+            raise NotImplementedError()
+
         return self.arg1 == other.arg1 and self.arg2 == other.arg2
 
     def __reduce__(self):
