@@ -223,7 +223,7 @@ class Cachify:
                 ...
 
             # Or as decorator via the instance method
-            @main_pool.pooled
+            @main_pool.pooled()
             async def process():
                 ...
         """

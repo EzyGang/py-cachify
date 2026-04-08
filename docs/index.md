@@ -35,7 +35,7 @@
 
 ---
 
-**Py-Cachify** is a robust library tailored for developers looking to enhance their Python applications with elegant caching and locking mechanisms.
+**Py-Cachify** is a robust library tailored for developers looking to enhance their Python applications with elegant caching, locking, and pool management mechanisms.
 Whether you're building synchronous or asynchronous applications, Py-Cachify has you covered!
 It acts as a thin, backend-agnostic wrapper over your favorite cache client, letting you focus on business logic instead of juggling low-level get/set calls.
 
@@ -46,10 +46,13 @@ Utilize customizable keys and time-to-live (TTL) parameters.
 - **Distributed Locks**: Ensure safe concurrent operation of functions with distributed locks.
 Prevent race conditions and manage shared resources effectively across both sync and async contexts.
 
+- **Resource Pools**: Control concurrent execution capacity with pool management.
+Limit connections to external APIs, manage worker queues, or throttle resource-intensive operations.
+
 - **Backend Agnostic**: Easily integrate with different cache backends.
 Choose between in-memory, Redis, DragonflyDB, or any custom backend that adheres to the provided client interfaces.
 
-- **Decorators for Ease**: Use intuitive decorators like `@cached()` and `@lock()` to wrap your functions,
+- **Decorators for Ease**: Use intuitive decorators like `@cached()`, `@lock()`, and `@pooled()` to wrap your functions,
 maintain clean code, and benefit from automatic cache management.
 
 - **Type Safety & Documentation**: Fully type-annotated for enhanced IDE support and readability,
@@ -103,7 +106,7 @@ init_cachify()
 
 This call:
 
-- Configures the **global** client used by the top-level decorators: `cached`, `lock`, and `once`.
+- Configures the **global** client used by the top-level decorators: `cached`, `lock`, `once`, and `pooled`.
 - Uses an in-memory cache by default (both for sync and async usage).
 
 
@@ -130,7 +133,7 @@ Once the global client is initialized you can use everything that the library pr
 
 
 
-❗ If you forgot to call `init_cachify` with `is_global=True` (default) at least once, using the global decorators (`cached`, `lock`, `once`) will raise `CachifyInitError` at runtime. Instance-based usage via `init_cachify(is_global=False)` does not depend on this global initialization.
+❗ If you forgot to call `init_cachify` with `is_global=True` (default) at least once, using the global decorators (`cached`, `lock`, `once`, `pooled`) will raise `CachifyInitError` at runtime. Instance-based usage via `init_cachify(is_global=False)` does not depend on this global initialization.
 
 
 
@@ -154,9 +157,9 @@ def compute_local(x: int) -> int:
 ```
 
 
-- Global decorators (`@cached`, `@lock`, `@once`) use the client configured by the first `init_cachify(is_global=True)` call.
+- Global decorators (`@cached`, `@lock`, `@once`, `@pooled`) use the client configured by the first `init_cachify(is_global=True)` call.
 
-- The `local_cache` instance has its own client and prefix and exposes `local_cache.cached`, `local_cache.lock`, and `local_cache.once` bound to that instance.
+- The `local_cache` instance has its own client and prefix and exposes `local_cache.cached`, `local_cache.lock`, `local_cache.once`, and `local_cache.pooled` bound to that instance.
 
 
 
@@ -206,7 +209,7 @@ await async_lock.arelease()
 
 # Use it within a synchronous context
 with lock('resource_key'):
-    # Your critical section here
+    # Your critical section code goes here
     print('Critical section code')
 ```
 
@@ -229,6 +232,44 @@ await critical_function.release(arg=5)
 ```
 
 Read more about `lock` [here](reference/lock.md).
+
+### Resource Pools
+
+Pool management via context manager:
+
+```python
+from py_cachify import pool
+
+
+# Use it within an asynchronous context
+async with pool(key='worker-pool', max_size=10):
+    # Your pooled work here
+    print('Executing within pool capacity')
+
+
+# Use it within a synchronous context
+with pool(key='sync-pool', max_size=5):
+    # Your pooled work here
+    print('Synchronous pooled execution')
+```
+
+Pool management via decorator:
+
+```python
+
+from py_cachify import pooled
+
+@pooled(key='api-call-pool-{user_id}', max_size=5)
+async def call_external_api(user_id: str) -> dict:
+    # Limited to 5 concurrent calls per user
+    return {'data': 'response'}
+
+
+# Check pool occupancy for user_id='123'
+await call_external_api.size(user_id='123')
+```
+
+Read more about `pool` and `pooled` [here](reference/pool.md).
 
 For a more detailed tutorial visit **[Tutorial](tutorial/index.md)** or **[full API reference](reference/init.md)**.
 
