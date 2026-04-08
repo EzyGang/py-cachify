@@ -1,5 +1,6 @@
 # pyright: reportPrivateUsage=false
 import asyncio
+import inspect
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import sleep
 
@@ -94,10 +95,10 @@ def test_once_wrapped_async_function_has_release_and_is_locked_callables_attache
         return None
 
     assert hasattr(async_function, 'release')
-    assert asyncio.iscoroutinefunction(async_function.release)
+    assert inspect.iscoroutinefunction(async_function.release)
 
     assert hasattr(async_function, 'is_locked')
-    assert asyncio.iscoroutinefunction(async_function.is_locked)
+    assert inspect.iscoroutinefunction(async_function.is_locked)
 
 
 def test_once_wrapped_function_has_release_and_is_locked_callables_attached(init_cachify_fixture: None) -> None:
@@ -105,9 +106,9 @@ def test_once_wrapped_function_has_release_and_is_locked_callables_attached(init
     def sync_function() -> None: ...
 
     assert hasattr(sync_function, 'release')
-    assert not asyncio.iscoroutinefunction(sync_function.release)
+    assert not inspect.iscoroutinefunction(sync_function.release)
     assert callable(sync_function.release)
 
     assert hasattr(sync_function, 'is_locked')
-    assert not asyncio.iscoroutinefunction(sync_function.is_locked)
+    assert not inspect.iscoroutinefunction(sync_function.is_locked)
     assert callable(sync_function.is_locked)

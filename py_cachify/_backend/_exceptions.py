@@ -4,3 +4,7 @@ class CachifyInitError(Exception):
 
 class CachifyLockError(Exception):
     pass
+
+
+class CachifyPoolFullError(Exception):
+    pass

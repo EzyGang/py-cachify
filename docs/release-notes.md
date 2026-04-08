@@ -4,6 +4,16 @@
 
 ### Features & Enhancements
 
+#### **Resource Pools**:
+  - New `pool()` class for managing concurrent execution slots with `max_size` limit.
+  - Use as context manager: `async with pool(key='worker-pool', max_size=10)`
+  - Use as decorator via `@pooled(key='...', max_size=N, on_full=callback)`
+  - `on_full` callback receives same `*args, **kwargs` as wrapped function, enabling rescheduling, logging, or fallback logic.
+  - `raise_on_full=True` option to raise `CachifyPoolFullError` instead of calling on_full.
+  - `slot_exp` parameter for slot TTL (defaults to `default_pool_slot_expiration` from `init_cachify()`, default 600 seconds).
+  - `size()` and `asize()` methods to check current pool occupancy.
+  - New `CachifyPoolFullError` exception exported from `py_cachify`.
+
 #### **Configurable lock polling interval**:
   - `init_cachify` now accepts a `lock_poll_interval` parameter (default: `0.1` seconds).
   - This controls how frequently the library polls for lock availability when `nowait=False`.

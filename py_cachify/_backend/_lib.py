@@ -5,11 +5,13 @@ from ._clients import AsyncWrapper, MemoryCache
 from ._exceptions import CachifyInitError
 from ._types._common import UNSET, AsyncClient, Decoder, Encoder, SyncClient, UnsetType
 from ._types._lock_wrap import WrappedFunctionLock
+from ._types._pool_wrap import WrappedFunctionPool
 from ._types._reset_wrap import WrappedFunctionReset
 
 
 if TYPE_CHECKING:
     from ._lock import lock as _lock_cls
+    from ._pool import pool as _pool_cls
 
 
 class CachifyClient:
@@ -21,6 +23,7 @@ class CachifyClient:
         prefix: str,
         default_cache_ttl: Optional[int] = None,
         lock_poll_interval: float = 0.1,
+        default_pool_slot_expiration: Optional[int] = 600,
     ) -> None:
         self._sync_client = sync_client
         self._async_client = async_client
@@ -28,6 +31,7 @@ class CachifyClient:
         self.default_expiration = default_expiration
         self.default_cache_ttl = default_cache_ttl
         self.lock_poll_interval = lock_poll_interval
+        self.default_pool_slot_expiration = default_pool_slot_expiration
 
     def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
         _ = self._sync_client.set(f'{self._prefix}{key}', pickle.dumps(val), ex=ttl, nx=False)
@@ -86,6 +90,7 @@ class Cachify:
         default_expiration: Optional[int],
         default_cache_ttl: Optional[int],
         lock_poll_interval: float = 0.1,
+        default_pool_slot_expiration: Optional[int] = 600,
     ) -> None:
         self._client = CachifyClient(
             sync_client=sync_client,
@@ -94,6 +99,7 @@ class Cachify:
             default_cache_ttl=default_cache_ttl,
             prefix=prefix,
             lock_poll_interval=lock_poll_interval,
+            default_pool_slot_expiration=default_pool_slot_expiration,
         )
 
     def cached(
@@ -189,6 +195,91 @@ class Cachify:
             client_provider=lambda: self._client,
         )
 
+    def pool(
+        self,
+        key: str,
+        max_size: int,
+        slot_exp: Union[Optional[int], UnsetType] = UNSET,
+    ) -> '_pool_cls':
+        """
+        Create a pool instance to manage concurrent execution slots with a maximum size.
+
+        The returned pool instance can be used as a context manager or as a decorator
+        to wrap the function in `.pooled()` method on the instance.
+
+        Args:
+        key (str): The key used to identify the pool.
+        max_size (int): Maximum number of concurrent slots in the pool.
+        slot_exp (Union[int, None, UnsetType], optional): TTL for pool slots in seconds.
+            Defaults to UNSET and uses default_pool_slot_expiration from cachify.
+
+        Returns:
+        pool: A pool instance that can be used as a context manager.
+
+        Example:
+            main_pool = cachify.pool(key='worker-pool', max_size=10)
+
+            async with main_pool:
+                ...
+
+            # Or as decorator via the instance method
+            @main_pool.pooled()
+            async def process():
+                ...
+        """
+        from ._pool import pool as _pool
+
+        pl = _pool(key=key, max_size=max_size, slot_exp=slot_exp)
+
+        pl._cachify = self._client  # pyright: ignore[reportPrivateUsage]
+
+        return pl
+
+    def pooled(
+        self,
+        key: str,
+        max_size: int,
+        on_full: Any = None,
+        raise_on_full: bool = False,
+        slot_exp: Union[Optional[int], UnsetType] = UNSET,
+    ) -> 'WrappedFunctionPool':
+        """
+        Decorator factory for pooled functions.
+
+        This is a convenience method equivalent to the standalone `pooled` function.
+        Use this when you only need the decorator functionality.
+
+        Args:
+            key (str): The key used to identify the pool. Supports format strings with function arguments.
+            max_size (int): Maximum number of concurrent slots in the pool.
+            on_full (Callable[..., Any], optional): Callback called when pool is full.
+                Receives the same *args, **kwargs as the wrapped function. Defaults to None.
+            raise_on_full (bool, optional): If True, raise CachifyPoolFullError when pool is full.
+                Defaults to False.
+            slot_exp (Union[int, None, UnsetType], optional): TTL for pool slots in seconds.
+                Defaults to UNSET and uses default_pool_slot_expiration from cachify.
+
+        Returns:
+            WrappedFunctionPool: A decorator that wraps functions with pool acquisition.
+                Attaches method `size(*args, **kwargs)` to check pool size.
+
+        Example:
+            @cachify.pooled(key='task-pool-{user_id}', max_size=10)
+            async def process_task(user_id: str) -> None:
+                ...
+        """
+        from ._pool import _pooled_impl  # pyright: ignore[reportPrivateUsage]
+
+        return _pooled_impl(
+            key=key,
+            max_size=max_size,
+            on_full=on_full,
+            raise_on_full=raise_on_full,
+            slot_exp=slot_exp,
+            pool_instance=None,
+            client_provider=lambda: self._client,
+        )
+
 
 def init_cachify(
     sync_client: Optional[SyncClient] = None,
@@ -197,6 +288,7 @@ def init_cachify(
     default_cache_ttl: Optional[int] = None,
     prefix: str = 'PYC-',
     lock_poll_interval: float = 0.1,
+    default_pool_slot_expiration: Optional[int] = 600,
     *,
     is_global: bool = True,
 ) -> Cachify:
@@ -216,6 +308,8 @@ def init_cachify(
         Defaults to 'PYC-'.
     lock_poll_interval (float, optional): The interval in seconds to wait between lock acquisition
         attempts when polling. Defaults to 0.1.
+    default_pool_slot_expiration (Optional[int], optional): The default TTL for pool slots in seconds.
+        Defaults to 600 (10 minutes).
     is_global (bool, optional): Whether to register this client as the global instance.
         Defaults to True.
     """
@@ -234,6 +328,7 @@ def init_cachify(
             default_cache_ttl=default_cache_ttl,
             prefix=prefix,
             lock_poll_interval=lock_poll_interval,
+            default_pool_slot_expiration=default_pool_slot_expiration,
         )
         # is not needed, but kept to not ruin the function signature
         return Cachify(
@@ -243,6 +338,7 @@ def init_cachify(
             default_expiration=default_lock_expiration,
             default_cache_ttl=default_cache_ttl,
             lock_poll_interval=lock_poll_interval,
+            default_pool_slot_expiration=default_pool_slot_expiration,
         )
 
     return Cachify(
@@ -252,6 +348,7 @@ def init_cachify(
         default_expiration=default_lock_expiration,
         default_cache_ttl=default_cache_ttl,
         lock_poll_interval=lock_poll_interval,
+        default_pool_slot_expiration=default_pool_slot_expiration,
     )
 
 
