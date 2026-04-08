@@ -23,6 +23,7 @@ class AsyncClient(Protocol):
         self,
         name: str,
         value: Any,
+        *,
         ex: Union[int, None] = None,
         nx: bool = False,
     ) -> Awaitable[Any]:
@@ -40,6 +41,7 @@ class SyncClient(Protocol):
         self,
         name: str,
         value: Any,
+        *,
         ex: Union[int, None] = None,
         nx: bool = False,
     ) -> Any:

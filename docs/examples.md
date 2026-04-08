@@ -166,3 +166,68 @@ def one_more_long_running_function() -> None:
     # Executing
     ...
 ```
+
+## ///pool/// as context manager
+
+```python
+from py_cachify import init_cachify, pool
+
+# Ensure global client is initialized
+init_cachify()
+
+# Use it within an asynchronous context
+async with pool(key='worker-pool', max_size=10):
+    # Your pooled work here
+    print('Executing within pool capacity')
+
+
+# Use it within a synchronous context
+with pool(key='sync-pool', max_size=5):
+    # Your pooled work here
+    print('Synchronous pooled execution')
+```
+
+## ///@pooled/// decorator
+
+```python
+from py_cachify import init_cachify, pooled
+
+# Initialize once at app startup
+init_cachify()
+
+
+@pooled(key='api-call-pool-{user_id}', max_size=5)
+async def call_external_api(user_id: str) -> dict:
+    # Limited to 5 concurrent calls per user
+    return {'user_id': user_id, 'data': 'response'}
+
+
+# Check pool occupancy
+await call_external_api.size(user_id='123')
+```
+
+## ///@pooled/// with on_full callback
+
+```python
+from py_cachify import init_cachify, pooled
+
+# Initialize once at app startup
+init_cachify()
+
+
+def handle_full(*args, **kwargs):
+    # Callback receives the same args/kwargs as the original function
+    user_id = kwargs.get('user_id')
+    # Could reschedule, log, or return cached data
+    return {'user_id': user_id, 'status': 'queued', 'data': None}
+
+
+@pooled(key='worker-pool-{user_id}', max_size=3, on_full=handle_full)
+async def process_task(user_id: str, task_data: str) -> dict:
+    # Process the task
+    return {'user_id': user_id, 'task_data': task_data, 'status': 'completed'}
+
+
+# When pool is full, handle_full is called instead
+result = await process_task(user_id='123', task_data='payload')
+```

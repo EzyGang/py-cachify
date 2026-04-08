@@ -1,4 +1,6 @@
+# pyright: reportPrivateUsage=false
 import asyncio
+import inspect
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import sleep
 
@@ -7,9 +9,9 @@ import pytest
 from py_cachify import CachifyLockError, once
 
 
-def test_once_decorator_sync_function(init_cachify_fixture):
+def test_once_decorator_sync_function(init_cachify_fixture: None) -> None:
     @once(key='test_key-{arg1}-{arg2}')
-    def sync_function(arg1, arg2):
+    def sync_function(arg1: int, arg2: int) -> int:
         sleep(1)
         return arg1 + arg2
 
@@ -22,9 +24,9 @@ def test_once_decorator_sync_function(init_cachify_fixture):
 
 
 @pytest.mark.asyncio
-async def test_once_decorator_async_function(init_cachify_fixture):
+async def test_once_decorator_async_function(init_cachify_fixture: None) -> None:
     @once(key='test_key-{arg1}-{arg2}')
-    async def async_function(arg1, arg2):
+    async def async_function(arg1: int, arg2: int) -> int:
         await asyncio.sleep(1)
         return arg1 + arg2
 
@@ -33,9 +35,9 @@ async def test_once_decorator_async_function(init_cachify_fixture):
     assert 7 in results
 
 
-def test_once_decorator_raise_on_locked(init_cachify_fixture):
+def test_once_decorator_raise_on_locked(init_cachify_fixture: None) -> None:
     @once(key='test_key-{arg1}-{arg2}', raise_on_locked=True)
-    def sync_function(arg1, arg2):
+    def sync_function(arg1: int, arg2: int) -> int:
         sleep(1)
         return arg1 + arg2
 
@@ -47,7 +49,7 @@ def test_once_decorator_raise_on_locked(init_cachify_fixture):
 
 
 @pytest.mark.asyncio
-async def test_async_once_decorator_raise_on_locked(init_cachify_fixture):
+async def test_async_once_decorator_raise_on_locked(init_cachify_fixture: None) -> None:
     @once(key='test_key-{arg1}-{arg2}', raise_on_locked=True)
     async def async_function(arg1: int, arg2: int) -> int:
         await asyncio.sleep(1)
@@ -57,11 +59,11 @@ async def test_async_once_decorator_raise_on_locked(init_cachify_fixture):
         await asyncio.gather(async_function(3, 4), async_function(3, 4))
 
 
-def test_once_decorator_return_on_locked_sync(init_cachify_fixture):
-    to_return = 'test'
+def test_once_decorator_return_on_locked_sync(init_cachify_fixture: None) -> None:
+    to_return: str = 'test'
 
     @once(key='test_key-{arg1}', return_on_locked=to_return)
-    def sync_function(arg1, arg2):
+    def sync_function(arg1: int, arg2: int) -> int:
         sleep(1)
         return arg1 + arg2
 
@@ -74,11 +76,11 @@ def test_once_decorator_return_on_locked_sync(init_cachify_fixture):
 
 
 @pytest.mark.asyncio
-async def test_once_decorator_return_on_locked_async(init_cachify_fixture):
-    to_return = 'test'
+async def test_once_decorator_return_on_locked_async(init_cachify_fixture: None) -> None:
+    to_return: str = 'test'
 
     @once(key='test_key-{arg1}', return_on_locked=to_return)
-    async def async_function(arg1, arg2):
+    async def async_function(arg1: int, arg2: int) -> int:
         await asyncio.sleep(1)
         return arg1 + arg2
 
@@ -87,26 +89,26 @@ async def test_once_decorator_return_on_locked_async(init_cachify_fixture):
     assert 7 in results
 
 
-def test_once_wrapped_async_function_has_release_and_is_locked_callables_attached(init_cachify_fixture):
+def test_once_wrapped_async_function_has_release_and_is_locked_callables_attached(init_cachify_fixture: None) -> None:
     @once(key='test')
     async def async_function(arg1: int, arg2: int) -> None:
         return None
 
     assert hasattr(async_function, 'release')
-    assert asyncio.iscoroutinefunction(async_function.release)
+    assert inspect.iscoroutinefunction(async_function.release)
 
     assert hasattr(async_function, 'is_locked')
-    assert asyncio.iscoroutinefunction(async_function.is_locked)
+    assert inspect.iscoroutinefunction(async_function.is_locked)
 
 
-def test_once_wrapped_function_has_release_and_is_locked_callables_attached(init_cachify_fixture):
+def test_once_wrapped_function_has_release_and_is_locked_callables_attached(init_cachify_fixture: None) -> None:
     @once(key='test')
     def sync_function() -> None: ...
 
     assert hasattr(sync_function, 'release')
-    assert not asyncio.iscoroutinefunction(sync_function.release)
+    assert not inspect.iscoroutinefunction(sync_function.release)
     assert callable(sync_function.release)
 
     assert hasattr(sync_function, 'is_locked')
-    assert not asyncio.iscoroutinefunction(sync_function.is_locked)
+    assert not inspect.iscoroutinefunction(sync_function.is_locked)
     assert callable(sync_function.is_locked)

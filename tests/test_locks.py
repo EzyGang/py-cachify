@@ -1,8 +1,10 @@
+# pyright: reportPrivateUsage=false
 import asyncio
 from asyncio import sleep as asleep
 from contextlib import nullcontext
 from threading import Thread
 from time import sleep
+from typing import Any
 
 import pytest
 
@@ -15,7 +17,7 @@ lock_obj = lock(key='test')
 
 
 @pytest.mark.asyncio
-async def test_async_lock(init_cachify_fixture):
+async def test_async_lock(init_cachify_fixture: None) -> None:
     async def async_operation():
         async with lock('lock'):
             return None
@@ -24,7 +26,7 @@ async def test_async_lock(init_cachify_fixture):
 
 
 @pytest.mark.asyncio
-async def test_async_lock_already_locked(init_cachify_fixture):
+async def test_async_lock_already_locked(init_cachify_fixture: None) -> None:
     key = 'lock'
 
     async def async_operation():
@@ -36,7 +38,7 @@ async def test_async_lock_already_locked(init_cachify_fixture):
         await async_operation()
 
 
-def test_lock(init_cachify_fixture):
+def test_lock(init_cachify_fixture: None) -> None:
     def sync_operation():
         with lock('lock'):
             pass
@@ -44,7 +46,7 @@ def test_lock(init_cachify_fixture):
     sync_operation()
 
 
-def test_lock_already_locked(init_cachify_fixture):
+def test_lock_already_locked(init_cachify_fixture: None) -> None:
     key = 'lock'
 
     def sync_operation():
@@ -59,7 +61,7 @@ def test_lock_already_locked(init_cachify_fixture):
 @pytest.mark.parametrize(
     'exp,timeout,expectation', [(1, 2, nullcontext(None)), (2, 1, pytest.raises(CachifyLockError))]
 )
-def test_waiting_lock(init_cachify_fixture, exp, timeout, expectation):
+def test_waiting_lock(init_cachify_fixture: None, exp: 'int | None', timeout: float, expectation: Any) -> None:
     key = 'lock'
 
     def sync_operation():
@@ -75,7 +77,9 @@ def test_waiting_lock(init_cachify_fixture, exp, timeout, expectation):
 @pytest.mark.parametrize(
     'exp,timeout,expectation', [(1, 2, nullcontext(None)), (2, 1, pytest.raises(CachifyLockError))]
 )
-async def test_waiting_lock_async(init_cachify_fixture, exp, timeout, expectation):
+async def test_waiting_lock_async(
+    init_cachify_fixture: None, exp: 'int | None', timeout: float, expectation: Any
+) -> None:
     key = 'lock'
 
     async def async_operation():
@@ -87,17 +91,17 @@ async def test_waiting_lock_async(init_cachify_fixture, exp, timeout, expectatio
         assert await async_operation() == e
 
 
-def test_lock_cachify_returns_cachify_instance(init_cachify_fixture):
+def test_lock_cachify_returns_cachify_instance(init_cachify_fixture: None) -> None:
     assert isinstance(lock_obj._cachify, CachifyClient)
     assert lock_obj._cachify is not None
 
 
-def test_lock_recreate_cm_returns_self():
+def test_lock_recreate_cm_returns_self() -> None:
     assert lock_obj._recreate_cm() is lock_obj
 
 
 @pytest.mark.parametrize('timeout,expected', [(None, float('inf')), (10, 20.0)])
-def test_lock_calc_stop_at(mocker, timeout, expected):
+def test_lock_calc_stop_at(mocker: Any, timeout: 'int | None', expected: float) -> None:
     new_lock = lock('test', timeout=timeout)
     mocker.patch('time.time', return_value=10.0)
 
@@ -113,10 +117,12 @@ def test_lock_calc_stop_at(mocker, timeout, expected):
         (30, None, None),
     ],
 )
-def test_lock_get_ttl(init_cachify_fixture, default_expiration, exp, expected):
+def test_lock_get_ttl(
+    init_cachify_fixture: None, default_expiration: 'int | None', exp: Any, expected: 'float | None'
+) -> None:
     init_dict = {'default_lock_expiration': default_expiration} if default_expiration is not None else {}
 
-    init_cachify(**init_dict)
+    init_cachify(**init_dict)  # pyright: ignore[reportArgumentType]
 
     lock_obj = lock('test', exp=exp)
 
@@ -131,7 +137,7 @@ def test_lock_get_ttl(init_cachify_fixture, default_expiration, exp, expected):
         (False, 'test', True, nullcontext(None)),
     ],
 )
-def test_lock_raise_if_cached(mocker, is_already_locked, key, do_raise, expectation):
+def test_lock_raise_if_cached(mocker: Any, is_already_locked: bool, key: str, do_raise: bool, expectation: Any) -> None:
     patch_log = mocker.patch('py_cachify._backend._logger.logger.debug')
 
     with expectation:
@@ -144,7 +150,7 @@ def test_lock_raise_if_cached(mocker, is_already_locked, key, do_raise, expectat
             patch_log.assert_called_once_with(f'{key} is already locked!')
 
 
-def test_unset_type_bool():
+def test_unset_type_bool() -> None:
     assert bool(UNSET) is False
 
 
@@ -155,7 +161,7 @@ def test_unset_type_bool():
         (0, False),
     ],
 )
-def test_is_locked_on_lock_obj(init_cachify_fixture, sleep_time, expected):
+def test_is_locked_on_lock_obj(init_cachify_fixture: None, sleep_time: float, expected: bool) -> None:
     test_lock = lock('test')
 
     def sync_function():
@@ -176,7 +182,7 @@ def test_is_locked_on_lock_obj(init_cachify_fixture, sleep_time, expected):
         (0, False),
     ],
 )
-async def test_is_locked_on_lock_obj_async(init_cachify_fixture, sleep_time, expected):
+async def test_is_locked_on_lock_obj_async(init_cachify_fixture: None, sleep_time: float, expected: bool) -> None:
     test_lock = lock('test')
 
     async def async_function():
@@ -190,3 +196,52 @@ async def test_is_locked_on_lock_obj_async(init_cachify_fixture, sleep_time, exp
     assert await test_lock.is_alocked() is expected
 
     await task
+
+
+def test_lock_poll_interval_is_stored_in_cachify_client():
+    cachify_instance = init_cachify(lock_poll_interval=0.05, is_global=True)
+    assert cachify_instance._client.lock_poll_interval == 0.05
+
+
+def test_lock_poll_interval_is_used_in_sync_lock(mocker: Any):
+    sleep_mock = mocker.patch('time.sleep')
+    _ = init_cachify(lock_poll_interval=0.05, is_global=True)
+
+    @lock(key='poll-test', nowait=False, timeout=2.0)
+    def sync_function() -> None:
+        sleep(0.5)
+
+    thread1 = Thread(target=sync_function)
+    thread1.start()
+    sleep(0.1)
+
+    thread2 = Thread(target=lambda: sync_function())
+    thread2.start()
+    thread2.join()
+    thread1.join()
+
+    poll_intervals = [call.args[0] for call in sleep_mock.call_args_list if call.args[0] == 0.05]
+    assert len(poll_intervals) > 0
+
+
+@pytest.mark.asyncio
+async def test_lock_poll_interval_is_used_in_async_lock(mocker: Any):
+    async def mock_sleep(interval: float) -> None:
+        await asleep(0.01)
+
+    sleep_mock = mocker.patch('py_cachify._backend._lock.asleep', side_effect=mock_sleep)
+    _ = init_cachify(lock_poll_interval=0.05, is_global=True)
+
+    @lock(key='poll-test-async', nowait=False, timeout=2.0)
+    async def async_function() -> None:
+        await asleep(0.2)
+
+    task1 = asyncio.create_task(async_function())
+    await asleep(0.05)
+
+    task2 = asyncio.create_task(async_function())
+    await task2
+    await task1
+
+    poll_intervals = [call.args[0] for call in sleep_mock.call_args_list if call.args[0] == 0.05]
+    assert len(poll_intervals) > 0

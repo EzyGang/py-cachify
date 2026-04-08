@@ -58,8 +58,11 @@ markdown_extensions:
     smart_enable: all
   pymdownx.caret:
   pymdownx.highlight:
+    anchor_linenums: true
     line_spans: __span
+    pygments_lang_class: true
   pymdownx.inlinehilite:
+  pymdownx.snippets:
   pymdownx.keys:
   pymdownx.mark:
   pymdownx.superfences:
@@ -111,11 +114,18 @@ nav:
           - tutorial/locks/lock-as-decorator.md
       - Once (///@once()/// decorator):
           - tutorial/once-decorator/index.md
+      - Pools (///pool()/// and ///@pooled()///):
+          - tutorial/pools/pools-intro.md
+          - tutorial/pools/simple-pools.md
+          - tutorial/pools/pool-parameters.md
+          - tutorial/pools/pool-methods.md
+          - tutorial/pools/pooled-decorator.md
   - API Reference:
       - reference/init.md
       - reference/cached.md
       - reference/lock.md
       - reference/once.md
+      - reference/pool.md
   - Examples: examples.md
   - Contribution & Help:
       - help/help.md

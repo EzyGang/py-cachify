@@ -54,7 +54,7 @@ Once the global client is initialized you can use everything that the library pr
 
 ## Additional info on initialization
 
-The clients are not the only thing that this function accepts. You can also configure `default_cache_ttl`, `default_lock_expiration`, prefixes, and whether a particular call should register a global client or return a dedicated instance. Make sure to check out the **[Detailed initialization reference](../../reference/init.md)** for the full list of options and defaulting rules.
+The clients are not the only thing that this function accepts. You can also configure `default_cache_ttl`, `default_lock_expiration`, `lock_poll_interval`, prefixes, and whether a particular call should register a global client or return a dedicated instance. Make sure to check out the **[Detailed initialization reference](../../reference/init.md)** for the full list of options and defaulting rules.
 
 
 

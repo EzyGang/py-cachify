@@ -1,19 +1,25 @@
-import asyncio
+# pyright: reportPrivateUsage=false
+import inspect
 import sys
+from typing import Optional
 
 import pytest
 from pytest_mock import MockerFixture
 
 from py_cachify import CachifyInitError, cached, init_cachify
-from py_cachify._backend._lib import Cachify
+from py_cachify._backend._lib import Cachify, CachifyClient
 from py_cachify._backend._types._common import UNSET
 
 
-def sync_function(arg1: int, arg2: int) -> int:
+def sync_function(arg1: int, arg2: int, calls: Optional[list[int]] = None) -> int:
+    if calls is not None:
+        calls.append(1)
     return arg1 + arg2
 
 
-async def async_function(arg1: int, arg2: int) -> int:
+async def async_function(arg1: int, arg2: int, calls: Optional[list[int]] = None) -> int:
+    if calls is not None:
+        calls.append(1)
     return arg1 + arg2
 
 
@@ -25,12 +31,12 @@ def encoder(val: int) -> int:
     return val + 5
 
 
-def _get_internal_client(cachify_instance: Cachify):
+def _get_internal_client(cachify_instance: Cachify) -> CachifyClient:
     # helper to access the bound internal client in tests
     return cachify_instance._client
 
 
-def test_cached_decorator_sync_function(init_cachify_fixture, mocker: MockerFixture):
+def test_cached_decorator_sync_function(init_cachify_fixture: None, mocker: MockerFixture) -> None:
     spy = mocker.spy(sys.modules[__name__], 'sync_function')
     sync_function_wrapped = cached(key='test_key')(sync_function)
 
@@ -43,19 +49,19 @@ def test_cached_decorator_sync_function(init_cachify_fixture, mocker: MockerFixt
 
 
 @pytest.mark.asyncio
-async def test_cached_decorator_async_function(init_cachify_fixture, mocker: MockerFixture):
-    spy = mocker.spy(sys.modules[__name__], 'async_function')
+async def test_cached_decorator_async_function(init_cachify_fixture: None) -> None:
+    calls: list[int] = []
     async_function_wrapped = cached(key='test_key_{arg1}')(async_function)
-    result = await async_function_wrapped(3, 4)
-    result_2 = await async_function_wrapped(3, 4)
+    result = await async_function_wrapped(3, 4, calls)
+    result_2 = await async_function_wrapped(3, 4, calls)
 
     assert result == 7
     assert result_2 == 7
-    spy.assert_called_once()
+    assert sum(calls) == 1
 
 
 @pytest.mark.asyncio
-async def test_cached_decorator_with_encoder_and_decoder(init_cachify_fixture, mocker: MockerFixture):
+async def test_cached_decorator_with_encoder_and_decoder(init_cachify_fixture: None, mocker: MockerFixture) -> None:
     decoder_spy = mocker.spy(sys.modules[__name__], 'decoder')
     encoder_spy = mocker.spy(sys.modules[__name__], 'encoder')
     async_function_wrapped = cached(key='test_key_enc_dec_{arg1}', enc_dec=(encoder, decoder))(async_function)
@@ -68,40 +74,40 @@ async def test_cached_decorator_with_encoder_and_decoder(init_cachify_fixture, m
     decoder_spy.assert_called_once_with(12)
 
 
-def test_cached_decorator_check_cachify_init():
+def test_cached_decorator_check_cachify_init() -> None:
     sync_function_wrapped = cached(key='test_key')(sync_function)
     with pytest.raises(CachifyInitError, match='Cachify is not initialized, did you forget to call `init_cachify`?'):
         _ = sync_function_wrapped(3, 4)
 
 
-def test_sync_cached_preserves_type_annotations(init_cachify_fixture):
+def test_sync_cached_preserves_type_annotations(init_cachify_fixture: None) -> None:
     func = cached(key='test_sync_key_{arg1}')(sync_function)
     for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
         assert func.__annotations__[name] == clz
 
 
-def test_async_cached_preserves_type_annotations(init_cachify_fixture):
+def test_async_cached_preserves_type_annotations(init_cachify_fixture: None) -> None:
     func = cached(key='test_key_{arg1}')(async_function)
     for name, clz in [('arg1', int), ('arg2', int), ('return', int)]:
         assert func.__annotations__[name] == clz
 
 
-def test_cached_wrapped_async_function_has_reset_callable_attached(init_cachify_fixture):
+def test_cached_wrapped_async_function_has_reset_callable_attached(init_cachify_fixture: None) -> None:
     func = cached(key='test_key_{arg1}')(async_function)
 
     assert hasattr(func, 'reset')
-    assert asyncio.iscoroutinefunction(func.reset)
+    assert inspect.iscoroutinefunction(func.reset)
 
 
-def test_cached_wrapped_function_has_reset_callable_attached(init_cachify_fixture):
+def test_cached_wrapped_function_has_reset_callable_attached(init_cachify_fixture: None) -> None:
     func = cached(key='teset')(sync_function)
 
     assert hasattr(func, 'reset')
-    assert not asyncio.iscoroutinefunction(func.reset)
+    assert not inspect.iscoroutinefunction(func.reset)
     assert callable(func.reset)
 
 
-def test_cached_works_on_methods(init_cachify_fixture):
+def test_cached_works_on_methods(init_cachify_fixture: None) -> None:
     class TestClass:
         t: str = 'test'
 
@@ -120,18 +126,18 @@ def test_cached_works_on_methods(init_cachify_fixture):
             return a + b
 
     tc = TestClass()
-    assert tc.method(1, 2) == 3
+    assert tc.method(1, 2) == 3  # pyright: ignore[reportCallIssue]
     assert tc.method.reset(tc, 1, 2) is None
     # Fix the type annotation to support
     assert tc.method_static(1, 2) == 3
     assert tc.method_static.reset(1, 2) is None
     # Fix the type annotation to support
-    assert tc.method_class(1, 2) == 3
+    assert tc.method_class(1, 2) == 3  # pyright: ignore[reportCallIssue]
     assert tc.method_class.reset(tc.__class__, 1, 2) is None
 
 
 @pytest.mark.asyncio
-async def test_cached_works_on_async_methods(init_cachify_fixture):
+async def test_cached_works_on_async_methods(init_cachify_fixture: None) -> None:
     class TestClass:
         t: str = 'test'
 
@@ -151,17 +157,17 @@ async def test_cached_works_on_async_methods(init_cachify_fixture):
 
     tc = TestClass()
 
-    assert await tc.method(1, 2) == 3
+    assert await tc.method(1, 2) == 3  # pyright: ignore[reportCallIssue]
     assert await tc.method.reset(tc, 1, 2) is None
     # Fix the type annotation to support
     assert await tc.method_static(1, 2) == 3
     assert await tc.method_static.reset(1, 2) is None
     # Fix the type annotation to support
-    assert await tc.method_class(1, 2) == 3
+    assert await tc.method_class(1, 2) == 3  # pyright: ignore[reportCallIssue]
     assert await tc.method_class.reset(tc.__class__, 1, 2) is None
 
 
-def test_cached_uses_global_and_local_clients_sync(init_cachify_fixture, mocker: MockerFixture):
+def test_cached_uses_global_and_local_clients_sync(init_cachify_fixture: None, mocker: MockerFixture) -> None:
     spy = mocker.spy(sys.modules[__name__], 'sync_function')
 
     global_wrapped = cached(key='multi_client_{arg1}_{arg2}')(sync_function)
@@ -180,25 +186,24 @@ def test_cached_uses_global_and_local_clients_sync(init_cachify_fixture, mocker:
 
 
 @pytest.mark.asyncio
-async def test_cached_uses_global_and_local_clients_async(init_cachify_fixture, mocker: MockerFixture):
-    spy = mocker.spy(sys.modules[__name__], 'async_function')
-
+async def test_cached_uses_global_and_local_clients_async(init_cachify_fixture: None) -> None:
+    calls: list[int] = []
     global_wrapped = cached(key='multi_client_async_{arg1}_{arg2}')(async_function)
 
     local_cachify = init_cachify(prefix='LOCAL-ASYNC-', is_global=False)
     local_wrapped = local_cachify.cached(key='multi_client_async_{arg1}_{arg2}')(async_function)
 
-    assert await global_wrapped(10, 11) == 21
-    assert await global_wrapped(10, 11) == 21  # hit global cache
+    assert await global_wrapped(10, 11, calls) == 21
+    assert await global_wrapped(10, 11, calls) == 21  # hit global cache
 
-    assert await local_wrapped(10, 12) == 22
-    assert await local_wrapped(10, 12) == 22  # hit local cache
+    assert await local_wrapped(10, 12, calls) == 22
+    assert await local_wrapped(10, 12, calls) == 22  # hit local cache
 
     # One call per client (global + local) with caching working independently
-    assert spy.call_count == 2
+    assert sum(calls) == 2
 
 
-def test_local_cachify_wraps_global_cached_sync(init_cachify_fixture, mocker: MockerFixture):
+def test_local_cachify_wraps_global_cached_sync(init_cachify_fixture: None, mocker: MockerFixture) -> None:
     spy = mocker.spy(sys.modules[__name__], 'sync_function')
 
     global_wrapped = cached(key='multi_layer_global_{arg1}_{arg2}')(sync_function)
@@ -223,30 +228,29 @@ def test_local_cachify_wraps_global_cached_sync(init_cachify_fixture, mocker: Mo
 
 
 @pytest.mark.asyncio
-async def test_local_cachify_wraps_global_cached_async(init_cachify_fixture, mocker: MockerFixture):
-    spy = mocker.spy(sys.modules[__name__], 'async_function')
-
+async def test_local_cachify_wraps_global_cached_async(init_cachify_fixture: None) -> None:
+    calls: list[int] = []
     global_wrapped = cached(key='multi_layer_async_{arg1}_{arg2}')(async_function)
     local_cachify = init_cachify(prefix='LOCAL-MULTI-ASYNC-', is_global=False)
     local_wrapped = local_cachify.cached(key='multi_layer_async_{arg1}_{arg2}')(global_wrapped)
 
-    assert await local_wrapped(5, 6) == 11
-    assert await global_wrapped(5, 6) == 11
-    assert spy.call_count == 1  # no additional calls
+    assert await local_wrapped(5, 6, calls) == 11
+    assert await global_wrapped(5, 6, calls) == 11
+    assert sum(calls) == 1  # no additional calls
 
     # Reset via the local wrapper; this should clear both caches for these args
     assert await local_wrapped.reset(5, 6) is None
 
     # After reset, calling through local wrapper should recompute and repopulate both caches
-    assert await local_wrapped(5, 6) == 11
-    assert spy.call_count == 2
+    assert await local_wrapped(5, 6, calls) == 11
+    assert sum(calls) == 2
 
     # Global wrapper should again hit its cache
-    assert await global_wrapped(5, 6) == 11
-    assert spy.call_count == 2
+    assert await global_wrapped(5, 6, calls) == 11
+    assert sum(calls) == 2
 
 
-def test_cached_default_ttl_uses_global_default_cache_ttl(mocker: MockerFixture):
+def test_cached_default_ttl_uses_global_default_cache_ttl(mocker: MockerFixture) -> None:
     # global default_cache_ttl=60, ttl left as UNSET on decorator
     cachify_instance = init_cachify(default_cache_ttl=60, is_global=True)
     client = _get_internal_client(cachify_instance)
@@ -261,7 +265,7 @@ def test_cached_default_ttl_uses_global_default_cache_ttl(mocker: MockerFixture)
     assert kwargs['ex'] == 60
 
 
-def test_cached_ttl_none_overrides_default_cache_ttl(mocker: MockerFixture):
+def test_cached_ttl_none_overrides_default_cache_ttl(mocker: MockerFixture) -> None:
     # default_cache_ttl=60 but ttl=None should result in ex=None (infinite)
     cachify_instance = init_cachify(default_cache_ttl=60, is_global=True)
     client = _get_internal_client(cachify_instance)
@@ -276,7 +280,7 @@ def test_cached_ttl_none_overrides_default_cache_ttl(mocker: MockerFixture):
     assert kwargs['ex'] is None
 
 
-def test_cached_ttl_explicit_int_overrides_default_cache_ttl(mocker: MockerFixture):
+def test_cached_ttl_explicit_int_overrides_default_cache_ttl(mocker: MockerFixture) -> None:
     # default_cache_ttl=60 but explicit ttl=5 wins
     cachify_instance = init_cachify(default_cache_ttl=60, is_global=True)
     client = _get_internal_client(cachify_instance)
@@ -291,7 +295,7 @@ def test_cached_ttl_explicit_int_overrides_default_cache_ttl(mocker: MockerFixtu
     assert kwargs['ex'] == 5
 
 
-def test_cached_ttl_unset_with_default_cache_ttl_none_means_infinite(mocker: MockerFixture):
+def test_cached_ttl_unset_with_default_cache_ttl_none_means_infinite(mocker: MockerFixture) -> None:
     # default_cache_ttl=None and ttl left as UNSET should lead to ex=None
     cachify_instance = init_cachify(default_cache_ttl=None, is_global=True)
     client = _get_internal_client(cachify_instance)
@@ -306,7 +310,7 @@ def test_cached_ttl_unset_with_default_cache_ttl_none_means_infinite(mocker: Moc
     assert kwargs['ex'] is None
 
 
-def test_cachify_instance_cached_uses_its_own_default_cache_ttl(mocker: MockerFixture):
+def test_cachify_instance_cached_uses_its_own_default_cache_ttl(mocker: MockerFixture) -> None:
     global_cachify = init_cachify(default_cache_ttl=10, is_global=True)
     local_cachify = init_cachify(prefix='LOCAL-TTL-', default_cache_ttl=20, is_global=False)
 
@@ -329,7 +333,7 @@ def test_cachify_instance_cached_uses_its_own_default_cache_ttl(mocker: MockerFi
     assert kwargs_local['ex'] == 20
 
 
-def test_cached_accepts_unset_type_ttl_without_overriding_default(mocker: MockerFixture):
+def test_cached_accepts_unset_type_ttl_without_overriding_default(mocker: MockerFixture) -> None:
     cachify_instance = init_cachify(default_cache_ttl=33, is_global=True)
     client = _get_internal_client(cachify_instance)
 

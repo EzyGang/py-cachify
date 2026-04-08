@@ -3,14 +3,14 @@
 ## Overview
 
 The `init_cachify` function initializes the `py-cachify` library, setting up the necessary synchronous and asynchronous
-clients along with configuration options.
+clients along with configuration options for caching, locking, and pool management.
 
 There are two main ways to use it:
 
 - As a **global initializer** (the default), where you only care about the global decorators
-  like `cached`, `lock`, and `once`, and you ignore the return value.
+  like `cached`, `lock`, `once`, and `pooled`, and you ignore the return value.
 - As a **factory for dedicated instances**, where you call it with `is_global=False` to obtain a `Cachify` instance
-  that you use directly via `instance.cached(...)`, `instance.lock(...)`, and `instance.once(...)`.
+  that you use directly via `instance.cached(...)`, `instance.lock(...)`, `instance.once(...)`, `instance.pool(...)`, and `instance.pooled(...)`.
 
 This function must be called at least once (with `is_global=True`) before using the global decorators.
 
@@ -21,7 +21,7 @@ If you are upgrading from 2.x, you may also want to review the [3.0.0 release no
 
 ### Description
 
-`init_cachify` configures the core caching and locking client used by py-cachify.
+`init_cachify` configures the core caching, locking, and pool management client used by py-cachify.
 
 By default (`is_global=True`), it:
 
@@ -30,6 +30,8 @@ By default (`is_global=True`), it:
   - `py_cachify.cached`
   - `py_cachify.lock`
   - `py_cachify.once`
+  - `py_cachify.pool`
+  - `py_cachify.pooled`
 
 Optionally (`is_global=False`), it:
 
@@ -38,6 +40,8 @@ Optionally (`is_global=False`), it:
   - `Cachify.cached`
   - `Cachify.lock`
   - `Cachify.once`
+  - `Cachify.pool`
+  - `Cachify.pooled`
 
 ### Signature
 
@@ -53,6 +57,8 @@ def init_cachify(
     default_lock_expiration: Optional[int] = 30,
     default_cache_ttl: Optional[int] = None,
     prefix: str = 'PYC-',
+    lock_poll_interval: float = 0.1,
+    default_pool_slot_expiration: Optional[int] = 600,
     *,
     is_global: bool = True,
 ) -> Cachify:  # returns a Cachify instance
@@ -65,10 +71,12 @@ def init_cachify(
 |---------------------------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `sync_client`             | `Optional[SyncClient]`| The synchronous client used for caching operations. If `None`, a new in-memory client is created.                                                                                                                                                                                        |
 | `async_client`            | `Optional[AsyncClient]`| The asynchronous client used for caching operations. If `None`, a new async client is created around an in-memory cache (see notes below for details).                                                                                                                                  |
-| `default_lock_expiration` | `Optional[int]`       | Default expiration time (in seconds) for locks. Defaults to `30`.                                                                                                                                                                                                                       |
+| `default_lock_expiration` | `Optional[int]`       | Default expiration time (in seconds) for locks. Defaults to `30`.                                                                                                                                                       |
 | `default_cache_ttl`       | `Optional[int]`       | Default TTL (in seconds) for cached values when a decorator omits `ttl`. `None` (the default) means values are stored without expiration when `ttl` is not explicitly specified.                                                                                                       |
 | `prefix`                  | `str`                 | String prefix to prepend to all keys used in caching and locks. Defaults to `'PYC-'`.                                                                                                                                                                                                   |
-| `is_global`               | `bool`                | Controls whether this call registers a **global** client. If `True` (default), the created client becomes the global backend used by the top-level `cached`, `lock`, and `once` decorators. If `False`, the global backend is not touched and only a dedicated `Cachify` instance is returned. |
+| `lock_poll_interval`      | `float`               | Interval in seconds between lock acquisition attempts when polling. Defaults to `0.1`. Lower values make locks more responsive but increase load on the cache backend.                                                                                                                  |
+| `default_pool_slot_expiration` | `Optional[int]`    | Default TTL (in seconds) for pool slots when a pool omits `slot_exp`. Defaults to `600` (10 minutes). `None` means slots never expire. See pool slot expiration section below for details.                                                                                              |
+| `is_global`               | `bool`                | Controls whether this call registers a **global** client. If `True` (default), the created client becomes the global backend used by the top-level `cached`, `lock`, `once`, `pool`, and `pooled` decorators. If `False`, the global backend is not touched and only a dedicated `Cachify` instance is returned. |
 
 ### Returns
 
@@ -76,10 +84,12 @@ def init_cachify(
   - `Cachify.cached(...)`
   - `Cachify.lock(...)`
   - `Cachify.once(...)`
+  - `Cachify.pool(...)`
+  - `Cachify.pooled(...)`
 
 #### When `is_global=True` (default)
 
-- The returned `Cachify` instance and the top-level decorators (`cached`, `lock`, `once`) share the same underlying client.
+- The returned `Cachify` instance and the top-level decorators (`cached`, `lock`, `once`, `pool`, `pooled`) share the same underlying client.
 - This is the traditional “initialize the library for my app” mode.
 - Most users who only rely on global decorators do **not** need to keep or use the return value.
 
@@ -131,8 +141,58 @@ The `default_cache_ttl` parameter controls the **default TTL for cached values**
 - If `default_cache_ttl` is `None` (the default):
   - Any decorator that omits `ttl` will store values **without expiration** (behaving like `ttl=None` for the underlying client).
 - If a decorator passes an explicit `ttl`:
-  - `ttl=None` means “no expiration” regardless of `default_cache_ttl`.
+  - `ttl=None` means "no expiration" regardless of `default_cache_ttl`.
   - `ttl=<int>` uses that integer and ignores `default_cache_ttl`.
+
+
+### Lock polling behavior
+
+The `lock_poll_interval` parameter controls how frequently py-cachify retries lock acquisition when a lock is already held by another process:
+
+- When a lock is requested with `nowait=False`, the library polls the cache backend until the lock becomes available or the `timeout` is reached.
+- `lock_poll_interval` (default: `0.1` seconds) specifies the sleep duration between polling attempts.
+- **Lower values** (e.g., `0.01`) make lock acquisition more responsive but increase the number of requests to the cache backend.
+- **Higher values** (e.g., `0.5` or `1.0`) reduce backend load but may increase the time before a waiting lock is acquired after the previous holder releases it.
+
+This setting applies globally to all locks created from this `Cachify` instance, including those used by the `@lock` and `@once` decorators.
+
+Example:
+
+```python
+from py_cachify import init_cachify
+
+# Reduce polling frequency for locks to decrease Redis load
+init_cachify(
+    lock_poll_interval=0.5,  # Poll every 500ms instead of 100ms
+    default_lock_expiration=30,
+)
+```
+
+
+### Default pool slot expiration behavior
+
+The `default_pool_slot_expiration` parameter controls the **default TTL for pool slots** used by both the global `pool()` / `@pooled` and instance-based `Cachify.pool()` / `Cachify.pooled`:
+
+- If `default_pool_slot_expiration` is an integer (for example, `600`):
+  - Any `pool(...)` or `@pooled(...)` call that omits `slot_exp` will use that integer as the slot TTL.
+- If `default_pool_slot_expiration` is `None`:
+  - Any pool that omits `slot_exp` will create slots **without expiration**.
+- If a pool passes an explicit `slot_exp`:
+  - `slot_exp=None` means "no expiration" regardless of `default_pool_slot_expiration`.
+  - `slot_exp=<int>` uses that integer and ignores `default_pool_slot_expiration`.
+
+Slot expiration is important for cleaning up orphaned slots if a process crashes while holding a slot. However, expiration does not interrupt running code; it only affects the pool's internal count.
+
+Example:
+
+```python
+from py_cachify import init_cachify
+
+# Set a 5 minute default for all pool slots
+init_cachify(
+    default_pool_slot_expiration=300,
+)
+```
 
 
 ---
@@ -147,7 +207,7 @@ For most applications you just configure a global backend once and only use the 
 from redis import from_url as redis_from_url
 from redis.asyncio import from_url as async_redis_from_url
 
-from py_cachify import cached, init_cachify, lock, once
+from py_cachify import cached, init_cachify, lock, once, pooled
 
 # Global initialization (returns a Cachify instance, but we don't need it here)
 init_cachify(
@@ -155,6 +215,7 @@ init_cachify(
     async_client=async_redis_from_url("redis://localhost:6379/1"),
     default_lock_expiration=60,
     default_cache_ttl=300,
+    default_pool_slot_expiration=600,
     prefix='APP-',
 )
 
@@ -169,11 +230,16 @@ def critical_section(id: int) -> None:
 @once(key='run-once-{id}', raise_on_locked=True)
 def run_once(id: int) -> None:
     ...
+
+@pooled(key='worker-pool', max_size=5)
+async def worker_task(data: str) -> str:
+    return f'processed-{data}'
+```
 ```
 
 In this mode:
 
-- `cached`, `lock` and `once` all use the global client configured by `init_cachify()`.
+- `cached`, `lock`, `once`, `pool`, and `pooled` all use the global client configured by `init_cachify()`.
 - If you never call `init_cachify`, using those decorators will raise `CachifyInitError`.
 
 ### 2. Creating a dedicated instance without touching the global client
@@ -209,6 +275,10 @@ def local_locked(name: str) -> None:
 
 @local_cachify.once(key='local-once-{task_id}')
 def local_once(task_id: str) -> None:
+    ...
+
+@local_cachify.pooled(key='local-pool', max_size=3)
+async def local_worker(data: str) -> str:
     ...
 ```
 
@@ -262,9 +332,9 @@ These custom implementations should match the following method signatures:
   - `set(name: str, value: Any, ex: Optional[int] = None, nx: bool = False) -> Awaitable[Any]`
   - `delete(*names: str) -> Awaitable[Any]`
 
-### NX flag and locking semantics
+### NX flag and locking/pool semantics
 
-The `nx` flag on `set` is crucial for the correctness of the locking APIs (`lock` and `once`):
+The `nx` flag on `set` is crucial for the correctness of the locking APIs (`lock` and `once`) and pool management (`pool` and `pooled`):
 
 - When `nx` is **False**:
   - `set(name, value, ex=..., nx=False)` should behave like a normal "upsert" operation: always set/overwrite the key.
@@ -290,7 +360,7 @@ For custom backends:
 - To have **correct distributed locking semantics**, you must implement `set(..., nx=True)` as an atomic "set-if-absent" operation and return a truthy/falsy value as described above.
 - If your backend cannot provide atomic `nx=True` behavior, `lock` and `once` will only offer best-effort mutual exclusion and may admit concurrent entries under rare races.
 
-By adhering to these protocols (including the `nx` semantics), you can integrate your custom backend while maintaining compatibility with py-cachify's caching and locking mechanisms.
+By adhering to these protocols (including the `nx` semantics), you can integrate your custom backend while maintaining compatibility with py-cachify's caching, locking, and pool management mechanisms.
 
 ### Example Custom Client Integration
 
@@ -347,6 +417,6 @@ This flexibility allows you to utilize a caching backend of your choice while le
 
 ## Notes
 
-- It is crucial to call `init_cachify` with `is_global=True` at least once before performing any global caching or locking operations with `cached`, `lock`, or `once`. Failing to do so will result in a `CachifyInitError` when attempting to access global caching features.
+- It is crucial to call `init_cachify` with `is_global=True` at least once before performing any global caching, locking, or pool operations with `cached`, `lock`, `once`, `pool`, or `pooled`. Failing to do so will result in a `CachifyInitError` when attempting to access global features.
 - `Cachify` instances created with `is_global=False` do *not* depend on the global initialization and can be used independently.
 - The `sync_client` and `async_client` parameters should comply with the `SyncClient` and `AsyncClient` protocols, respectively.
