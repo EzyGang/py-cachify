@@ -32,208 +32,360 @@
 
 ---
 
-**Documentation**: <a href="https://py-cachify.readthedocs.io/latest/" target="_blank">https://py-cachify.readthedocs.io/latest/</a>
+**Py-Cachify** is a lightweight, backend-agnostic Python library for caching, distributed locking, and resource pool management. Works seamlessly with both sync and async code.
 
-**Source Code**: <a href="https://github.com/EzyGang/py-cachify" target="_blank">https://github.com/EzyGang/py-cachify</a>
+Out of the box, it supports **in-memory**, **Redis**, and **DragonflyDB** backends. You can also integrate **any custom backend** by implementing the `SyncClient` or `AsyncClient` protocols.
 
-**FastAPI Integration Guide**: <a href="https://github.com/EzyGang/py-cachify-fastapi-demo" target="_blank">Repo</a>
-
----
-
-**Py-Cachify** is a robust library tailored for developers looking to enhance their Python applications with elegant caching and locking mechanisms.
-Whether you're building synchronous or asynchronous applications, Py-Cachify has you covered!
-It acts as a thin, backend-agnostic wrapper over your favorite cache client, letting you focus on business logic instead of juggling low-level get/set calls.
-
-
-## Key Features:
-- **Flexible Caching**: Effortlessly cache your function results, dramatically reducing execution time for expensive computations and I/O-bound tasks.
-Utilize customizable keys and time-to-live (TTL) parameters.
-
-- **Distributed Locks**: Ensure safe concurrent operation of functions with distributed locks. 
-Prevent race conditions and manage shared resources effectively across both sync and async contexts.
-
-- **Backend Agnostic**: Easily integrate with different cache backends. 
-Choose between in-memory, Redis, DragonflyDB, or any custom backend that adheres to the provided client interfaces.
-
-- **Decorators for Ease**: Use intuitive decorators like `@cached()` and `@lock()` to wrap your functions, 
-maintain clean code, and benefit from automatic cache management.
-
-- **Type Safety & Documentation**: Fully type-annotated for enhanced IDE support and readability, 
-featuring comprehensive documentation and examples to guide you through various use cases.
-
-- **Production Ready**: With 100% test coverage and usage in multiple commercial projects, 
-Py-Cachify is trusted for production environments, ensuring reliability and stability for your applications.
+**Documentation**: https://py-cachify.readthedocs.io/latest/  
+**Source Code**: https://github.com/EzyGang/py-cachify  
+**FastAPI Demo**: https://github.com/EzyGang/py-cachify-fastapi-demo
 
 ---
 
 ## Table of Contents
 
+- [Why py-cachify?](#why-py-cachify)
 - [Installation](#installation)
-- [How to use](#how-to-use)
-- [Basic examples](#basic-examples)
+- [Quick Start](#quick-start)
+- [Core Features](#core-features)
+  - [Caching](#caching)
+  - [Distributed Locks](#distributed-locks)
+  - [Run Once](#run-once)
+  - [Resource Pools](#resource-pools) *(New in 3.1.0)*
+- [Advanced Patterns](#advanced-patterns)
+- [Backend Configuration](#backend-configuration)
+- [API Quick Reference](#api-quick-reference)
 - [Contributing](#contributing)
 - [License](#license)
 
+---
+
+## Why py-cachify?
+
+There are many caching libraries for Python—so why choose py-cachify?
+
+**🪶 Tiny & Focused** — No bloated dependencies or complex setup. Just install and use.
+
+**🔌 Backend Agnostic** — Switch from in-memory (development) to Redis/DragonflyDB (production) by changing one line. Or plug in any custom backend that implements simple protocols.
+
+**✨ Minimal, Intuitive Syntax** — Stop wrestling with low-level `get/set` calls. One decorator handles caching, locking, or pool management automatically.
+
+**🎯 Decorators That Just Work** — No manual key management, no cache client wiring in every file. Initialize once, decorate everywhere. Both sync and async functions are supported with identical APIs.
+
+**🏭 Production Ready** — 100% test coverage, used in commercial projects, fully type-annotated for excellent IDE support.
+
+| Feature | What it solves |
+|---------|---------------|
+| **@cached** | Eliminate redundant expensive computations and I/O |
+| **lock / @lock** | Prevent race conditions in distributed systems |
+| **@once** | Ensure background tasks don't overlap (deduplication) |
+| **pool / @pooled** | Control concurrency—rate limiting, connection limits *(v3.1.0)* |
+| **Backend Agnostic** | Switch between in-memory (dev) and Redis (prod) with one line |
+| **Sync + Async** | Same API for both sync and async code |
+
+---
+
 ## Installation
 
-<!-- termynal -->
+### pip
 ```bash
-$ pip install py-cachify
-
----> 100%
-Successfully installed py-cachify
+pip install py-cachify
 ```
 
-## How to use
-
-You can read more in-depth tutorials [here](https://py-cachify.readthedocs.io/latest/tutorial/).
-
-First, to start working with the library, you will have to initialize it by using the provided `init_cachify` function:
-```python
-from py_cachify import init_cachify
-
-init_cachify()
+### uv
+```bash
+uv add py-cachify
 ```
 
-This call:
-
-- Configures the **global** client used by the top-level decorators: `cached`, `lock`, and `once`.
-- Returns a `Cachify` instance, but you don't have to use it if you only work with the global decorators.
-- Uses an in-memory cache by default (both for sync and async usage).
-
-
-If you want to use Redis:
-```python
-from py_cachify import init_cachify
-from redis.asyncio import from_url as async_from_url
-from redis import from_url
-
-
-# Example: configure global cachify with Redis for both sync and async flows
-init_cachify(
-    sync_client=from_url(redis_url),
-    async_client=async_from_url(redis_url),
-)
+### poetry
+```bash
+poetry add py-cachify
 ```
-Normally you wouldn't have to use both sync and async clients since an application usually works in a single mode i.e. sync/async. You can pass only `sync_client` **or** only `async_client` if that matches your usage.
 
+For Redis support, you'll also need:
+```bash
+pip install redis
+# or
+uv add redis
+# or
+poetry add redis
+```
 
-Once initialized you can use everything that the library provides straight up without being worried about managing the cache yourself.
+---
 
-
-❗ If you forgot to call `init_cachify` with `is_global=True` at least once, using the global decorators (`cached`, `lock`, `once`) will raise `CachifyInitError` during runtime.
-
-You can also create **dedicated instances** without touching the global client:
+## Quick Start
 
 ```python
-from py_cachify import init_cachify
+from py_cachify import init_cachify, cached
 
-# Global initialization for the top-level decorators
+# Initialize once (uses in-memory cache by default)
 init_cachify()
 
-# Local instance that does NOT touch the global client
-local_cache = init_cachify(is_global=False, prefix='LOCAL-')
+@cached(key='user-{user_id}', ttl=300)
+async def get_user(user_id: int) -> dict:
+    return await fetch_from_db(user_id)
 
-@local_cache.cached(key='local-{x}')
-def compute_local(x: int) -> int:
-    return x * 2
+# First call executes the function
+user = await get_user(42)
+
+# Subsequent calls return cached result instantly
+user = await get_user(42)
+
+# Manually invalidate when needed
+await get_user.reset(user_id=42)
 ```
 
+📖 **[Full Tutorial →](https://py-cachify.readthedocs.io/latest/tutorial/)**  
+📖 **[API Reference →](https://py-cachify.readthedocs.io/latest/reference/init.md)**
 
-## Basic examples
+---
 
+## Core Features
 
 ### Caching
 
-
-Caching by using `@cached` decorator utilizing the flexibility of a dynamic key:
-
+Cache function results with dynamic keys and configurable TTL.
 
 ```python
-# Cache the result of the following function with dynamic key
-@cached(key='sum_two-{a}-{b}')
+from py_cachify import init_cachify, cached
+
+init_cachify(default_cache_ttl=60)  # Default 60s when ttl is omitted
+
+@cached(key='sum-{a}-{b}', ttl=300)  # Custom TTL
 async def sum_two(a: int, b: int) -> int:
-    # Let's put print here to see what was the function called with
-    print(f'Called with {a} {b}')
     return a + b
-    
-    
-# Reset the cache for the call with arguments a=1, b=2
-await sub_two.reset(a=1, b=2)
+
+@cached(key='profile-{user_id}')  # Uses default_cache_ttl=60
+async def get_profile(user_id: int) -> dict:
+    return await fetch_profile(user_id)
+
+@cached(key='flags', ttl=None)  # Never expires
+def get_feature_flags() -> dict:
+    return load_flags()
 ```
 
-### Multi-layer Usage
+**Reset cache manually:**
+```python
+await sum_two.reset(a=1, b=2)  # Clear specific entry
+```
 
-It is possible to layer caches by stacking `cached` decorators (for example, a global cache inside a local instance cache).
+**Custom encoder/decoder** for non-picklable types:
+```python
+def encode(obj: MyClass) -> dict:
+    return {'data': obj.to_dict()}
+
+def decode(data: dict) -> MyClass:
+    return MyClass.from_dict(data['data'])
+
+@cached(key='obj-{id}', enc_dec=(encode, decode))
+def get_obj(id: int) -> MyClass:
+    return MyClass(id)
+```
+
+[Full @cached reference →](https://py-cachify.readthedocs.io/latest/reference/cached/)
+
+---
+
+### Distributed Locks
+
+Prevent concurrent execution with distributed locks.
+
+**Context manager:**
+```python
+from py_cachify import lock
+
+# Async
+async with lock('resource-{id}', nowait=False, timeout=10):
+    await process_resource(id)
+
+# Sync
+with lock('critical-section'):
+    process_data()
+
+# Check and force release
+await lock('resource-{id}').is_alocked()
+await lock('resource-{id}').arelease()
+```
+
+**Decorator:**
+```python
+@lock(key='process-{item_id}', nowait=True)
+async def process_item(item_id: str):
+    # Only one execution at a time per item_id
+    await do_work(item_id)
+
+# Check if locked for specific args
+await process_item.is_locked(item_id='abc')
+await process_item.release(item_id='abc')
+```
+
+[Full lock reference →](https://py-cachify.readthedocs.io/latest/reference/lock/)
+
+---
+
+### Run Once
+
+Ensure a function runs only once at a time—useful for background tasks.
 
 ```python
-from py_cachify import cached, init_cachify
+from py_cachify import once
 
-# Global initialization for the top-level decorators
+@once(key='sync-order-{order_id}', raise_on_locked=False, return_on_locked=None)
+async def sync_order(order_id: str):
+    # If another task is already syncing this order, this exits early
+    await call_external_api(order_id)
+
+@once(key='daily-report', raise_on_locked=True)
+def generate_report():
+    # Raises CachifyLockError if already running
+    run_expensive_analysis()
+```
+
+Perfect for Celery, Dramatiq, Taskiq, or any task queue to prevent duplicate processing.
+
+[Full @once reference →](https://py-cachify.readthedocs.io/latest/reference/once/)
+
+---
+
+### Resource Pools *(New in 3.1.0)*
+
+Limit concurrent execution to N at a time—ideal for API rate limits, connection pools, or worker throttling.
+
+**Context manager:**
+```python
+from py_cachify import pool, CachifyPoolFullError
+
+async with pool(key='api-pool-{user_id}', max_size=5):
+    # Max 5 concurrent API calls per user
+    await call_external_api(user_id)
+```
+
+**Decorator with graceful handling:**
+```python
+from py_cachify import pooled
+
+def queue_for_later(*args, **kwargs):
+    # Called when pool is full instead of executing
+    return {'status': 'queued', 'task_id': kwargs.get('task_id')}
+
+@pooled(key='worker-pool', max_size=10, on_full=queue_for_later)
+async def process_task(task_id: str):
+    await do_work(task_id)
+
+# Check pool occupancy
+occupancy = await process_task.size()
+```
+
+**Raise on full:**
+```python
+@pooled(key='strict-pool', max_size=3, raise_on_full=True)
+async def strict_task():
+    # Raises CachifyPoolFullError when pool is full
+    await work()
+```
+
+[Full pool reference →](https://py-cachify.readthedocs.io/latest/reference/pool/)
+
+---
+
+## Advanced Patterns
+
+### Multi-Layer Caching
+
+Stack caches for optimal performance—fast in-memory layer over persistent Redis.
+
+```python
+init_cachify(default_cache_ttl=300)  # Redis layer
+
+# Local in-memory instance with shorter TTL
+local = init_cachify(is_global=False, prefix='L1-', default_cache_ttl=5)
+
+@local.cached(key='l1-{user_id}')      # Outer: in-memory, 5s
+@cached(key='l2-{user_id}')            # Inner: Redis, 5min
+async def get_user(user_id: int):
+    return await fetch_user(user_id)
+
+# Reset clears both layers
+await get_user.reset(user_id=42)
+```
+
+[Multi-layer tutorial →](https://py-cachify.readthedocs.io/latest/tutorial/cached-decorator/reset-attribute.md)
+
+### Instance-Based Usage
+
+Create isolated caches for different subsystems.
+
+```python
+# Global for main app
+init_cachify(prefix='APP-')
+
+# Isolated instance for metrics (different prefix, different TTL)
+metrics = init_cachify(is_global=False, prefix='METRICS-', default_cache_ttl=60)
+
+@metrics.cached(key='metric-{name}')
+def compute_metric(name: str) -> float:
+    return expensive_calculation(name)
+```
+
+---
+
+## Backend Configuration
+
+### Redis / DragonflyDB
+
+```python
+from py_cachify import init_cachify
+from redis import from_url as redis_from_url
+from redis.asyncio import from_url as async_redis_from_url
+
+init_cachify(
+    sync_client=redis_from_url('redis://localhost:6379/0'),
+    async_client=async_redis_from_url('redis://localhost:6379/0'),
+    prefix='APP-',
+    default_cache_ttl=300,
+    default_lock_expiration=30,
+    default_pool_slot_expiration=600,  # 10 min for pool slots
+    lock_poll_interval=0.1,  # Check lock every 100ms when waiting
+)
+```
+
+### In-Memory (Default)
+
+```python
+from py_cachify import init_cachify
+
+# Perfect for development and testing
 init_cachify()
-
-# Local instance with a shorter TTL that wraps the global one
-local = init_cachify(is_global=False, prefix='LOCAL-')
-
-@local.cached(key='local-expensive-{x}', ttl=5)
-@cached(key='expensive-{x}', ttl=60)
-def expensive(x: int) -> int:
-    return x * 10
 ```
 
-Read more about `@cached` [here](https://py-cachify.readthedocs.io/latest/reference/cached/).
+### Custom Backend
 
-### Locking
+Implement `SyncClient` or `AsyncClient` protocols for Memcached, database-backed, or file-based caching.
 
-Locking through context manager:
+[Custom client guide →](https://py-cachify.readthedocs.io/latest/reference/init.md#custom-clients)
 
-```python
-from py_cachify import lock
+---
 
+## API Quick Reference
 
-async_lock = lock('resource_key')
-# Use it within an asynchronous context
-async with async_lock:
-    # Your critical section here
-    print('Critical section code')
+| Decorator/Class | Purpose | Key Parameters |
+|-----------------|---------|----------------|
+| `@cached(key, ttl, enc_dec)` | Cache function results | `key`: template string, `ttl`: expiration in seconds |
+| `lock(key, nowait, timeout)` | Distributed lock context manager | `nowait`: fail fast, `timeout`: max wait time |
+| `@lock(key, nowait, timeout)` | Lock as decorator | Same as above |
+| `@once(key, raise_on_locked, return_on_locked)` | Prevent concurrent runs | `raise_on_locked`: exception vs skip |
+| `pool(key, max_size, slot_exp)` | Resource pool context manager *(v3.1.0)* | `max_size`: max concurrent, `slot_exp`: slot TTL |
+| `@pooled(key, max_size, on_full, raise_on_full)` | Pool as decorator *(v3.1.0)* | `on_full`: callback when full |
 
-# Check if it's locked
-await async_lock.is_alocked()
+[Full API reference →](https://py-cachify.readthedocs.io/latest/reference/init.md)
 
-# Forcefully release
-await async_lock.arelease()
-
-# Use it within a synchronous context
-with lock('resource_key'):
-    # Your critical section here
-    print('Critical section code')
-```
-
-Locking via decorator:
-
-```python
-
-from py_cachify import lock
-
-@lock(key='critical_function_lock-{arg}', nowait=False, timeout=10)
-async def critical_function(arg: int) -> None:
-    # critical code
-    
-
-# Check if it's locked for arg=5
-await critical_function.is_locked(arg=5)
-
-# Forcefully release for arg=5
-await critical_function.release(arg=5)
-```
-
-Read more about `lock` [here](https://py-cachify.readthedocs.io/latest/reference/lock/).
-
-For a more detailed tutorial visit [Tutorial](https://py-cachify.readthedocs.io/latest/tutorial/) or [full API reference](https://py-cachify.readthedocs.io/latest/reference).
+---
 
 ## Contributing
 
-If you'd like to contribute, please first discuss the changes using Issues, and then don't hesitate to shoot a PR which will be reviewed shortly.
+If you'd like to contribute, please first discuss changes via [Issues](https://github.com/EzyGang/py-cachify/issues), then submit a PR.
+
+---
 
 ## License
 
