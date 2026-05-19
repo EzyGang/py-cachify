@@ -619,15 +619,15 @@ pyjwt==2.12.1 \
     --hash=sha256:28ca37c070cad8ba8cd9790cd940535d40274d22f80ab87f3ac6a713e6e8454c \
     --hash=sha256:c74a7a2adf861c04d002db713dd85f84beb242228e671280bf709d765b03672b
     # via redis
-pymdown-extensions==10.21.2 \
-    --hash=sha256:5c0fd2a2bea14eb39af8ff284f1066d898ab2187d81b889b75d46d4348c01638 \
-    --hash=sha256:c3f55a5b8a1d0edf6699e35dcbea71d978d34ff3fa79f3d807b8a5b3fa90fbdc
+pymdown-extensions==10.21.3 \
+    --hash=sha256:72cfcf55f07aea0d4af2c4f11dd4e52466ddfb1bb819673146398e0bd3a77354 \
+    --hash=sha256:d7a5d08014fc571e80ca21dd6f854e31f94c489800350564d55d15b3c41e76b6
     # via
     #   mkdocs-material
     #   zensical
-pytest==8.4.2 \
-    --hash=sha256:86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01 \
-    --hash=sha256:872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79
+pytest==9.0.3 \
+    --hash=sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9 \
+    --hash=sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c
     # via
     #   pytest-asyncio
     #   pytest-cov
@@ -736,9 +736,9 @@ requests==2.32.5 ; python_full_version < '3.10' \
     --hash=sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6 \
     --hash=sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf
     # via mkdocs-material
-requests==2.33.1 ; python_full_version >= '3.10' \
-    --hash=sha256:18817f8c57c6263968bc123d237e3b8b08ac046f5456bd1e307ee8f4250d3517 \
-    --hash=sha256:4e6d1ef462f3626a1f0a0a9c42dd93c63bad33f9f1c1937509b8c5c8718ab56a
+requests==2.34.2 ; python_full_version >= '3.10' \
+    --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
+    --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
     # via mkdocs-material
 ruff==0.15.8 \
     --hash=sha256:04f79eff02a72db209d47d665ba7ebcad609d8918a134f86cb13dd132159fc89 \
@@ -835,9 +835,9 @@ typing-extensions==4.15.0 \
     #   py-cachify
     #   pyjwt
     #   pytest-asyncio
-urllib3==2.6.3 \
-    --hash=sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed \
-    --hash=sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4
+urllib3==2.7.0 \
+    --hash=sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c \
+    --hash=sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897
     # via requests
 watchdog==6.0.0 \
     --hash=sha256:07df1fdd701c5d4c8e55ef6cf55b8f0120fe1aef7ef39a1c6fc6bc2e606d517a \
