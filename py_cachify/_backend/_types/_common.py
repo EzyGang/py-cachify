@@ -1,7 +1,5 @@
-from collections.abc import Awaitable
-from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, Union
-
-from typing_extensions import TypeAlias
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
 
 
 if TYPE_CHECKING:
@@ -13,7 +11,7 @@ Decoder: TypeAlias = Callable[[Any], Any]
 
 
 class AsyncClient(Protocol):
-    def get(self, name: str) -> Awaitable[Optional[Any]]:
+    def get(self, name: str) -> Awaitable[Any | None]:
         raise NotImplementedError
 
     def delete(self, *names: str) -> Awaitable[Any]:
@@ -24,14 +22,14 @@ class AsyncClient(Protocol):
         name: str,
         value: Any,
         *,
-        ex: Union[int, None] = None,
+        ex: int | None = None,
         nx: bool = False,
     ) -> Awaitable[Any]:
         raise NotImplementedError
 
 
 class SyncClient(Protocol):
-    def get(self, name: str) -> Optional[Any]:
+    def get(self, name: str) -> Any | None:
         raise NotImplementedError
 
     def delete(self, *names: str) -> Any:
@@ -42,7 +40,7 @@ class SyncClient(Protocol):
         name: str,
         value: Any,
         *,
-        ex: Union[int, None] = None,
+        ex: int | None = None,
         nx: bool = False,
     ) -> Any:
         raise NotImplementedError
@@ -59,8 +57,8 @@ UNSET = UnsetType()
 class LockProtocolBase(Protocol):
     _key: str
     _nowait: bool
-    _timeout: Optional[Union[int, float]]
-    _exp: Union[Optional[int], UnsetType]
+    _timeout: int | float | None
+    _exp: int | None | UnsetType
 
     @staticmethod
     def _raise_if_cached(
@@ -72,4 +70,4 @@ class LockProtocolBase(Protocol):
 
     def _calc_stop_at(self) -> float: ...  # pragma: no cover
 
-    def _get_ttl(self) -> Optional[int]: ...  # pragma: no cover
+    def _get_ttl(self) -> int | None: ...  # pragma: no cover

@@ -1,7 +1,7 @@
 import functools
 import inspect
-from collections.abc import Awaitable
-from typing import Any, Callable, TypeVar, Union
+from collections.abc import Awaitable, Callable
+from typing import Any, TypeVar
 
 from typing_extensions import ParamSpec, TypeIs
 
@@ -17,7 +17,7 @@ _S = TypeVar('_S')
 
 
 def _call_original(
-    _pyc_original_func: Union[Callable[..., Any], None], _pyc_method_name: str, *args: Any, **kwargs: Any
+    _pyc_original_func: Callable[..., Any] | None, _pyc_method_name: str, *args: Any, **kwargs: Any
 ) -> Any:
     if not _pyc_original_func:
         return
@@ -35,7 +35,7 @@ def _call_original(
 
 
 async def _acall_original(
-    _pyc_original_func: Union[Callable[..., Awaitable[Any]], None], _pyc_method_name: str, *args: Any, **kwargs: Any
+    _pyc_original_func: Callable[..., Awaitable[Any]] | None, _pyc_method_name: str, *args: Any, **kwargs: Any
 ) -> Any:
     if not _pyc_original_func:
         return
@@ -72,7 +72,7 @@ def get_full_key_from_signature(
 
 
 def is_coroutine(
-    func: Union[Callable[_P, Awaitable[_R]], Callable[_P, _R]],
+    func: Callable[_P, Awaitable[_R]] | Callable[_P, _R],
 ) -> TypeIs[Callable[_P, Awaitable[_R]]]:
 
     while isinstance(func, functools.partial):
@@ -81,7 +81,7 @@ def is_coroutine(
     return inspect.iscoroutinefunction(func) or (callable(func) and inspect.iscoroutinefunction(func.__call__))  # pyright: ignore[reportFunctionMemberAccess]
 
 
-def encode_decode_value(encoder_decoder: Union[Encoder, Decoder, None], val: Any) -> Any:
+def encode_decode_value(encoder_decoder: Encoder | Decoder | None, val: Any) -> Any:
     if not encoder_decoder:
         return val
 
@@ -93,7 +93,7 @@ def reset(
     _pyc_key: str,
     _pyc_signature: inspect.Signature,
     _pyc_operation_postfix: OperationPostfix,
-    _pyc_original_func: Union[Callable[..., Any], None],
+    _pyc_original_func: Callable[..., Any] | None,
     _pyc_client_provider: Callable[..., CachifyClient],
     **kwargs: Any,
 ) -> None:
@@ -114,7 +114,7 @@ async def a_reset(
     _pyc_key: str,
     _pyc_signature: inspect.Signature,
     _pyc_operation_postfix: OperationPostfix,
-    _pyc_original_func: Union[Callable[..., Awaitable[Any]], None],
+    _pyc_original_func: Callable[..., Awaitable[Any]] | None,
     _pyc_client_provider: Callable[..., CachifyClient],
     **kwargs: Any,
 ) -> None:
@@ -133,7 +133,7 @@ async def is_alocked(
     _pyc_key: str,
     _pyc_signature: inspect.Signature,
     _pyc_operation_postfix: OperationPostfix,
-    _pyc_original_func: Union[Callable[..., Awaitable[Any]], None],
+    _pyc_original_func: Callable[..., Awaitable[Any]] | None,
     _pyc_client_provider: Callable[..., CachifyClient],
     **kwargs: Any,
 ) -> bool:
@@ -153,7 +153,7 @@ def is_locked(
     _pyc_key: str,
     _pyc_signature: inspect.Signature,
     _pyc_operation_postfix: OperationPostfix,
-    _pyc_original_func: Union[Callable[..., Any], None],
+    _pyc_original_func: Callable[..., Any] | None,
     _pyc_client_provider: Callable[..., CachifyClient],
     **kwargs: Any,
 ) -> bool:

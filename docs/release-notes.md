@@ -1,5 +1,16 @@
 # Release Notes
 
+## [3.2.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.2.0)
+
+### Breaking Changes
+
+#### **Python 3.9 support dropped**:
+  - The supported Python versions are now 3.10–3.14.
+  - Python 3.9 reached end-of-life in October 2025; it is removed from `requires-python`, classifiers and the test matrix.
+  - Projects still on 3.9 will keep resolving to py-cachify 3.1.x.
+
+---
+
 ## [3.1.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.1.0)
 
 ### Features & Enhancements

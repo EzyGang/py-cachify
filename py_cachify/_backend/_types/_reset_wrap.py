@@ -1,5 +1,5 @@
-from collections.abc import Awaitable
-from typing import Callable, TypeVar, Union
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 from typing_extensions import ParamSpec, Protocol, overload
 
@@ -33,11 +33,5 @@ class WrappedFunctionReset(Protocol):
 
     def __call__(  # pragma: no cover
         self,
-        _func: Union[
-            Callable[_P, Awaitable[_R]],
-            Callable[_P, _R],
-        ],
-    ) -> Union[
-        AsyncResetWrappedF[_P, _R],
-        SyncResetWrappedF[_P, _R],
-    ]: ...
+        _func: Callable[_P, Awaitable[_R]] | Callable[_P, _R],
+    ) -> AsyncResetWrappedF[_P, _R] | SyncResetWrappedF[_P, _R]: ...
