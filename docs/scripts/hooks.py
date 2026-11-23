@@ -32,11 +32,12 @@ def on_post_page(output_content: str, page: Page, config: MkDocsConfig) -> str:
         dialog.attrs.setdefault('aria-label', 'Search')
 
     output_content = str(soup)
-    return re.sub(
-        regex,
-        INLINE_CODE,
-        output_content,
-    )
+    # The head holds the title, the share tags and the JSON-LD block. Markup there shows up as text in
+    # search results and breaks the JSON, so the markers become plain text in the head and code in the body.
+    head, closing_tag, body = output_content.partition('</head>')
+    if not closing_tag:
+        return re.sub(regex, INLINE_CODE, output_content)
+    return re.sub(regex, r'\2', head) + closing_tag + re.sub(regex, INLINE_CODE, body)
 
 
 MAX_DESCRIPTION = 160
