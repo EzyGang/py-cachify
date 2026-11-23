@@ -1,7 +1,6 @@
 # pyright: reportPrivateUsage=false
 import inspect
 import sys
-from typing import Optional
 
 import pytest
 from pytest_mock import MockerFixture
@@ -11,13 +10,13 @@ from py_cachify._backend._lib import Cachify, CachifyClient
 from py_cachify._backend._types._common import UNSET
 
 
-def sync_function(arg1: int, arg2: int, calls: Optional[list[int]] = None) -> int:
+def sync_function(arg1: int, arg2: int, calls: list[int] | None = None) -> int:
     if calls is not None:
         calls.append(1)
     return arg1 + arg2
 
 
-async def async_function(arg1: int, arg2: int, calls: Optional[list[int]] = None) -> int:
+async def async_function(arg1: int, arg2: int, calls: list[int] | None = None) -> int:
     if calls is not None:
         calls.append(1)
     return arg1 + arg2

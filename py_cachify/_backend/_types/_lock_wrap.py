@@ -1,5 +1,4 @@
-from collections.abc import Awaitable
-from typing import Callable, Union
+from collections.abc import Awaitable, Callable
 
 from typing_extensions import ParamSpec, Protocol, TypeVar, overload
 
@@ -37,11 +36,5 @@ class WrappedFunctionLock(Protocol):
 
     def __call__(  # pragma: no cover
         self,
-        _func: Union[
-            Callable[_P, Awaitable[_R]],
-            Callable[_P, _R],
-        ],
-    ) -> Union[
-        AsyncLockWrappedF[_P, _R],
-        SyncLockWrappedF[_P, _R],
-    ]: ...
+        _func: Callable[_P, Awaitable[_R]] | Callable[_P, _R],
+    ) -> AsyncLockWrappedF[_P, _R] | SyncLockWrappedF[_P, _R]: ...

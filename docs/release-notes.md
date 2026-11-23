@@ -1,5 +1,16 @@
 # Release Notes
 
+## [3.2.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.2.0)
+
+### Breaking Changes
+
+#### **Python 3.9 support dropped**:
+  - The supported Python versions are now 3.10–3.14.
+  - Python 3.9 reached end-of-life in October 2025; it is removed from `requires-python`, classifiers and the test matrix.
+  - Projects still on 3.9 will keep resolving to py-cachify 3.1.x.
+
+---
+
 ## [3.1.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.1.0)
 
 ### Features & Enhancements
@@ -168,7 +179,7 @@ In short, 3.0.0 focuses on:
         - `is_locked(*args, **kwargs)` - to check whether the lock is acquired or not
         - `release(*args, **kwargs)` - to forcefully release a lock.
     
-    - More info could be found [here](./reference/lock.md).
+    - More info could be found in the [lock reference](./reference/lock.md).
   
 - **File layout improved**: All internal files have been made private helping LSP's and IDE's 
 provide better import locations for the features py-cachify provides.
@@ -180,7 +191,7 @@ making it easier to write better code. They expose all methods attached to decor
 
 - **`cached` decorator improvements**: There is now a new method attached to the wrapped functions called
 `reset(*args, **kwargs)` to allow for a quick cache resets.
-    - More info can be found [here](./reference/cached.md).
+    - More info can be found in the [cached reference](./reference/cached.md).
     
 - **Bump dependencies**
 

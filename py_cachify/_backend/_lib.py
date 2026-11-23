@@ -1,5 +1,5 @@
 import pickle
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
 from ._clients import AsyncWrapper, MemoryCache
 from ._exceptions import CachifyInitError
@@ -19,11 +19,11 @@ class CachifyClient:
         self,
         sync_client: SyncClient,
         async_client: AsyncClient,
-        default_expiration: Optional[int],
+        default_expiration: int | None,
         prefix: str,
-        default_cache_ttl: Optional[int] = None,
+        default_cache_ttl: int | None = None,
         lock_poll_interval: float = 0.1,
-        default_pool_slot_expiration: Optional[int] = 600,
+        default_pool_slot_expiration: int | None = 600,
     ) -> None:
         self._sync_client = sync_client
         self._async_client = async_client
@@ -33,7 +33,7 @@ class CachifyClient:
         self.lock_poll_interval = lock_poll_interval
         self.default_pool_slot_expiration = default_pool_slot_expiration
 
-    def set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
+    def set(self, key: str, val: Any, ttl: int | None = None) -> Any:
         _ = self._sync_client.set(f'{self._prefix}{key}', pickle.dumps(val), ex=ttl, nx=False)
 
     def get(self, key: str) -> Any:
@@ -42,7 +42,7 @@ class CachifyClient:
     def delete(self, key: str) -> Any:
         return self._sync_client.delete(f'{self._prefix}{key}')
 
-    def try_acquire_lock(self, key: str, ttl: Optional[int]) -> bool:
+    def try_acquire_lock(self, key: str, ttl: int | None) -> bool:
         """
         Returns True if the lock was acquired, False if it is already held.
         """
@@ -54,13 +54,13 @@ class CachifyClient:
     async def a_get(self, key: str) -> Any:
         return (val := await self._async_client.get(f'{self._prefix}{key}')) and pickle.loads(val)
 
-    async def a_set(self, key: str, val: Any, ttl: Union[int, None] = None) -> Any:
+    async def a_set(self, key: str, val: Any, ttl: int | None = None) -> Any:
         await self._async_client.set(f'{self._prefix}{key}', pickle.dumps(val), ex=ttl, nx=False)
 
     async def a_delete(self, key: str) -> Any:
         return await self._async_client.delete(f'{self._prefix}{key}')
 
-    async def a_try_acquire_lock(self, key: str, ttl: Optional[int]) -> bool:
+    async def a_try_acquire_lock(self, key: str, ttl: int | None) -> bool:
         """
         Returns True if the lock was acquired, False if it is already held.
         """
@@ -87,10 +87,10 @@ class Cachify:
         sync_client: SyncClient,
         async_client: AsyncClient,
         prefix: str,
-        default_expiration: Optional[int],
-        default_cache_ttl: Optional[int],
+        default_expiration: int | None,
+        default_cache_ttl: int | None,
         lock_poll_interval: float = 0.1,
-        default_pool_slot_expiration: Optional[int] = 600,
+        default_pool_slot_expiration: int | None = 600,
     ) -> None:
         self._client = CachifyClient(
             sync_client=sync_client,
@@ -105,8 +105,8 @@ class Cachify:
     def cached(
         self,
         key: str,
-        ttl: Union[Optional[int], UnsetType] = UNSET,
-        enc_dec: Union[tuple[Encoder, Decoder], None] = None,
+        ttl: int | None | UnsetType = UNSET,
+        enc_dec: tuple[Encoder, Decoder] | None = None,
     ) -> WrappedFunctionReset:
         """
         Decorator that caches the result of a function based on the specified key, time-to-live (ttl),
@@ -134,8 +134,8 @@ class Cachify:
         self,
         key: str,
         nowait: bool = True,
-        timeout: Optional[Union[int, float]] = None,
-        exp: Union[Optional[int], UnsetType] = UNSET,
+        timeout: int | float | None = None,
+        exp: int | None | UnsetType = UNSET,
     ) -> '_lock_cls':
         """
         Class to manage locking mechanism for synchronous and asynchronous functions.
@@ -199,7 +199,7 @@ class Cachify:
         self,
         key: str,
         max_size: int,
-        slot_exp: Union[Optional[int], UnsetType] = UNSET,
+        slot_exp: int | None | UnsetType = UNSET,
     ) -> '_pool_cls':
         """
         Create a pool instance to manage concurrent execution slots with a maximum size.
@@ -241,7 +241,7 @@ class Cachify:
         max_size: int,
         on_full: Any = None,
         raise_on_full: bool = False,
-        slot_exp: Union[Optional[int], UnsetType] = UNSET,
+        slot_exp: int | None | UnsetType = UNSET,
     ) -> 'WrappedFunctionPool':
         """
         Decorator factory for pooled functions.
@@ -282,13 +282,13 @@ class Cachify:
 
 
 def init_cachify(
-    sync_client: Optional[SyncClient] = None,
-    async_client: Optional[AsyncClient] = None,
-    default_lock_expiration: Optional[int] = 30,
-    default_cache_ttl: Optional[int] = None,
+    sync_client: SyncClient | None = None,
+    async_client: AsyncClient | None = None,
+    default_lock_expiration: int | None = 30,
+    default_cache_ttl: int | None = None,
     prefix: str = 'PYC-',
     lock_poll_interval: float = 0.1,
-    default_pool_slot_expiration: Optional[int] = 600,
+    default_pool_slot_expiration: int | None = 600,
     *,
     is_global: bool = True,
 ) -> Cachify:

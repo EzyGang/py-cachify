@@ -1,15 +1,15 @@
 import asyncio
 import threading
 import time
-from typing import Any, Optional, Union
+from typing import Any
 
 
 class MemoryCache:
     def __init__(self) -> None:
-        self._cache: dict[str, tuple[Any, Union[float, None]]] = {}
+        self._cache: dict[str, tuple[Any, float | None]] = {}
         self._lock = threading.RLock()
 
-    def set(self, name: str, value: Any, ex: Union[int, None] = None, nx: bool = False) -> Optional[bool]:
+    def set(self, name: str, value: Any, ex: int | None = None, nx: bool = False) -> bool | None:
         """
         Set a value with optional NX semantics.
 
@@ -33,7 +33,7 @@ class MemoryCache:
             self._cache[name] = value, ex and time.time() + ex
             return True
 
-    def get(self, name: str) -> Optional[Any]:
+    def get(self, name: str) -> Any | None:
         val, exp_at = self._cache.get(name, (None, None))
         if not exp_at or exp_at > time.time():
             return val
@@ -51,7 +51,7 @@ class AsyncWrapper:
         self._cache = cache
         self._lock = asyncio.Lock()
 
-    async def get(self, name: str) -> Optional[Any]:
+    async def get(self, name: str) -> Any | None:
         async with self._lock:
             return self._cache.get(name)
 
@@ -59,6 +59,6 @@ class AsyncWrapper:
         async with self._lock:
             self._cache.delete(*names)
 
-    async def set(self, name: str, value: Any, ex: Union[int, None] = None, nx: bool = False) -> Optional[bool]:
+    async def set(self, name: str, value: Any, ex: int | None = None, nx: bool = False) -> bool | None:
         async with self._lock:
             return self._cache.set(name, value, ex, nx)

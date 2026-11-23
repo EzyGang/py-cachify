@@ -1,9 +1,9 @@
 import inspect
 import time
 from asyncio import sleep as asleep
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from functools import partial, wraps
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from typing_extensions import ParamSpec, Self, final, overload, override
 
@@ -124,14 +124,14 @@ class lock(AsyncLockMethods, SyncLockMethods):
         self,
         key: str,
         nowait: bool = True,
-        timeout: Optional[Union[int, float]] = None,
-        exp: Union[Optional[int], UnsetType] = UNSET,
+        timeout: int | float | None = None,
+        exp: int | None | UnsetType = UNSET,
     ) -> None:
         self._key = key
         self._nowait = nowait
         self._timeout = timeout
         self._exp = exp
-        self._bound_cachify_client: Union[CachifyClient, None] = None
+        self._bound_cachify_client: CachifyClient | None = None
 
     @overload
     def __call__(self, _func: Callable[_P, Awaitable[_R]]) -> AsyncLockWrappedF[_P, _R]: ...  # type: ignore[overload-overlap]
@@ -141,14 +141,8 @@ class lock(AsyncLockMethods, SyncLockMethods):
 
     def __call__(
         self,
-        _func: Union[
-            Callable[_P, Awaitable[_R]],
-            Callable[_P, _R],
-        ],
-    ) -> Union[
-        AsyncLockWrappedF[_P, _R],
-        SyncLockWrappedF[_P, _R],
-    ]:
+        _func: Callable[_P, Awaitable[_R]] | Callable[_P, _R],
+    ) -> AsyncLockWrappedF[_P, _R] | SyncLockWrappedF[_P, _R]:
         signature = inspect.signature(_func)
 
         if is_coroutine(_func):
@@ -251,7 +245,7 @@ class lock(AsyncLockMethods, SyncLockMethods):
         return time.time() + self._timeout if self._timeout is not None else float('inf')
 
     @override
-    def _get_ttl(self) -> Optional[int]:
+    def _get_ttl(self) -> int | None:
         return self._cachify.default_expiration if isinstance(self._exp, UnsetType) else self._exp
 
     @staticmethod
@@ -305,8 +299,8 @@ def _once_impl(
     ) -> SyncLockWrappedF[_P, _R]: ...
 
     def _once_inner(
-        _func: Union[Callable[_P, _R], Callable[_P, Awaitable[_R]]],
-    ) -> Union[AsyncLockWrappedF[_P, _R], SyncLockWrappedF[_P, _R]]:
+        _func: Callable[_P, _R] | Callable[_P, Awaitable[_R]],
+    ) -> AsyncLockWrappedF[_P, _R] | SyncLockWrappedF[_P, _R]:
         signature = inspect.signature(_func)
 
         if is_coroutine(_func):

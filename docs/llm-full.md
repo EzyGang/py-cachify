@@ -1,4 +1,5 @@
 ---
+description: Every page of the py-cachify documentation on one page, for tools and language models that want a single file.
 hide:
   - toc
   - navigation
