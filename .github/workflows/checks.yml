@@ -23,17 +23,17 @@ jobs:
         python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.4.0
         with:
           version: "latest"
           python-version: ${{ matrix.python }}
           activate-environment: true
           enable-cache: true
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install Dependencies
@@ -45,14 +45,14 @@ jobs:
         env:
           VER: ${{ matrix.python }}
         run: mv ./coverage.xml ./coverage-$VER.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.python }}.xml
           path: coverage-${{ matrix.python }}.xml
       - name: Coveralls
-        uses: coverallsapp/github-action@v2.3.0
+        uses: coverallsapp/github-action@v2.3.8
         with:
-          coverage-reporter-version: v0.6.14
+          coverage-reporter-version: v0.6.22
           file: coverage-${{ matrix.python }}.xml
   lint:
     name: Code Lint
@@ -63,17 +63,17 @@ jobs:
         python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.4.0
         with:
           version: "latest"
           python-version: ${{ matrix.python }}
           activate-environment: true
           enable-cache: true
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install Dependencies
@@ -88,16 +88,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: unit-tests
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: coverage-3.14.xml
       - name: Rename file
         run: mv ./coverage{-3.14,}.xml
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v7.0.0
+        uses: SonarSource/sonarqube-scan-action@v8.5.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -120,17 +120,17 @@ jobs:
           - 6379:6379
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.4.0
         with:
           version: "latest"
           python-version: ${{ matrix.python }}
           activate-environment: true
           enable-cache: true
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install Dependencies
@@ -148,6 +148,6 @@ jobs:
       - integration-tests
     runs-on: Ubuntu-latest
     steps:
-      - uses: re-actors/alls-green@v1.2.2
+      - uses: re-actors/alls-green@v1.3.0
         with:
           jobs: ${{ toJSON(needs) }}
