@@ -5,7 +5,7 @@ Judging by the package's name py-cachify provides cache-based utilities, so let'
 
 Py-Cachify is a thin, backend-agnostic wrapper over your cache client (for example Redis or DragonflyDB), giving you a clean decorator-based API instead of manually wiring get/set logic.
 
-The initialization details can be found [here](../initial-setup/initialization.md).
+The initialization details can be found on the [initialization page](../initial-setup/initialization.md).
 
 
 

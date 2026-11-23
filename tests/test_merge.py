@@ -2,7 +2,6 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import sleep
-from typing import Optional
 
 import pytest
 
@@ -11,14 +10,14 @@ from py_cachify._backend._lock import once
 from py_cachify._backend._pool import pool, pooled
 
 
-def sync_function(arg1: int, arg2: int, calls: Optional[list[int]] = None) -> int:
+def sync_function(arg1: int, arg2: int, calls: list[int] | None = None) -> int:
     sleep(1)
     if calls is not None:
         calls.append(1)
     return arg1 + arg2
 
 
-async def async_function(arg1: int, arg2: int, calls: Optional[list[int]] = None) -> int:
+async def async_function(arg1: int, arg2: int, calls: list[int] | None = None) -> int:
     await asyncio.sleep(1)
     if calls is not None:
         calls.append(1)
