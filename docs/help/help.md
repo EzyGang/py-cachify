@@ -25,3 +25,9 @@ Here are a few ways you can help:
 Do you have a wonderful idea or want to help fix an issue?
 
 Go to the [contribution guide](./contribution.md).
+
+## About this site
+
+This documentation counts its page views with a small script from blog.ezygang.digital, a <a href="https://cuhlumn.ezygang.digital/platform/analytics/" target="_blank">Cuhlumn</a> server that the py-cachify maintainers run themselves.
+The server counts page views, daily visitors by a hash that changes every day, the host name of the referring site, the device class and browser family, and clicks on outbound links and downloads.
+The script sets no cookie and stores nothing in your browser, and the server never stores your IP address.
