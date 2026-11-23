@@ -1,10 +1,12 @@
 site_name: Py-Cachify
-site_description: Py-Cachify. Cache and locks made easy. Fully type annotated. 100% coverage.
+site_description: Py-Cachify is a Python library for caching, distributed locks and resource pools, with one decorator API for sync and async code.
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, 'https://py-cachify.readthedocs.io/latest/']
 repo_name: EzyGang/py-cachify
 repo_url: https://github.com/EzyGang/py-cachify
 
 theme:
   name: material
+  custom_dir: overrides
   logo: img/logo-icon.svg
   favicon: img/logo.png
   palette:
@@ -94,6 +96,15 @@ plugins:
   - search
   - termynal
   - include-markdown
+  # Serves the fonts from this site instead of Google Fonts. Badges stay remote so they stay current.
+  - privacy:
+      assets_exclude:
+        - img.shields.io/*
+        - badge.fury.io/*
+        - coveralls.io/*
+        - github.com/*
+        - readthedocs.org/*
+        - sonarcloud.io/*
 nav:
   - Introduction: "index.md"
   - Tutorial - User Guide:

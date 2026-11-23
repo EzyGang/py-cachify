@@ -64,7 +64,7 @@ This will make sure you won't run into multiple update tasks running at the same
 
 ## What's next
 
-You can always check the full reference for once [here](../../reference/once.md).
+You can always check the [full reference for once](../../reference/once.md).
 
 ## Conslusion
 
@@ -79,4 +79,4 @@ the topics of caching and locking are pretty common yet they are always unique t
 Py-Cachify tries to help you cover your specific cases by giving you lock- and once-based tools built on the same underlying mechanism, so you can adapt them to your needs without bloating your codebase.
 
 
-For full API reference [here](../../reference/init.md).
+See the [full API reference for init_cachify](../../reference/init.md).

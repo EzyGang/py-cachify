@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://py-cachify.readthedocs.io/latest/sitemap.xml

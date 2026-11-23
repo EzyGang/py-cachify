@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block htmltitle %}
+  {% if page and page.is_homepage %}
+    <title>Py-Cachify: Python caching, distributed locks and pools</title>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
+
+{% block extrahead %}
+  {{ super() }}
+  {% if page and page.canonical_url %}
+  {% set description = page.meta.description if page.meta and page.meta.description else config.site_description %}
+  {% set title = config.site_name if page.is_homepage else (page.meta.title if page.meta and page.meta.title else page.title) | striptags ~ " - " ~ config.site_name %}
+  {% set image = config.site_url ~ "img/social-card.png" %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ description }}">
+  <meta property="og:url" content="{{ page.canonical_url }}">
+  <meta property="og:image" content="{{ image }}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ title }}">
+  <meta name="twitter:description" content="{{ description }}">
+  <meta name="twitter:image" content="{{ image }}">
+  {% set publisher = {
+    "@type": "Organization",
+    "@id": "https://github.com/EzyGang#organization",
+    "name": "EzyGang",
+    "url": "https://github.com/EzyGang",
+    "sameAs": ["https://github.com/EzyGang"]
+  } %}
+  {% set website = {
+    "@type": "WebSite",
+    "@id": config.site_url ~ "#website",
+    "name": config.site_name,
+    "url": config.site_url,
+    "description": config.site_description,
+    "publisher": {"@id": "https://github.com/EzyGang#organization"}
+  } %}
+  {% if page.is_homepage %}
+    {% set data = {
+      "@context": "https://schema.org",
+      "@graph": [
+        website,
+        {
+          "@type": "SoftwareApplication",
+          "@id": config.site_url ~ "#software",
+          "name": "py-cachify",
+          "description": config.site_description,
+          "url": config.site_url,
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Any (Python 3.9 or later)",
+          "license": "https://opensource.org/licenses/MIT",
+          "downloadUrl": "https://pypi.org/project/py-cachify/",
+          "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+          "author": {"@id": "https://github.com/EzyGang#organization"},
+          "sameAs": [
+            "https://github.com/EzyGang/py-cachify",
+            "https://pypi.org/project/py-cachify/"
+          ]
+        },
+        publisher
+      ]
+    } %}
+  {% else %}
+    {% set data = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "TechArticle",
+          "headline": page.title | striptags,
+          "description": description,
+          "url": page.canonical_url,
+          "inLanguage": "en",
+          "isPartOf": {"@id": config.site_url ~ "#website"},
+          "about": {"@type": "SoftwareApplication", "@id": config.site_url ~ "#software", "name": "py-cachify"},
+          "publisher": {"@id": "https://github.com/EzyGang#organization"}
+        },
+        website,
+        publisher
+      ]
+    } %}
+  {% endif %}
+  <script type="application/ld+json">{{ data | tojson }}</script>
+  {% endif %}
+{% endblock %}

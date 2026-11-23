@@ -209,4 +209,4 @@ The `@pooled()` decorator integrates pool management into your function definiti
 
 ## What's Next
 
-The full API reference for `pool()` and `@pooled()` is available [here](../../reference/pool.md).
+The full API reference for `pool()` and `@pooled()` is available in the [pool reference](../../reference/pool.md).
