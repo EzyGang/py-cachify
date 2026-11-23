@@ -58,26 +58,26 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.2,<9",
-    "pytest-mock>=3.14.0,<4",
-    "pytest-cov>=7.0.0,<8",
-    "taskipy>=1.13.0,<2",
-    "coverage>=7.6.1,<8",
-    "pytest-asyncio>=1.0.0,<2",
-    "pytest-socket>=0.7.0,<0.8",
-    "basedpyright>=1.35.0,<2",
-    "ruff>=0.9.10",
+    "pytest>=9.2.0,<10",
+    "pytest-mock>=3.17.0,<4",
+    "pytest-cov>=7.1.0,<8",
+    "taskipy>=1.14.1,<2",
+    "coverage>=7.16.2,<8",
+    "pytest-asyncio>=1.5.0,<2",
+    "pytest-socket>=0.8.1,<0.9",
+    "basedpyright>=1.40.2,<2",
+    "ruff>=0.17.5",
 ]
 docs = [
-    "mkdocs>=1.6.0,<2",
-    "mkdocs-material>=9.5.28,<10",
-    "pygments>=2.18.0,<3",
-    "termynal>=0.13,<0.14 ; python_version >= '3.8.1' and python_version < '4.0'",
-    "beautifulsoup4>=4.12.3,<5",
-    "mkdocs-include-markdown-plugin>=7.2.0",
+    "mkdocs>=1.6.1,<2",
+    "mkdocs-material>=9.7.7,<10",
+    "pygments>=2.21.0,<3",
+    "termynal>=0.14.0,<0.15",
+    "beautifulsoup4>=4.15.0,<5",
+    "mkdocs-include-markdown-plugin>=7.3.2",
 ]
 integration = [
-    "redis>=5.3.1",
+    "redis>=8.1.0",
 ]
 
 [tool.uv]
