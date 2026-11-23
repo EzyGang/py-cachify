@@ -45,6 +45,9 @@ theme:
     - search.suggest
     - toc.follow
 
+extra_css:
+  - css/accessibility.css
+
 markdown_extensions:
   # Python Markdown
   abbr:
