@@ -2,9 +2,9 @@ import contextvars
 import inspect
 import time
 import uuid
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from typing_extensions import ParamSpec, Self, final, overload
 
@@ -30,13 +30,13 @@ class _PoolBase:
         self,
         key: str,
         max_size: int,
-        slot_exp: Union[Optional[int], UnsetType] = UNSET,
+        slot_exp: int | None | UnsetType = UNSET,
     ) -> None:
         self._key = key
         self._max_size = max_size
         self._slot_exp = slot_exp
-        self._bound_cachify_client: Optional[CachifyClient] = None
-        self._slot_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+        self._bound_cachify_client: CachifyClient | None = None
+        self._slot_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
             f'pool-slot-{key}', default=None
         )
 
@@ -50,7 +50,7 @@ class _PoolBase:
     def _cachify(self, client: 'CachifyClient') -> None:
         self._bound_cachify_client = client
 
-    def _get_slot_expiration(self) -> Optional[int]:
+    def _get_slot_expiration(self) -> int | None:
         if isinstance(self._slot_exp, UnsetType):
             return self._cachify.default_pool_slot_expiration
         return self._slot_exp
@@ -91,7 +91,7 @@ class _PoolSync(_PoolBase):
         state_key = self._get_state_key()
         _ = self._cachify.set(key=state_key, val=state)
 
-    def _acquire_slot(self) -> Optional[str]:
+    def _acquire_slot(self) -> str | None:
         now = time.time()
         state = self._load_state()
         state.cleanup(now)
@@ -180,7 +180,7 @@ class _PoolAsync(_PoolBase):
         state_key = self._get_state_key()
         _ = await self._cachify.a_set(key=state_key, val=state)
 
-    async def _a_acquire_slot(self) -> Optional[str]:
+    async def _a_acquire_slot(self) -> str | None:
         now = time.time()
         state = await self._aload_state()
         state.cleanup(now)
@@ -283,7 +283,7 @@ class pool(_PoolSync, _PoolAsync):
 
     def pooled(
         self,
-        on_full: Optional[Callable[..., Any]] = None,
+        on_full: Callable[..., Any] | None = None,
         raise_on_full: bool = False,
     ) -> WrappedFunctionPool:
         """Use pool instance as decorator factory.
@@ -312,9 +312,9 @@ class pool(_PoolSync, _PoolAsync):
 def _pooled_impl(
     key: str,
     max_size: int,
-    on_full: Optional[Callable[..., Any]] = None,
+    on_full: Callable[..., Any] | None = None,
     raise_on_full: bool = False,
-    slot_exp: Union[Optional[int], UnsetType] = UNSET,
+    slot_exp: int | None | UnsetType = UNSET,
     pool_instance: Optional['pool'] = None,
     client_provider: Callable[[], 'CachifyClient'] = get_cachify_client,
 ) -> WrappedFunctionPool:
@@ -334,23 +334,23 @@ def _pooled_impl(
     @overload
     def _pooled_inner(  # type: ignore[overload-overlap]
         _func: Callable[_P, Awaitable[_R]],
-    ) -> AsyncPoolWrappedF[_P, Optional[_R]]: ...
+    ) -> AsyncPoolWrappedF[_P, _R | None]: ...
 
     @overload
     def _pooled_inner(
         _func: Callable[_P, _R],
-    ) -> SyncPoolWrappedF[_P, Optional[_R]]: ...
+    ) -> SyncPoolWrappedF[_P, _R | None]: ...
 
     def _pooled_inner(
-        _func: Union[Callable[_P, _R], Callable[_P, Awaitable[_R]]],
-    ) -> Union[AsyncPoolWrappedF[_P, Optional[_R]], SyncPoolWrappedF[_P, Optional[_R]]]:
+        _func: Callable[_P, _R] | Callable[_P, Awaitable[_R]],
+    ) -> AsyncPoolWrappedF[_P, _R | None] | SyncPoolWrappedF[_P, _R | None]:
         signature = inspect.signature(_func)
 
         if is_coroutine(_func):
             _awaitable_func = _func
 
             @wraps(_awaitable_func)
-            async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Optional[_R]:
+            async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R | None:
                 bound_args = signature.bind(*args, **kwargs)
                 _pool = _get_pool(bound_args)
 
@@ -374,12 +374,12 @@ def _pooled_impl(
                 return await _pool.asize()
 
             setattr(_async_wrapper, 'size', _size)
-            return cast(AsyncPoolWrappedF[_P, Optional[_R]], cast(object, _async_wrapper))
+            return cast(AsyncPoolWrappedF[_P, _R | None], cast(object, _async_wrapper))
         else:
             _sync_func = cast(Callable[_P, _R], _func)
 
             @wraps(_sync_func)
-            def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Optional[_R]:
+            def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R | None:
                 bound_args = signature.bind(*args, **kwargs)
                 _pool = _get_pool(bound_args)
 
@@ -400,7 +400,7 @@ def _pooled_impl(
                 return _pool.size()
 
             setattr(_sync_wrapper, 'size', _sync_size)
-            return cast(SyncPoolWrappedF[_P, Optional[_R]], cast(object, _sync_wrapper))
+            return cast(SyncPoolWrappedF[_P, _R | None], cast(object, _sync_wrapper))
 
     return cast(WrappedFunctionPool, cast(object, _pooled_inner))
 
@@ -408,9 +408,9 @@ def _pooled_impl(
 def pooled(
     key: str,
     max_size: int,
-    on_full: Optional[Callable[..., Any]] = None,
+    on_full: Callable[..., Any] | None = None,
     raise_on_full: bool = False,
-    slot_exp: Union[Optional[int], UnsetType] = UNSET,
+    slot_exp: int | None | UnsetType = UNSET,
 ) -> WrappedFunctionPool:
     """Standalone decorator factory for pooled functions.
 

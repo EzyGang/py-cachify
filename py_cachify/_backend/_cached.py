@@ -1,7 +1,7 @@
 import inspect
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from functools import partial, wraps
-from typing import Callable, Optional, TypeVar, Union, cast, overload
+from typing import TypeVar, cast, overload
 
 from typing_extensions import ParamSpec
 
@@ -18,8 +18,8 @@ _S = TypeVar('_S')
 
 def cached(
     key: str,
-    ttl: Union[Optional[int], UnsetType] = UNSET,
-    enc_dec: Union[tuple[Encoder, Decoder], None] = None,
+    ttl: int | None | UnsetType = UNSET,
+    enc_dec: tuple[Encoder, Decoder] | None = None,
 ) -> WrappedFunctionReset:
     """
     Decorator that caches the result of a function based on the specified key, time-to-live (ttl),
@@ -44,8 +44,8 @@ def cached(
 
 def _cached_impl(
     key: str,
-    ttl: Union[Optional[int], UnsetType] = UNSET,
-    enc_dec: Union[tuple[Encoder, Decoder], None] = None,
+    ttl: int | None | UnsetType = UNSET,
+    enc_dec: tuple[Encoder, Decoder] | None = None,
     client_provider: Callable[[], CachifyClient] = get_cachify_client,
 ) -> WrappedFunctionReset:
     @overload
@@ -59,15 +59,15 @@ def _cached_impl(
     ) -> SyncResetWrappedF[_P, _R]: ...
 
     def _cached_inner(
-        _func: Union[Callable[_P, Awaitable[_R]], Callable[_P, _R]],
-    ) -> Union[AsyncResetWrappedF[_P, _R], SyncResetWrappedF[_P, _R]]:
+        _func: Callable[_P, Awaitable[_R]] | Callable[_P, _R],
+    ) -> AsyncResetWrappedF[_P, _R] | SyncResetWrappedF[_P, _R]:
         signature = inspect.signature(_func)
 
         enc, dec = None, None
         if enc_dec is not None:
             enc, dec = enc_dec
 
-        def _resolve_ttl(client: CachifyClient) -> Optional[int]:
+        def _resolve_ttl(client: CachifyClient) -> int | None:
             if isinstance(ttl, UnsetType):
                 return client.default_cache_ttl
             return ttl

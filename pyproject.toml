@@ -1,11 +1,26 @@
 [project]
 name = "py-cachify"
-description = "Distributed locks, caching, and locking at hand"
-version = "3.1.0"
+description = "Caching, distributed locks, run-once guards and resource pools for sync and async Python, in memory or on Redis and DragonflyDB"
+version = "3.2.0"
 authors = [{ name = "Galtozzy", email = "galtozzy+git@gmail.com" }]
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 readme = "README.md"
 license = "MIT"
+keywords = [
+    "cache",
+    "caching",
+    "decorator",
+    "distributed lock",
+    "lock",
+    "mutex",
+    "semaphore",
+    "pool",
+    "redis",
+    "dragonflydb",
+    "asyncio",
+    "fastapi",
+    "celery",
+]
 classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
@@ -19,7 +34,6 @@ classifiers = [
     "Typing :: Typed",
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -32,8 +46,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/EzyGang/py-cachify"
+Homepage = "https://py-cachify.readthedocs.io/latest/"
+Documentation = "https://py-cachify.readthedocs.io/latest/"
 Repository = "https://github.com/EzyGang/py-cachify"
+Issues = "https://github.com/EzyGang/py-cachify/issues"
+Changelog = "https://py-cachify.readthedocs.io/latest/release-notes/"
 
 [build-system]
 requires = ["hatchling"]
@@ -99,7 +116,7 @@ pyright-lint = "basedpyright ./py_cachify/"
 [tool.ruff]
 line-length = 120
 extend-exclude = ["site-packages", "*.pyi"]
-target-version = 'py39'
+target-version = 'py310'
 
 [tool.ruff.lint]
 fixable = ["ALL"]
@@ -185,7 +202,7 @@ include = ["py_cachify"]
 exclude = ["tests"]
 reportAny = false
 typeCheckingMode = "strict"
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 executionEnvironments = [
   { root = "py_cachify" },
   { root = "tests" }

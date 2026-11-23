@@ -1,0 +1,25 @@
+/* Links inside text are told apart by more than colour (WCAG 1.4.1). */
+.md-typeset a:not(.md-button):not(.headerlink):not(.md-content__button) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+/* Code colours that fall just short of a 4.5:1 contrast in the theme's defaults (WCAG 1.4.3). */
+[data-md-color-scheme="default"] {
+  --md-code-hl-comment-color: #6a6a6a;
+  --md-code-hl-operator-color: #6a6a6a;
+}
+
+[data-md-color-scheme="default"] .md-copyright {
+  color: var(--md-footer-fg-color--light);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-code-hl-number-color: #ec7c6f;
+  --md-code-hl-constant-color: #a194e8;
+}
+
+/* Comments in the animated terminal blocks. */
+div.termy .termynal-comment {
+  color: #62b3ab;
+}

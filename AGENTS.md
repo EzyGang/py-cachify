@@ -47,9 +47,9 @@ uv run task docs-dev
 
 ## Tooling Constraints
 
-- **Ruff**: Line length 120, single quotes, Python 3.9+ target
+- **Ruff**: Line length 120, single quotes, Python 3.10+ target
 - **MyPy**: Strict mode enabled
-- **Python versions**: 3.9 - 3.14 (all tested in CI)
+- **Python versions**: 3.10 - 3.14 (all tested in CI)
 - **Package manager**: `uv` (frozen lockfile in CI via `UV_FROZEN=1`)
 - **Build**: `hatchling` build backend
 
