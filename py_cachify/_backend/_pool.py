@@ -36,9 +36,7 @@ class _PoolBase:
         self._max_size = max_size
         self._slot_exp = slot_exp
         self._bound_cachify_client: CachifyClient | None = None
-        self._slot_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-            f'pool-slot-{key}', default=None
-        )
+        self._slot_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(f'pool-slot-{key}', default=None)
 
     @property
     def _cachify(self) -> 'CachifyClient':
