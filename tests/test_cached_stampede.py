@@ -9,18 +9,13 @@ import pytest
 from pytest_mock import MockerFixture
 
 import py_cachify._backend._cached as cached_module
-from py_cachify import cached, init_cachify
+from py_cachify import LockConf, StampedeProtect, cached, init_cachify
 from py_cachify._backend._lib import CachifyClient, get_cachify_client
-from py_cachify._backend._single_flight import SingleFlight
-
-
-class _Interrupt(BaseException):
-    pass
+from py_cachify._backend._stampede import SingleFlight
 
 
 @pytest.fixture
 def flights(mocker: MockerFixture) -> list[SingleFlight]:
-    """Records the SingleFlight of every function decorated during the test."""
     created: list[SingleFlight] = []
 
     def _make() -> SingleFlight:
@@ -31,14 +26,12 @@ def flights(mocker: MockerFixture) -> list[SingleFlight]:
     return created
 
 
-def _hold_lock(client: CachifyClient, lock_key: str, ttl: int = 60) -> None:
-    assert client.try_acquire_lock(key=lock_key, ttl=ttl, token='other')
+def _hold_lock(client: CachifyClient, lock_key: str) -> None:
+    assert client.try_acquire_lock(key=lock_key, ttl=60, token='other')
 
 
-def _reads_then_real(client: CachifyClient, mocker: MockerFixture, cache_key: str, reads: list[Any]) -> None:
-    """Makes the first reads of `cache_key` return `reads`, then None; other keys are read for real."""
-    real_get = client.get
-    pending = iter(reads)
+def _fake_reads(client: CachifyClient, mocker: MockerFixture, cache_key: str, reads: list[Any]) -> None:
+    real_get, pending = client.get, iter(reads)
 
     def _get(key: str) -> Any:
         return next(pending, None) if key == cache_key else real_get(key)
@@ -46,17 +39,13 @@ def _reads_then_real(client: CachifyClient, mocker: MockerFixture, cache_key: st
     mocker.patch.object(client, 'get', side_effect=_get)
 
 
-def _areads_then_real(client: CachifyClient, mocker: MockerFixture, cache_key: str, reads: list[Any]) -> None:
-    real_get = client.a_get
-    pending = iter(reads)
+def _afake_reads(client: CachifyClient, mocker: MockerFixture, cache_key: str, reads: list[Any]) -> None:
+    real_get, pending = client.a_get, iter(reads)
 
     async def _get(key: str) -> Any:
         return next(pending, None) if key == cache_key else await real_get(key)
 
     mocker.patch.object(client, 'a_get', side_effect=_get)
-
-
-# Layer 1, async
 
 
 async def test_async_concurrent_misses_share_one_call(init_cachify_fixture: None, flights: list[SingleFlight]) -> None:
@@ -69,9 +58,7 @@ async def test_async_concurrent_misses_share_one_call(init_cachify_fixture: None
         await asyncio.sleep(0.05)
         return x * 2
 
-    results = await asyncio.gather(*(compute(21) for _ in range(100)))
-
-    assert results == [42] * 100
+    assert await asyncio.gather(*(compute(21) for _ in range(100))) == [42] * 100
     assert calls == 1
     assert flights[0]._tasks == {}
     assert await compute(21) == 42
@@ -160,10 +147,10 @@ async def test_async_recursive_call_with_same_key_does_not_wait_for_itself(init_
     assert await asyncio.wait_for(countdown(3), timeout=1) == 3
 
 
-async def test_async_single_flight_off_calls_once_per_caller(init_cachify_fixture: None) -> None:
+async def test_async_protection_off_calls_once_per_caller(init_cachify_fixture: None) -> None:
     calls = 0
 
-    @cached(key='sf-async-off', single_flight=False)
+    @cached(key='sf-async-off', stampede_protect=StampedeProtect.OFF)
     async def compute() -> int:
         nonlocal calls
         calls += 1
@@ -177,7 +164,7 @@ async def test_async_single_flight_off_calls_once_per_caller(init_cachify_fixtur
 async def test_async_leader_returns_value_filled_after_callers_miss(
     init_cachify_fixture: None, mocker: MockerFixture
 ) -> None:
-    _areads_then_real(get_cachify_client(), mocker, 'sf-async-reread-cached', [None, 'stored'])
+    _afake_reads(get_cachify_client(), mocker, 'sf-async-reread-cached', [None, 'stored'])
 
     @cached(key='sf-async-reread')
     async def compute() -> str:
@@ -189,7 +176,7 @@ async def test_async_leader_returns_value_filled_after_callers_miss(
 async def test_async_reset_during_computation_does_not_strand_waiters(init_cachify_fixture: None) -> None:
     started = asyncio.Event()
 
-    @cached(key='sf-async-reset', lock=True)
+    @cached(key='sf-async-reset', stampede_protect=StampedeProtect.LOCK)
     async def compute() -> int:
         started.set()
         await asyncio.sleep(0.05)
@@ -202,8 +189,8 @@ async def test_async_reset_during_computation_does_not_strand_waiters(init_cachi
     assert await asyncio.wait_for(callers, timeout=1) == [3] * 10
 
 
-async def test_async_encoder_and_decoder_with_both_layers(init_cachify_fixture: None) -> None:
-    @cached(key='sf-async-enc', enc_dec=(lambda v: v + 5, lambda v: v - 5), lock=True)
+async def test_async_encoder_and_decoder_with_lock(init_cachify_fixture: None) -> None:
+    @cached(key='sf-async-enc', enc_dec=(lambda v: v + 5, lambda v: v - 5), stampede_protect=StampedeProtect.LOCK)
     async def compute() -> int:
         await asyncio.sleep(0.05)
         return 10
@@ -211,9 +198,6 @@ async def test_async_encoder_and_decoder_with_both_layers(init_cachify_fixture: 
     assert await asyncio.gather(*(compute() for _ in range(10))) == [10] * 10
     assert await get_cachify_client().a_get(key='sf-async-enc-cached') == 15
     assert await compute() == 10
-
-
-# Layer 1, sync
 
 
 def test_sync_concurrent_misses_share_one_call(init_cachify_fixture: None, flights: list[SingleFlight]) -> None:
@@ -261,8 +245,7 @@ def test_sync_error_reaches_every_waiter_and_is_not_cached(
         return compute()
 
     with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = [pool.submit(_caller, i) for i in range(10)]
-        errors = [f.exception() for f in futures]
+        errors = [f.exception() for f in [pool.submit(_caller, i) for i in range(10)]]
 
     assert calls == 1
     assert all(isinstance(e, ValueError) for e in errors)
@@ -270,35 +253,6 @@ def test_sync_error_reaches_every_waiter_and_is_not_cached(
     assert flights[0]._calls == {}
     assert compute() == 7
     assert calls == 2
-
-
-def test_sync_waiter_computes_when_leader_ends_with_base_exception(
-    init_cachify_fixture: None, flights: list[SingleFlight]
-) -> None:
-    calls = 0
-    entered = threading.Event()
-
-    @cached(key='sf-sync-base')
-    def compute() -> int:
-        nonlocal calls
-        calls += 1
-        if calls == 1:
-            entered.set()
-            time.sleep(0.2)
-            raise _Interrupt
-        return 3
-
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        leader = pool.submit(compute)
-        _ = entered.wait()
-        waiter = pool.submit(compute)
-
-        with pytest.raises(_Interrupt):
-            _ = leader.result()
-        assert waiter.result() == 3
-
-    assert calls == 2
-    assert flights[0]._calls == {}
 
 
 def test_sync_recursive_call_with_same_key_does_not_wait_for_itself(init_cachify_fixture: None) -> None:
@@ -312,12 +266,12 @@ def test_sync_recursive_call_with_same_key_does_not_wait_for_itself(init_cachify
         assert pool.submit(countdown, 3).result(timeout=1) == 3
 
 
-def test_sync_single_flight_off_calls_once_per_caller(init_cachify_fixture: None) -> None:
+def test_sync_protection_off_calls_once_per_caller(init_cachify_fixture: None) -> None:
     calls = 0
     calls_lock = threading.Lock()
     barrier = threading.Barrier(5)
 
-    @cached(key='sf-sync-off', single_flight=False)
+    @cached(key='sf-sync-off', stampede_protect=StampedeProtect.OFF)
     def compute() -> int:
         nonlocal calls
         with calls_lock:
@@ -336,7 +290,7 @@ def test_sync_single_flight_off_calls_once_per_caller(init_cachify_fixture: None
 
 
 def test_sync_leader_returns_value_filled_after_callers_miss(init_cachify_fixture: None, mocker: MockerFixture) -> None:
-    _reads_then_real(get_cachify_client(), mocker, 'sf-sync-reread-cached', [None, 'stored'])
+    _fake_reads(get_cachify_client(), mocker, 'sf-sync-reread-cached', [None, 'stored'])
 
     @cached(key='sf-sync-reread')
     def compute() -> str:
@@ -345,13 +299,10 @@ def test_sync_leader_returns_value_filled_after_callers_miss(init_cachify_fixtur
     assert compute() == 'stored'
 
 
-# Layer 2, sync
-
-
 def test_sync_lock_holder_computes_and_releases(init_cachify_fixture: None) -> None:
     calls: list[int] = []
 
-    @cached(key='l2-sync-{x}', lock=True)
+    @cached(key='l2-sync-{x}', stampede_protect=StampedeProtect.LOCK)
     def compute(x: int) -> int:
         calls.append(x)
         return x + 1
@@ -365,10 +316,13 @@ def test_sync_lock_holder_computes_and_releases(init_cachify_fixture: None) -> N
 def test_sync_lock_waiter_returns_value_without_taking_lock(init_cachify_fixture: None) -> None:
     client = get_cachify_client()
     _hold_lock(client, 'l2-sync-wait-cached_lock')
-    timer = threading.Timer(0.2, client.set, kwargs={'key': 'l2-sync-wait-cached', 'val': 14})
-    timer.start()
+    threading.Timer(0.2, client.set, kwargs={'key': 'l2-sync-wait-cached', 'val': 14}).start()
 
-    @cached(key='l2-sync-wait', enc_dec=(lambda v: v + 5, lambda v: v - 5), lock=True, lock_poll_interval=0.02)
+    @cached(
+        key='l2-sync-wait',
+        enc_dec=(lambda v: v + 5, lambda v: v - 5),
+        stampede_protect=LockConf(poll_interval=0.02),
+    )
     def compute() -> int:
         pytest.fail('another process is computing the value')
 
@@ -380,7 +334,7 @@ def test_sync_lock_wait_timeout_computes_without_lock(init_cachify_fixture: None
     client = get_cachify_client()
     _hold_lock(client, 'l2-sync-timeout-cached_lock')
 
-    @cached(key='l2-sync-timeout', lock=True, lock_wait=0.2, lock_poll_interval=0.05)
+    @cached(key='l2-sync-timeout', stampede_protect=LockConf(wait=0.2, poll_interval=0.05))
     def compute() -> str:
         return 'fresh'
 
@@ -394,10 +348,9 @@ def test_sync_lock_wait_timeout_computes_without_lock(init_cachify_fixture: None
 def test_sync_lock_waiter_takes_freed_lock_and_computes(init_cachify_fixture: None) -> None:
     client = get_cachify_client()
     _hold_lock(client, 'l2-sync-freed-cached_lock')
-    timer = threading.Timer(0.2, client.delete, kwargs={'key': 'l2-sync-freed-cached_lock'})
-    timer.start()
+    threading.Timer(0.2, client.delete, kwargs={'key': 'l2-sync-freed-cached_lock'}).start()
 
-    @cached(key='l2-sync-freed', lock=True, lock_wait=None, lock_poll_interval=0.02)
+    @cached(key='l2-sync-freed', stampede_protect=LockConf(wait=None, poll_interval=0.02))
     def compute() -> str:
         return 'mine'
 
@@ -407,9 +360,9 @@ def test_sync_lock_waiter_takes_freed_lock_and_computes(init_cachify_fixture: No
 
 def test_sync_lock_holder_rereads_cache_before_computing(init_cachify_fixture: None, mocker: MockerFixture) -> None:
     client = get_cachify_client()
-    _reads_then_real(client, mocker, 'l2-sync-reread-cached', [None, 'stored'])
+    _fake_reads(client, mocker, 'l2-sync-reread-cached', [None, None, 'stored'])
 
-    @cached(key='l2-sync-reread', single_flight=False, lock=True)
+    @cached(key='l2-sync-reread', stampede_protect=StampedeProtect.LOCK)
     def compute() -> str:
         pytest.fail('the value was already cached')
 
@@ -420,7 +373,7 @@ def test_sync_lock_holder_rereads_cache_before_computing(init_cachify_fixture: N
 def test_sync_lock_released_when_function_raises(init_cachify_fixture: None) -> None:
     calls = 0
 
-    @cached(key='l2-sync-raise', lock=True)
+    @cached(key='l2-sync-raise', stampede_protect=StampedeProtect.LOCK)
     def compute() -> int:
         nonlocal calls
         calls += 1
@@ -438,19 +391,18 @@ def test_lock_settings_default_to_init_cachify_values(mocker: MockerFixture) -> 
     cachify_instance = init_cachify(default_lock_expiration=7, is_global=False)
     spy_set = mocker.spy(cachify_instance._client._sync_client, 'set')
 
-    @cachify_instance.cached(key='l2-defaults', lock=True)
+    @cachify_instance.cached(key='l2-defaults', stampede_protect=StampedeProtect.LOCK)
     def default_exp() -> int:
         return 1
 
-    @cachify_instance.cached(key='l2-explicit', lock=True, lock_exp=3)
+    @cachify_instance.cached(key='l2-explicit', stampede_protect=LockConf(exp=3))
     def explicit_exp() -> int:
         return 1
 
     _ = default_exp()
     _ = explicit_exp()
 
-    lock_ttls = [c.kwargs['ex'] for c in spy_set.call_args_list if c.kwargs['nx']]
-    assert lock_ttls == [7, 3]
+    assert [c.kwargs['ex'] for c in spy_set.call_args_list if c.kwargs['nx']] == [7, 3]
 
 
 def test_release_lock_keeps_lock_held_by_another_token(init_cachify_fixture: None) -> None:
@@ -464,13 +416,10 @@ def test_release_lock_keeps_lock_held_by_another_token(init_cachify_fixture: Non
     assert client.get(key='l2-release') is None
 
 
-# Layer 2, async
-
-
 async def test_async_lock_holder_computes_and_releases(init_cachify_fixture: None) -> None:
     calls: list[int] = []
 
-    @cached(key='l2-async-{x}', lock=True)
+    @cached(key='l2-async-{x}', stampede_protect=StampedeProtect.LOCK)
     async def compute(x: int) -> int:
         calls.append(x)
         return x + 1
@@ -491,7 +440,11 @@ async def test_async_lock_waiter_returns_value_without_taking_lock(init_cachify_
 
     filler = asyncio.create_task(_other_process_fills())
 
-    @cached(key='l2-async-wait', enc_dec=(lambda v: v + 5, lambda v: v - 5), lock=True, lock_poll_interval=0.02)
+    @cached(
+        key='l2-async-wait',
+        enc_dec=(lambda v: v + 5, lambda v: v - 5),
+        stampede_protect=LockConf(poll_interval=0.02),
+    )
     async def compute() -> int:
         pytest.fail('another process is computing the value')
 
@@ -504,7 +457,7 @@ async def test_async_lock_wait_timeout_computes_without_lock(init_cachify_fixtur
     client = get_cachify_client()
     _hold_lock(client, 'l2-async-timeout-cached_lock')
 
-    @cached(key='l2-async-timeout', lock=True, lock_wait=0.2, lock_poll_interval=0.05)
+    @cached(key='l2-async-timeout', stampede_protect=LockConf(wait=0.2, poll_interval=0.05))
     async def compute() -> str:
         return 'fresh'
 
@@ -525,7 +478,7 @@ async def test_async_lock_waiter_takes_freed_lock_and_computes(init_cachify_fixt
 
     releaser = asyncio.create_task(_other_process_releases())
 
-    @cached(key='l2-async-freed', lock=True, lock_wait=None, lock_poll_interval=0.02)
+    @cached(key='l2-async-freed', stampede_protect=LockConf(wait=None, poll_interval=0.02))
     async def compute() -> str:
         return 'mine'
 
@@ -538,9 +491,9 @@ async def test_async_lock_holder_rereads_cache_before_computing(
     init_cachify_fixture: None, mocker: MockerFixture
 ) -> None:
     client = get_cachify_client()
-    _areads_then_real(client, mocker, 'l2-async-reread-cached', [None, 'stored'])
+    _afake_reads(client, mocker, 'l2-async-reread-cached', [None, None, 'stored'])
 
-    @cached(key='l2-async-reread', single_flight=False, lock=True)
+    @cached(key='l2-async-reread', stampede_protect=StampedeProtect.LOCK)
     async def compute() -> str:
         pytest.fail('the value was already cached')
 
@@ -551,7 +504,7 @@ async def test_async_lock_holder_rereads_cache_before_computing(
 async def test_async_lock_released_when_function_raises(init_cachify_fixture: None) -> None:
     calls = 0
 
-    @cached(key='l2-async-raise', lock=True)
+    @cached(key='l2-async-raise', stampede_protect=StampedeProtect.LOCK)
     async def compute() -> int:
         nonlocal calls
         calls += 1

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from ._clients import AsyncWrapper, MemoryCache
 from ._exceptions import CachifyInitError
+from ._stampede import LockConf, StampedeProtect
 from ._types._common import UNSET, AsyncClient, Decoder, Encoder, SyncClient, UnsetType
 from ._types._lock_wrap import WrappedFunctionLock
 from ._types._pool_wrap import WrappedFunctionPool
@@ -53,10 +54,7 @@ class CachifyClient:
 
     def release_lock(self, key: str, token: Any) -> None:
         """
-        Deletes the lock only while it still holds `token`.
-
-        The client protocol has no compare-and-delete, so this is a read followed by a delete: a lock that expires
-        and is taken by someone else between the two can still be deleted.
+        Deletes the lock if it still holds `token` (a read and a delete, not atomic).
         """
         if self.get(key) == token:
             self.delete(key)
@@ -80,9 +78,6 @@ class CachifyClient:
         return bool(res)
 
     async def a_release_lock(self, key: str, token: Any) -> None:
-        """
-        Async version of `release_lock`, with the same read-then-delete caveat.
-        """
         if await self.a_get(key) == token:
             await self.a_delete(key)
 
@@ -124,12 +119,7 @@ class Cachify:
         key: str,
         ttl: int | None | UnsetType = UNSET,
         enc_dec: tuple[Encoder, Decoder] | None = None,
-        *,
-        single_flight: bool = True,
-        lock: bool = False,
-        lock_exp: int | None | UnsetType = UNSET,
-        lock_wait: float | None | UnsetType = UNSET,
-        lock_poll_interval: float | UnsetType = UNSET,
+        stampede_protect: StampedeProtect | LockConf = StampedeProtect.IN_MEMORY,
     ) -> WrappedFunctionReset:
         """
         Decorator that caches the result of a function based on the specified key, time-to-live (ttl),
@@ -143,16 +133,8 @@ class Cachify:
         enc_dec (Union[Tuple[Encoder, Decoder], None], optional): The encoding and decoding functions for
           the cached value.
             Defaults to None.
-        single_flight (bool, optional): Concurrent misses for the same key in this process share one call
-            of the function. Defaults to True.
-        lock (bool, optional): On a miss, take a lock in the cache backend so that one process computes
-            the value while the others wait for it. Defaults to False.
-        lock_exp (Union[int, None, UnsetType], optional): Expiration of that lock in seconds.
-            Defaults to default_lock_expiration from cachify client.
-        lock_wait (Union[float, None, UnsetType], optional): How long a caller waits for another process's value
-            before computing it without the lock. Defaults to lock_exp; None waits as long as the lock exists.
-        lock_poll_interval (Union[float, UnsetType], optional): Seconds between checks while waiting.
-            Defaults to lock_poll_interval from cachify client.
+        stampede_protect (Union[StampedeProtect, LockConf], optional): What happens when several callers miss
+            the same key at once. Defaults to StampedeProtect.IN_MEMORY.
 
         Returns:
         WrappedFunctionReset: Either a synchronous or asynchronous function with reset method attached to it,
@@ -162,15 +144,7 @@ class Cachify:
         from ._cached import _cached_impl  # pyright: ignore[reportPrivateUsage]
 
         return _cached_impl(
-            key=key,
-            ttl=ttl,
-            enc_dec=enc_dec,
-            single_flight=single_flight,
-            lock=lock,
-            lock_exp=lock_exp,
-            lock_wait=lock_wait,
-            lock_poll_interval=lock_poll_interval,
-            client_provider=lambda: self._client,
+            key=key, ttl=ttl, enc_dec=enc_dec, stampede_protect=stampede_protect, client_provider=lambda: self._client
         )
 
     def lock(

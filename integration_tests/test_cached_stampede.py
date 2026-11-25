@@ -12,13 +12,12 @@ import pytest
 import redis
 from redis.asyncio import Redis as RedisAsync
 
-from py_cachify import cached, init_cachify
+from py_cachify import LockConf, cached, init_cachify
 from py_cachify._backend._lib import get_cachify_client
 
 
 REDIS_URL = 'redis://localhost:6379'
 
-# Counts the real calls of the functions below across every process.
 _counter = redis.Redis.from_url(f'{REDIS_URL}/0')  # pyright: ignore[reportUnknownMemberType]
 
 
@@ -30,21 +29,21 @@ def _count_call(item: str) -> None:
     _ = _counter.incr(f'stampede-calls-{item}')
 
 
-@cached(key='stampede-async-{item}', lock=True, lock_poll_interval=0.02)
+@cached(key='stampede-async-{item}', stampede_protect=LockConf(poll_interval=0.02))
 async def _slow_async(item: str) -> str:
     _count_call(item)
     await asyncio.sleep(0.3)
     return f'value-{item}'
 
 
-@cached(key='stampede-sync-{item}', lock=True, lock_poll_interval=0.02)
+@cached(key='stampede-sync-{item}', stampede_protect=LockConf(poll_interval=0.02))
 def _slow_sync(item: str) -> str:
     _count_call(item)
     time.sleep(0.3)
     return f'value-{item}'
 
 
-@cached(key='stampede-dead-{item}', lock=True, lock_exp=2, lock_wait=10, lock_poll_interval=0.05)
+@cached(key='stampede-dead-{item}', stampede_protect=LockConf(exp=2, wait=10, poll_interval=0.05))
 def _hangs_on_first_call(item: str, hang: bool) -> str:
     _count_call(item)
     if hang:
@@ -110,7 +109,7 @@ def test_lock_waiter_returns_value_without_taking_lock() -> None:
     filler = Timer(0.3, client.set, kwargs={'key': cache_key, 'val': f'value-{item}'})
     filler.start()
 
-    @cached(key='stampede-wait-{item}', lock=True, lock_wait=10, lock_poll_interval=0.02)
+    @cached(key='stampede-wait-{item}', stampede_protect=LockConf(wait=10, poll_interval=0.02))
     def compute(item: str) -> Any:
         pytest.fail('another process is computing the value')
 
@@ -145,7 +144,7 @@ def test_lock_wait_timeout_computes_without_raising() -> None:
     lock_key = f'stampede-timeout-{item}-cached_lock'
     assert client.try_acquire_lock(key=lock_key, ttl=60, token='other')
 
-    @cached(key='stampede-timeout-{item}', lock=True, lock_wait=0.5, lock_poll_interval=0.05)
+    @cached(key='stampede-timeout-{item}', stampede_protect=LockConf(wait=0.5, poll_interval=0.05))
     def compute(item: str) -> str:
         _count_call(item)
         return f'value-{item}'

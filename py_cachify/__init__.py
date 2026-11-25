@@ -8,6 +8,8 @@ from ._backend._lock import lock as lock
 from ._backend._lock import once as once
 from ._backend._pool import pool as pool
 from ._backend._pool import pooled as pooled
+from ._backend._stampede import LockConf as LockConf
+from ._backend._stampede import StampedeProtect as StampedeProtect
 from ._backend._types._common import AsyncClient as AsyncClient
 from ._backend._types._common import Decoder as Decoder
 from ._backend._types._common import Encoder as Encoder

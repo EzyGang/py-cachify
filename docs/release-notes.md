@@ -5,10 +5,10 @@
 ### Features & Enhancements
 
 #### **Stampede protection in `cached`**:
-  - **Concurrent misses in one process are now collapsed by default.** When several callers (threads or tasks) miss the same key while the function is running, they wait for that run instead of calling the function again. If it raises, they all get the same exception and nothing is cached. Callers that share a run get the same result object. Turn it off per decorator with `@cached(..., single_flight=False)`.
-  - New opt-in `lock=True` makes one process compute a missing value while the other processes wait for it, through a lock key in the cache backend. Waiters read the cache on every poll and return as soon as the value is there; after `lock_wait` seconds they compute it themselves instead of raising.
-  - New keyword-only options `lock_exp`, `lock_wait` and `lock_poll_interval`, defaulting to `default_lock_expiration`, the lock expiration and `lock_poll_interval` from `init_cachify`.
-  - The same options exist on `Cachify.cached`. Cache hits, `lock`, `once`, pools and the client protocol are unchanged.
+  - **Concurrent misses in one process are now collapsed by default.** When several callers (threads or tasks) miss the same key while the function is running, they wait for that run instead of calling the function again. If it raises, they all get the same exception and nothing is cached. Callers that share a run get the same result object. Turn it off per decorator with `@cached(..., stampede_protect=StampedeProtect.OFF)`.
+  - New `stampede_protect=StampedeProtect.LOCK` makes one process compute a missing value while the other processes wait for it, through a lock key in the cache backend. Waiters read the cache on every poll and return as soon as the value is there; after the wait limit they compute it themselves instead of raising.
+  - `LockConf(exp=..., wait=..., poll_interval=...)` sets the lock per decorator; unset fields fall back to `init_cachify` (`default_lock_expiration`, `lock_poll_interval`, and `wait` defaults to `exp`).
+  - New exports: `StampedeProtect`, `LockConf`. The option exists on `Cachify.cached` too. Cache hits, `lock`, `once`, pools and the client protocol are unchanged.
   - See [Cache stampedes](reference/cached.md#cache-stampedes) in the `cached` reference.
 
 ---
