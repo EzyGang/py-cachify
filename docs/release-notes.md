@@ -54,6 +54,12 @@
 
 ---
 
+## [3.0.1](https://github.com/EzyGang/py-cachify/releases/tag/v3.0.1)
+
+- Same code as 3.0.0, published under a new version number: 3.0.0 is not on PyPI, so 3.0.1 is the first 3.x release you can install. The notes for 3.0.0 below apply.
+
+---
+
 ## [3.0.0](https://github.com/EzyGang/py-cachify/releases/tag/v3.0.0)
 
 In short, 3.0.0 focuses on:
@@ -150,6 +156,28 @@ In short, 3.0.0 focuses on:
     - `sync_cached` / `async_cached` with `cached` (it works for both sync and async).
     - `sync_once` / `async_once` with `once`.
 
+---
+
+## [2.1.1](https://github.com/EzyGang/py-cachify/releases/tag/v2.1.1)
+
+### Features & Enhancements
+
+- Python 3.14 support.
+- Sync wrappers of `cached`, `lock` and `once` keep the wrapped function's return type for type checkers.
+- Bump dependencies.
+
+## [2.1.0](https://github.com/EzyGang/py-cachify/releases/tag/v2.1.0)
+
+### Features & Enhancements
+
+- **Operation postfix in keys**: every key now ends with the operation that made it: `-cached`, `-lock` or `-once`. A `cached`, a `lock` and a `once` with the same key template no longer share, and overwrite, one entry.
+- All modules log through one `py-cachify` logger (`logging.getLogger('py-cachify')`).
+- Bump dependencies; development moved from Poetry to uv.
+
+### Upgrade notes
+
+- Because keys changed, values cached by 2.0.x aren't found after the upgrade (each key is computed once more), and a lock held by a 2.0.x process isn't seen by a 2.1.0 process. Avoid running both versions side by side against the same backend.
+
 ## [2.0.10](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.10) 
 
 ### Features & Enchancements
@@ -167,6 +195,12 @@ In short, 3.0.0 focuses on:
 
 - Fix default arguments are not respected when crafting cache key
 
+## [2.0.8](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.8)
+
+### Features & Enhancements
+
+- Bump dependencies
+
 ## [2.0.7](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.7) 
 
 ### Features & Enchancements
@@ -174,12 +208,44 @@ In short, 3.0.0 focuses on:
 - Bump dependencies
 - Add Python 3.13 Support
 
+## [2.0.5](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.5)
+
+### Features & Enhancements
+
+- Add Python 3.13 support
+- Bump dependencies
+
 ## [2.0.4](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.4) 
 
 ### Features & Enchancements
 
 - Bump dependencies
 - Better README and Docs
+
+## [2.0.3](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.3)
+
+### Miscellaneous
+
+- Documentation fixes
+
+## [2.0.2](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.2)
+
+### Features & Enhancements
+
+- Bump dependencies
+- README and documentation tweaks
+
+## [2.0.1](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.1)
+
+### Features & Enhancements
+
+- **Typing adjustments**: names are re-exported explicitly (`from ... import x as x`) instead of through `__all__`, so strict type checkers accept imports from `py_cachify`.
+- `AsyncLockWrappedF`, `SyncLockWrappedF` and `WrappedFunctionLock` are exported from `py_cachify`.
+- Functions wrapped with `cached` (sync) and `lock` keep their return type instead of `Any`.
+
+### Miscellaneous
+
+- Documentation and README update
 
 ## [2.0.0](https://github.com/EzyGang/py-cachify/releases/tag/v2.0.0)
 
@@ -228,9 +294,76 @@ I recommend checking out **[full API reference](reference/init.md)** to get fami
 - **Docs update to include info on `init_cachify` `prefix` parameter**
 
 
-## [1.1.0](https://github.com/EzyGang/py-cachify/releases/tag/v1.1.2)
+## [1.1.0](https://github.com/EzyGang/py-cachify/releases/tag/v1.1.0)
 ### Features & Enchancements
 - **Custom encoders/decoders for the `cached` decorator**: `enc_dec` parameter introduced on a `cached` decorator.
 
 ### Miscellaneous
 - **Documentation update**
+
+## [1.0.11](https://github.com/EzyGang/py-cachify/releases/tag/v1.0.11)
+
+### Features & Enhancements
+- **Client protocol**: `get` on `SyncClient` and `AsyncClient` (and the built-in memory cache) takes only the key, `get(name)`, and returns the value or `None`; the `default` argument is gone, matching redis-py.
+- **Bump dependencies**
+
+## [1.0.10](https://github.com/EzyGang/py-cachify/releases/tag/v1.0.10)
+
+### Breaking Changes
+- **`py_cachify.async` renamed to `py_cachify.asyncio`**: `async` is a Python keyword, so `from py_cachify.async import ...` was a syntax error. Import the async decorators from `py_cachify.asyncio`.
+
+## [1.0.9](https://github.com/EzyGang/py-cachify/releases/tag/v1.0.9)
+
+### Features & Enhancements
+- **Bump dependencies**
+
+### Miscellaneous
+- **Documentation update**
+
+## [1.0.8](https://github.com/EzyGang/py-cachify/releases/tag/v1.0.8)
+
+### Features & Enhancements
+- **Sync and async decorators split**: `py_cachify.sync` exports `sync_cached`, `sync_once`, `lock` and `SyncClient`; `py_cachify.async` exports `async_cached`, `async_once`, `async_lock` and `AsyncClient`. Type checkers complain less when each decorator matches the kind of function it wraps.
+
+### Breaking Changes
+- **Imports**: `lock`, `async_lock`, `SyncClient` and `AsyncClient` are no longer importable from `py_cachify` itself; import them from the new modules. `cached`, `once`, `init_cachify` and the exceptions stay at the top level.
+
+## [1.0.7](https://github.com/EzyGang/py-cachify/releases/tag/v1.0.7)
+
+### Features & Enhancements
+- **Generic return types**: decorated functions keep their return type for type checkers.
+
+### Miscellaneous
+- **README**
+
+## [1.0.6](https://pypi.org/project/py-cachify/1.0.6/)
+
+### Features & Enhancements
+- **`py.typed` marker**: type checkers now use the package's own annotations.
+
+## [1.0.5](https://pypi.org/project/py-cachify/1.0.5/)
+
+### Bugfixes
+- **Client protocol annotations**: `SyncClient` and `AsyncClient` use `typing.Protocol` and a valid `Union[int, None]` for `ex`.
+
+### Miscellaneous
+- **Bump dependencies, typo fixes**
+
+## [1.0.4](https://pypi.org/project/py-cachify/1.0.4/)
+
+### Features & Enhancements
+- **Bump dependencies**
+
+## [1.0.3](https://pypi.org/project/py-cachify/1.0.3/)
+
+### Features & Enhancements
+- **Key prefix**: `init_cachify(prefix=...)` prepends a prefix to every key (default `'_PYC_'`).
+- **Pickled values**: values are pickled before they are stored, so any picklable object can be cached in Redis.
+- **`SyncClient` and `AsyncClient` protocols** are exported, for custom clients.
+
+### Miscellaneous
+- **Documentation** and integration tests against Redis
+
+## [1.0.2](https://pypi.org/project/py-cachify/1.0.2/)
+
+First release on PyPI: `init_cachify`, the `cached` decorator, `lock`, `async_lock` and `once`, an in-memory cache by default, and the `CachifyInitError` and `CachifyLockError` exceptions.
