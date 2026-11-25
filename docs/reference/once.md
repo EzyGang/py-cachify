@@ -96,6 +96,7 @@ await local_task.release(task_id='42')
 - If py-cachify is not initialized through `init_cachify` with `is_global=True`, using the global `once` decorator will raise a `CachifyInitError`.
 - `Cachify` instances created with `is_global=False` do not depend on global initialization and can be used independently.
 - The correctness of `once` in concurrent or distributed environments depends on the underlying cache client providing an atomic "set-if-not-exists" (`nx`) operation (see the initialization reference and custom client section for details). Redis/DragonflyDB support his by default.
+- `once` around `cached` answers concurrent callers with `return_on_locked` (or `None`, or an error) even when the value is already cached, so it isn't a stampede guard; use the `single_flight` and `lock` options of [`cached`](cached.md#cache-stampedes) for that.
 
 
 

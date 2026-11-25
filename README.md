@@ -370,7 +370,7 @@ Implement `SyncClient` or `AsyncClient` protocols for Memcached, database-backed
 
 | Decorator/Class | Purpose | Key Parameters |
 |-----------------|---------|----------------|
-| `@cached(key, ttl, enc_dec)` | Cache function results | `key`: template string, `ttl`: expiration in seconds |
+| `@cached(key, ttl, enc_dec, single_flight, lock)` | Cache function results | `key`: template string, `ttl`: expiration in seconds, `lock`: one computation across processes on a miss |
 | `lock(key, nowait, timeout)` | Distributed lock context manager | `nowait`: fail fast, `timeout`: max wait time |
 | `@lock(key, nowait, timeout)` | Lock as decorator | Same as above |
 | `@once(key, raise_on_locked, return_on_locked)` | Prevent concurrent runs | `raise_on_locked`: exception vs skip |

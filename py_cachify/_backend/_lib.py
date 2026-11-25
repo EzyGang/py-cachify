@@ -42,14 +42,24 @@ class CachifyClient:
     def delete(self, key: str) -> Any:
         return self._sync_client.delete(f'{self._prefix}{key}')
 
-    def try_acquire_lock(self, key: str, ttl: int | None) -> bool:
+    def try_acquire_lock(self, key: str, ttl: int | None, token: Any = 1) -> bool:
         """
         Returns True if the lock was acquired, False if it is already held.
         """
         name = f'{self._prefix}{key}'
-        payload = pickle.dumps(1)
+        payload = pickle.dumps(token)
         res = self._sync_client.set(name, payload, ex=ttl, nx=True)
         return bool(res)
+
+    def release_lock(self, key: str, token: Any) -> None:
+        """
+        Deletes the lock only while it still holds `token`.
+
+        The client protocol has no compare-and-delete, so this is a read followed by a delete: a lock that expires
+        and is taken by someone else between the two can still be deleted.
+        """
+        if self.get(key) == token:
+            self.delete(key)
 
     async def a_get(self, key: str) -> Any:
         return (val := await self._async_client.get(f'{self._prefix}{key}')) and pickle.loads(val)
@@ -60,14 +70,21 @@ class CachifyClient:
     async def a_delete(self, key: str) -> Any:
         return await self._async_client.delete(f'{self._prefix}{key}')
 
-    async def a_try_acquire_lock(self, key: str, ttl: int | None) -> bool:
+    async def a_try_acquire_lock(self, key: str, ttl: int | None, token: Any = 1) -> bool:
         """
         Returns True if the lock was acquired, False if it is already held.
         """
         name = f'{self._prefix}{key}'
-        payload = pickle.dumps(1)
+        payload = pickle.dumps(token)
         res = await self._async_client.set(name, payload, ex=ttl, nx=True)
         return bool(res)
+
+    async def a_release_lock(self, key: str, token: Any) -> None:
+        """
+        Async version of `release_lock`, with the same read-then-delete caveat.
+        """
+        if await self.a_get(key) == token:
+            await self.a_delete(key)
 
 
 _cachify: Optional['CachifyClient'] = None
@@ -107,6 +124,12 @@ class Cachify:
         key: str,
         ttl: int | None | UnsetType = UNSET,
         enc_dec: tuple[Encoder, Decoder] | None = None,
+        *,
+        single_flight: bool = True,
+        lock: bool = False,
+        lock_exp: int | None | UnsetType = UNSET,
+        lock_wait: float | None | UnsetType = UNSET,
+        lock_poll_interval: float | UnsetType = UNSET,
     ) -> WrappedFunctionReset:
         """
         Decorator that caches the result of a function based on the specified key, time-to-live (ttl),
@@ -120,6 +143,16 @@ class Cachify:
         enc_dec (Union[Tuple[Encoder, Decoder], None], optional): The encoding and decoding functions for
           the cached value.
             Defaults to None.
+        single_flight (bool, optional): Concurrent misses for the same key in this process share one call
+            of the function. Defaults to True.
+        lock (bool, optional): On a miss, take a lock in the cache backend so that one process computes
+            the value while the others wait for it. Defaults to False.
+        lock_exp (Union[int, None, UnsetType], optional): Expiration of that lock in seconds.
+            Defaults to default_lock_expiration from cachify client.
+        lock_wait (Union[float, None, UnsetType], optional): How long a caller waits for another process's value
+            before computing it without the lock. Defaults to lock_exp; None waits as long as the lock exists.
+        lock_poll_interval (Union[float, UnsetType], optional): Seconds between checks while waiting.
+            Defaults to lock_poll_interval from cachify client.
 
         Returns:
         WrappedFunctionReset: Either a synchronous or asynchronous function with reset method attached to it,
@@ -128,7 +161,17 @@ class Cachify:
         """
         from ._cached import _cached_impl  # pyright: ignore[reportPrivateUsage]
 
-        return _cached_impl(key=key, ttl=ttl, enc_dec=enc_dec, client_provider=lambda: self._client)
+        return _cached_impl(
+            key=key,
+            ttl=ttl,
+            enc_dec=enc_dec,
+            single_flight=single_flight,
+            lock=lock,
+            lock_exp=lock_exp,
+            lock_wait=lock_wait,
+            lock_poll_interval=lock_poll_interval,
+            client_provider=lambda: self._client,
+        )
 
     def lock(
         self,
