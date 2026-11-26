@@ -24,6 +24,15 @@ There are two main ways to use caching with py-cachify:
 | `key`               | `str`                           | The key used to identify the cached result, which can utilize formatted strings to create dynamic keys. (i.e. `key='my_key-{func_arg}'`)       |
 | `ttl`               | `Union[int, None]`, optional    | Time-to-live (seconds) for the cached result. If omitted, the decorator uses the cache client's `default_cache_ttl` (configured via `init_cachify`). If `ttl` is `None`, the value is stored without expiration. If `ttl` is an integer, that value is used directly and overrides any `default_cache_ttl`.   |
 | `enc_dec`           | `Union[Tuple[Encoder, Decoder], None]`, optional  | A tuple containing the encoding and decoding functions for the cached value. Defaults to `None`, which means that no encoding or decoding functions will be applied. |
+| `stampede_protect`  | `Union[StampedeProtect, LockConf]`, optional | What happens when several callers miss the same key at once. `StampedeProtect.OFF`: every caller runs the function. `StampedeProtect.IN_MEMORY` (default): callers in one process wait for the run already in progress. `StampedeProtect.LOCK` or `LockConf(...)`: additionally one process computes while the others wait for it. See [Cache stampedes](#cache-stampedes). |
+
+`LockConf` fields, each defaulting to the value configured in `init_cachify`:
+
+| Field           | Type                 | Description |
+|-----------------|----------------------|-------------|
+| `exp`           | `Union[int, None]`   | Lock expiration in seconds. Defaults to `default_lock_expiration` (30). |
+| `wait`          | `Union[float, None]` | Seconds to wait for another process's value before computing it without the lock. Defaults to `exp`; `None` waits as long as the lock exists. |
+| `poll_interval` | `float`              | Seconds between two checks while waiting. Defaults to `lock_poll_interval` (0.1). |
 
 
 ### Default TTL behavior
@@ -48,10 +57,13 @@ This lets you define a global or instance-specific default TTL once and only ove
     - Checks if a cached value exists for the provided key.
     - If the cached value exists, it returns the decoded value.
     - If not, it executes the function, caches the result (after encoding, if specified), and then returns the result.
+    - With `StampedeProtect.IN_MEMORY` (the default), threads that miss the same key while the function is running wait for that run instead of starting their own.
+    - With `StampedeProtect.LOCK` or a `LockConf`, the run takes a lock in the cache backend first, as described in [Cache stampedes](#cache-stampedes).
 
 2. **For Asynchronous Functions**:
     - Similar checks are performed in an asynchronous context using `await`.
-    - The caching behavior mirrors the synchronous version. 
+    - The caching behavior mirrors the synchronous version: tasks that miss the same key while the function is running await that run.
+
 
 ### Global Usage Example
 
@@ -123,6 +135,60 @@ In this scenario:
 
 This makes multi-layer setups behave intuitively when resetting cached values.
 
+### Cache stampedes
+
+A stampede is many callers asking for the same key at the moment it isn't cached: after a deploy, after the value expired, for a new item. Without protection, every one of them misses and runs the function, so 100 concurrent requests for a cold key call a slow database query or API 100 times at once.
+
+`cached` has two layers against it, chosen with `stampede_protect`.
+
+**In one process (`StampedeProtect.IN_MEMORY`, the default).** The first caller that misses runs the function; callers that miss the same key while it runs wait for its result instead of running it again. In async code the function runs as a separate task, so a caller that is cancelled (a client that disconnects) cancels neither the computation nor the other callers, and the value is still cached. If the function raises, every caller of that round gets the same exception, nothing is cached, and the next caller tries again. Cache hits don't go through this layer at all.
+
+Callers that shared one run receive the same object, not separate copies, so a caller that mutates the result changes it for the others.
+
+With several processes (uvicorn or gunicorn workers, several servers), each process still runs the function once.
+
+**Across processes (`StampedeProtect.LOCK` or `LockConf(...)`).** The one caller per process that the first layer lets through then:
+
+1. Reads the cache again and returns the value if another process has filled it.
+2. Tries to take a lock key in the backend (`SET NX` with `exp`). The lock key is the cache key with `_lock` appended, for example `PYC-user-42-cached_lock`, a name no other py-cachify key can have.
+3. If it got the lock, it reads the cache once more, runs the function only if the value is still missing, stores it, and releases the lock.
+4. If it didn't get the lock, it waits: every `poll_interval` it reads the cache and returns the value as soon as it is there. Only when the value is still missing does it try to take the lock itself. A waiter never has to take the lock to read a value that already exists.
+5. If nothing has arrived after `wait` seconds, it runs the function without the lock and stores the result. Waiting never raises an error.
+
+So a burst at a cold key runs the function once across all processes, and the waiters get the value within one poll interval after it is stored.
+
+Things to know:
+
+- **Poll interval.** Each waiting process sends a `GET` and a `SET NX` to the backend every `poll_interval`. Thanks to the first layer that's one waiter per process, not one per request, but a very short interval on many processes still adds load to Redis. The default 0.1 s adds at most 0.1 s of latency for waiters.
+- **A computation that outlives the lock.** If the function takes longer than `exp`, the lock expires and another process may run the function too. Both results are stored and the later one wins. Set `exp` above the slowest expected run.
+- **A process that dies while holding the lock** leaves it in place until `exp` passes; then the next caller takes it and computes.
+- **Releasing.** The holder deletes the lock only if it still holds its own token. The client protocol has no atomic compare-and-delete, so this is a read followed by a delete; in the rare case that the lock expires and another process takes it between the two, that process's lock is deleted early, which at worst allows one more computation.
+- **`None` results are never cached** (as before), so with the lock, callers of a function that returns `None` take the lock one after another.
+
+```python
+from py_cachify import LockConf, StampedeProtect, cached
+
+
+# Sync: one process computes, the others wait up to 10 seconds for the value.
+@cached(key='report-{day}', ttl=300, stampede_protect=LockConf(exp=60, wait=10))
+def build_report(day: str) -> dict:
+    ...
+
+
+# Async: lock settings from init_cachify.
+@cached(key='user-{user_id}', ttl=300, stampede_protect=StampedeProtect.LOCK)
+async def get_user(user_id: int) -> dict:
+    ...
+
+
+# No protection: every concurrent caller that misses runs the function.
+@cached(key='token-{user_id}', stampede_protect=StampedeProtect.OFF)
+async def issue_token(user_id: int) -> str:
+    ...
+```
+
+Stacking `lock` or `once` around `cached` is not a stampede guard: with `lock`, every waiter has to take the lock before it can even read the cache, so waiters pass one at a time and the last ones run into the lock's timeout; `once` answers concurrent callers with `return_on_locked` even when the value is already cached.
+
 ### Resetting the Cache
 
 You can reset the cache for either a synchronous or asynchronous function by calling the `reset` method attached to the wrapped function.
@@ -140,6 +206,8 @@ For instance-based usage, the pattern is the same:
 ```python
 local_sum.reset(x=1, y=2)
 ```
+
+Calling `reset` while a computation for that key is running doesn't strand the callers waiting for it: they receive that computation's result. As before, that result is stored when the computation ends, even if the reset came in between.
 
 ### Notes
 

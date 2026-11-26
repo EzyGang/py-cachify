@@ -1,7 +1,7 @@
 [project]
 name = "py-cachify"
 description = "Caching, distributed locks, run-once guards and resource pools for sync and async Python, in memory or on Redis and DragonflyDB"
-version = "3.2.0"
+version = "3.3.0"
 authors = [{ name = "Galtozzy", email = "galtozzy+git@gmail.com" }]
 requires-python = ">=3.10,<4.0"
 readme = "README.md"

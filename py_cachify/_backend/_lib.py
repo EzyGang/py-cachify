@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from ._clients import AsyncWrapper, MemoryCache
 from ._exceptions import CachifyInitError
+from ._stampede import LockConf, StampedeProtect
 from ._types._common import UNSET, AsyncClient, Decoder, Encoder, SyncClient, UnsetType
 from ._types._lock_wrap import WrappedFunctionLock
 from ._types._pool_wrap import WrappedFunctionPool
@@ -42,14 +43,21 @@ class CachifyClient:
     def delete(self, key: str) -> Any:
         return self._sync_client.delete(f'{self._prefix}{key}')
 
-    def try_acquire_lock(self, key: str, ttl: int | None) -> bool:
+    def try_acquire_lock(self, key: str, ttl: int | None, token: Any = 1) -> bool:
         """
         Returns True if the lock was acquired, False if it is already held.
         """
         name = f'{self._prefix}{key}'
-        payload = pickle.dumps(1)
+        payload = pickle.dumps(token)
         res = self._sync_client.set(name, payload, ex=ttl, nx=True)
         return bool(res)
+
+    def release_lock(self, key: str, token: Any) -> None:
+        """
+        Deletes the lock if it still holds `token` (a read and a delete, not atomic).
+        """
+        if self.get(key) == token:
+            self.delete(key)
 
     async def a_get(self, key: str) -> Any:
         return (val := await self._async_client.get(f'{self._prefix}{key}')) and pickle.loads(val)
@@ -60,14 +68,18 @@ class CachifyClient:
     async def a_delete(self, key: str) -> Any:
         return await self._async_client.delete(f'{self._prefix}{key}')
 
-    async def a_try_acquire_lock(self, key: str, ttl: int | None) -> bool:
+    async def a_try_acquire_lock(self, key: str, ttl: int | None, token: Any = 1) -> bool:
         """
         Returns True if the lock was acquired, False if it is already held.
         """
         name = f'{self._prefix}{key}'
-        payload = pickle.dumps(1)
+        payload = pickle.dumps(token)
         res = await self._async_client.set(name, payload, ex=ttl, nx=True)
         return bool(res)
+
+    async def a_release_lock(self, key: str, token: Any) -> None:
+        if await self.a_get(key) == token:
+            await self.a_delete(key)
 
 
 _cachify: Optional['CachifyClient'] = None
@@ -107,6 +119,7 @@ class Cachify:
         key: str,
         ttl: int | None | UnsetType = UNSET,
         enc_dec: tuple[Encoder, Decoder] | None = None,
+        stampede_protect: StampedeProtect | LockConf = StampedeProtect.IN_MEMORY,
     ) -> WrappedFunctionReset:
         """
         Decorator that caches the result of a function based on the specified key, time-to-live (ttl),
@@ -120,6 +133,8 @@ class Cachify:
         enc_dec (Union[Tuple[Encoder, Decoder], None], optional): The encoding and decoding functions for
           the cached value.
             Defaults to None.
+        stampede_protect (Union[StampedeProtect, LockConf], optional): What happens when several callers miss
+            the same key at once. Defaults to StampedeProtect.IN_MEMORY.
 
         Returns:
         WrappedFunctionReset: Either a synchronous or asynchronous function with reset method attached to it,
@@ -128,7 +143,9 @@ class Cachify:
         """
         from ._cached import _cached_impl  # pyright: ignore[reportPrivateUsage]
 
-        return _cached_impl(key=key, ttl=ttl, enc_dec=enc_dec, client_provider=lambda: self._client)
+        return _cached_impl(
+            key=key, ttl=ttl, enc_dec=enc_dec, stampede_protect=stampede_protect, client_provider=lambda: self._client
+        )
 
     def lock(
         self,
