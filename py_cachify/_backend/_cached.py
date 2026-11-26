@@ -1,5 +1,6 @@
 import inspect
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from functools import partial, wraps
 from typing import TypeVar, cast, overload
 
@@ -48,6 +49,72 @@ def cached(
     )
 
 
+@dataclass(frozen=True)
+class _CachedSettings:
+    ttl: int | None | UnsetType
+    enc: Encoder | None
+    dec: Decoder | None
+    lock_conf: LockConf | None
+
+    @classmethod
+    def create(
+        cls,
+        ttl: int | None | UnsetType,
+        enc_dec: tuple[Encoder, Decoder] | None,
+        stampede_protect: StampedeProtect | LockConf,
+    ) -> '_CachedSettings':
+        enc, dec = enc_dec or (None, None)
+        if stampede_protect is StampedeProtect.LOCK:
+            stampede_protect = LockConf()
+        lock_conf = stampede_protect if isinstance(stampede_protect, LockConf) else None
+        return cls(ttl=ttl, enc=enc, dec=dec, lock_conf=lock_conf)
+
+    def resolve_ttl(self, client: CachifyClient) -> int | None:
+        return client.default_cache_ttl if isinstance(self.ttl, UnsetType) else self.ttl
+
+
+def _store(settings: _CachedSettings, client: CachifyClient, key: str, call: Callable[[], _R]) -> _R:
+    res = call()
+    client.set(
+        key=key, val=encode_decode_value(encoder_decoder=settings.enc, val=res), ttl=settings.resolve_ttl(client)
+    )
+    return res
+
+
+def _compute(settings: _CachedSettings, client: CachifyClient, key: str, call: Callable[[], _R]) -> _R:
+    if (val := client.get(key=key)) is not None:
+        return cast(_R, encode_decode_value(encoder_decoder=settings.dec, val=val))
+    if settings.lock_conf is None:
+        return _store(settings, client, key, call)
+
+    with cache_lock(client, key, settings.lock_conf) as val:
+        if val is not None:
+            return cast(_R, encode_decode_value(encoder_decoder=settings.dec, val=val))
+        return _store(settings, client, key, call)
+
+
+async def _astore(settings: _CachedSettings, client: CachifyClient, key: str, call: Callable[[], Awaitable[_R]]) -> _R:
+    res = await call()
+    await client.a_set(
+        key=key, val=encode_decode_value(encoder_decoder=settings.enc, val=res), ttl=settings.resolve_ttl(client)
+    )
+    return res
+
+
+async def _acompute(
+    settings: _CachedSettings, client: CachifyClient, key: str, call: Callable[[], Awaitable[_R]]
+) -> _R:
+    if (val := await client.a_get(key=key)) is not None:
+        return cast(_R, encode_decode_value(encoder_decoder=settings.dec, val=val))
+    if settings.lock_conf is None:
+        return await _astore(settings, client, key, call)
+
+    async with acache_lock(client, key, settings.lock_conf) as val:
+        if val is not None:
+            return cast(_R, encode_decode_value(encoder_decoder=settings.dec, val=val))
+        return await _astore(settings, client, key, call)
+
+
 def _cached_impl(
     key: str,
     ttl: int | None | UnsetType = UNSET,
@@ -55,9 +122,7 @@ def _cached_impl(
     stampede_protect: StampedeProtect | LockConf = StampedeProtect.IN_MEMORY,
     client_provider: Callable[[], CachifyClient] = get_cachify_client,
 ) -> WrappedFunctionReset:
-    lock_conf = stampede_protect if isinstance(stampede_protect, LockConf) else None
-    if stampede_protect is StampedeProtect.LOCK:
-        lock_conf = LockConf()
+    settings = _CachedSettings.create(ttl=ttl, enc_dec=enc_dec, stampede_protect=stampede_protect)
 
     @overload
     def _cached_inner(  # type: ignore[overload-overlap]
@@ -75,37 +140,8 @@ def _cached_impl(
         signature = inspect.signature(_func)
         flight = None if stampede_protect is StampedeProtect.OFF else SingleFlight()
 
-        enc, dec = None, None
-        if enc_dec is not None:
-            enc, dec = enc_dec
-
-        def _resolve_ttl(client: CachifyClient) -> int | None:
-            if isinstance(ttl, UnsetType):
-                return client.default_cache_ttl
-            return ttl
-
         if is_coroutine(_func):
             _awaitable_func = _func
-
-            async def _astore(client: CachifyClient, _key: str, call: Callable[[], Awaitable[_R]]) -> _R:
-                res = await call()
-                await client.a_set(
-                    key=_key,
-                    val=encode_decode_value(encoder_decoder=enc, val=res),
-                    ttl=_resolve_ttl(client),
-                )
-                return res
-
-            async def _acompute(client: CachifyClient, _key: str, call: Callable[[], Awaitable[_R]]) -> _R:
-                if (val := await client.a_get(key=_key)) is not None:
-                    return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
-                if lock_conf is None:
-                    return await _astore(client, _key, call)
-
-                async with acache_lock(client, _key, lock_conf) as val:
-                    if val is not None:
-                        return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
-                    return await _astore(client, _key, call)
 
             @wraps(_awaitable_func)
             async def _async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
@@ -114,12 +150,12 @@ def _cached_impl(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
                 if (val := await cachify_client.a_get(key=_key)) is not None:
-                    return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
+                    return cast(_R, encode_decode_value(encoder_decoder=settings.dec, val=val))
 
                 call = partial(_awaitable_func, *args, **kwargs)
                 if flight is None:
-                    return await _astore(cachify_client, _key, call)
-                return await flight.arun(_key, partial(_acompute, cachify_client, _key, call))
+                    return await _astore(settings, cachify_client, _key, call)
+                return await flight.arun(_key, partial(_acompute, settings, cachify_client, _key, call))
 
             setattr(
                 _async_wrapper,
@@ -138,26 +174,6 @@ def _cached_impl(
         else:
             _sync_func = cast(Callable[_P, _R], _func)  # type: ignore[redundant-cast]
 
-            def _store(client: CachifyClient, _key: str, call: Callable[[], _R]) -> _R:
-                res = call()
-                client.set(
-                    key=_key,
-                    val=encode_decode_value(encoder_decoder=enc, val=res),
-                    ttl=_resolve_ttl(client),
-                )
-                return res
-
-            def _compute(client: CachifyClient, _key: str, call: Callable[[], _R]) -> _R:
-                if (val := client.get(key=_key)) is not None:
-                    return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
-                if lock_conf is None:
-                    return _store(client, _key, call)
-
-                with cache_lock(client, _key, lock_conf) as val:
-                    if val is not None:
-                        return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
-                    return _store(client, _key, call)
-
             @wraps(_sync_func)
             def _sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
                 cachify_client = client_provider()
@@ -165,12 +181,12 @@ def _cached_impl(
                     bound_args=signature.bind(*args, **kwargs), key=key, operation_postfix='cached'
                 )
                 if (val := cachify_client.get(key=_key)) is not None:
-                    return cast(_R, encode_decode_value(encoder_decoder=dec, val=val))
+                    return cast(_R, encode_decode_value(encoder_decoder=settings.dec, val=val))
 
                 call = partial(_sync_func, *args, **kwargs)
                 if flight is None:
-                    return _store(cachify_client, _key, call)
-                return flight.run(_key, partial(_compute, cachify_client, _key, call))
+                    return _store(settings, cachify_client, _key, call)
+                return flight.run(_key, partial(_compute, settings, cachify_client, _key, call))
 
             setattr(
                 _sync_wrapper,
